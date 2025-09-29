@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Lighting - OAuth Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .btn-google {
+            background: #4285f4;
+            color: white;
+        }
+        .btn-google:hover {
+            background: #357ae8;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smart Lighting OAuth Test</h1>
+        
+        <div id="status" class="status info">
+            Ready to test authentication
+        </div>
+
+        <div>
+            <a href="/oauth2/authorization/google" class="btn btn-google">
+                Login with Google
+            </a>
+            <button class="btn btn-secondary" onclick="checkAuth()">
+                Check Auth Status
+            </button>
+            <button class="btn btn-secondary" onclick="getUserInfo()">
+                Get User Info
+            </button>
+            <button class="btn btn-secondary" onclick="testWebSocket()">
+                Test WebSocket
+            </button>
+        </div>
+
+        <div id="response" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Check URL parameters for OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('login') === 'success') {
+            setStatus('Login successful! Fetching user info...', 'success');
+            getUserInfo();
+        } else if (urlParams.get('error')) {
+            setStatus('Login failed: ' + urlParams.get('message'), 'error');
+        }
+
+        function setStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+        }
+
+        function showResponse(data) {
+            const responseEl = document.getElementById('response');
+            responseEl.style.display = 'block';
+            responseEl.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/check', {
+                    credentials: 'include'
+                });
+                const isAuthenticated = await response.json();
+                setStatus(isAuthenticated ? 'Authenticated ✓' : 'Not authenticated ✗', 
+                         isAuthenticated ? 'success' : 'error');
+                showResponse({ authenticated: isAuthenticated });
+            } catch (error) {
+                setStatus('Error checking auth: ' + error.message, 'error');
+            }
+        }
+
+        async function getUserInfo() {
+            try {
+                const response = await fetch('/api/me', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const user = await response.json();
+                    setStatus('User data retrieved successfully', 'success');
+                    showResponse(user);
+                } else {
+                    setStatus('Failed to get user info (Status: ' + response.status + ')', 'error');
+                }
+            } catch (error) {
+                setStatus('Error getting user info: ' + error.message, 'error');
+            }
+        }
+
+        function testWebSocket() {
+            setStatus('Connecting to WebSocket...', 'info');
+            
+            const ws = new WebSocket('ws://localhost:8080/ws-native');
+            
+            ws.onopen = () => {
+                setStatus('WebSocket connected!', 'success');
+                showResponse({ event: 'connected', timestamp: new Date().toISOString() });
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                showResponse({ event: 'message', data: data, timestamp: new Date().toISOString() });
+            };
+            
+            ws.onerror = (error) => {
+                setStatus('WebSocket error', 'error');
+                console.error(error);
+            };
+            
+            ws.onclose = () => {
+                setStatus('WebSocket disconnected', 'info');
+            };
+        }
+    </script>
+</body>
+</html>

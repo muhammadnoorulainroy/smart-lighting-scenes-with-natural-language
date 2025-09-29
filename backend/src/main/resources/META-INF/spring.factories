@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationContextInitializer=\
+com.example.smart.lighting.scenes.with_natural.language.config.DotenvConfig
