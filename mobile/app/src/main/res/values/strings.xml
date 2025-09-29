@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">Smart Lighting</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="scenes">Scenes</string>
+    <string name="routines">Routines</string>
+    <string name="schedules">Schedules</string>
+    <string name="settings">Settings</string>
+    <string name="login">Login</string>
+    <string name="login_with_google">Login with Google</string>
+    <string name="logout">Logout</string>
+    <string name="brightness">Brightness</string>
+    <string name="color_temperature">Color Temperature</string>
+    <string name="warm">Warm</string>
+    <string name="neutral">Neutral</string>
+    <string name="cool">Cool</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="apply_scene">Apply Scene</string>
+    <string name="create_scene">Create Scene</string>
+    <string name="edit_scene">Edit Scene</string>
+    <string name="delete_scene">Delete Scene</string>
+    <string name="reading">Reading</string>
+    <string name="relax">Relax</string>
+    <string name="movie">Movie</string>
+    <string name="nightlight">Nightlight</string>
+    <string name="speak_command">Speak a command</string>
+    <string name="type_command">Type a natural language command...</string>
+    <string name="processing">Processing...</string>
+    <string name="error_occurred">An error occurred</string>
+    <string name="no_internet">No internet connection</string>
+    <string name="retry">Retry</string>
+</resources>

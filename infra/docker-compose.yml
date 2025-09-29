@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: smart-lighting-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smartlighting
+      POSTGRES_USER: smartlighting
+      POSTGRES_PASSWORD: smartlighting123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - smart-lighting-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartlighting"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and WebSocket sessions
+  redis:
+    image: redis:7-alpine
+    container_name: smart-lighting-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - smart-lighting-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Mosquitto MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: smart-lighting-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - smart-lighting-network
+
+  # Mailhog for email testing (optional)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: smart-lighting-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI
+    networks:
+      - smart-lighting-network
+
+  # Adminer for database management (optional, development only)
+  adminer:
+    image: adminer:4.8.1
+    container_name: smart-lighting-adminer
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    networks:
+      - smart-lighting-network
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: nette
+    depends_on:
+      - postgres
+
+networks:
+  smart-lighting-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

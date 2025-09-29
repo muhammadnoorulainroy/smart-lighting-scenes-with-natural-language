@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-neutral-50 text-neutral-900 font-sans antialiased;
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    body {
+      @apply bg-neutral-950 text-neutral-100;
+    }
+  }
+}
+
+@layer components {
+  /* Button styles */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 transform active:scale-95;
+  }
+
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 shadow-md hover:shadow-glow;
+  }
+
+  .btn-secondary {
+    @apply bg-neutral-200 text-neutral-800 hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700;
+  }
+
+  .btn-accent {
+    @apply bg-accent-500 text-white hover:bg-accent-600 shadow-md hover:shadow-glow-accent;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-800;
+  }
+
+  .card-hover {
+    @apply hover:shadow-lg transition-shadow duration-300;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all;
+  }
+
+  /* Room tile styles */
+  .room-tile {
+    @apply card p-6 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden;
+  }
+
+  .room-tile::before {
+    @apply absolute inset-0 bg-gradient-to-br from-primary-500/10 to-transparent opacity-0 transition-opacity duration-300;
+    content: '';
+  }
+
+  .room-tile:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Slider styles */
+  .slider {
+    @apply w-full h-2 bg-neutral-300 dark:bg-neutral-700 rounded-full outline-none transition-colors;
+  }
+
+  .slider::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 bg-primary-500 rounded-full cursor-pointer hover:bg-primary-600 transition-colors shadow-md;
+  }
+
+  .slider::-moz-range-thumb {
+    @apply w-5 h-5 bg-primary-500 rounded-full cursor-pointer hover:bg-primary-600 transition-colors shadow-md border-0;
+  }
+
+  /* Scene button styles */
+  .scene-btn {
+    @apply card p-8 text-center hover:shadow-xl transition-all duration-300 cursor-pointer group;
+  }
+
+  .scene-btn:hover {
+    @apply transform scale-105;
+  }
+
+  /* Toggle switch */
+  .toggle {
+    @apply relative inline-flex items-center h-6 rounded-full w-11 transition-colors;
+  }
+
+  .toggle-on {
+    @apply bg-primary-500;
+  }
+
+  .toggle-off {
+    @apply bg-neutral-300 dark:bg-neutral-700;
+  }
+
+  .toggle-handle {
+    @apply absolute left-0 inline-block w-5 h-5 bg-white rounded-full shadow transform transition-transform;
+  }
+
+  .toggle-on .toggle-handle {
+    @apply translate-x-5;
+  }
+}
+
+@layer utilities {
+  /* Custom animations */
+  @keyframes glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(234, 179, 8, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(234, 179, 8, 0.8);
+    }
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/80 dark:bg-neutral-900/80 backdrop-blur-lg;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-500 to-accent-500 bg-clip-text text-transparent;
+  }
+}

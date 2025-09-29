@@ -1,0 +1,98 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Production builds
+dist/
+build/
+out/
+target/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Package managers
+.npm
+.yarn/
+.pnpm-store/
+
+# Android / Kotlin
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+local.properties
+captures/
+.gradle/
+.externalNativeBuild
+.cxx
+
+# Python (for embedded simulator)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+*.egg-info/
+.pytest_cache/
+
+# Spring Boot
+.gradle
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Docker
+.docker/
+
+# Mosquitto
+mosquitto/data/
+mosquitto/log/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Misc
+.temp/
+.cache/
+tmp/
