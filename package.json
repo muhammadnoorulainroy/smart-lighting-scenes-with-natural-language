@@ -2,14 +2,31 @@
   "name": "smart-lighting-scenes",
   "version": "1.0.0",
   "private": true,
-  "description": "Smart Lighting Scenes with Natural Language - Monorepo",
+  "description": "Smart home lighting control system with natural language processing and IoT integration",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/smart-lighting-scenes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/smart-lighting-scenes/issues"
+  },
+  "homepage": "https://github.com/yourusername/smart-lighting-scenes#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "workspaces": [
     "frontend",
     "shared"
   ],
   "scripts": {
+    "preinstall": "echo 'Installing Smart Lighting Scenes dependencies...'",
+    "postinstall": "echo 'Dependencies installed! Run npm run dev to start development.'",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && ./gradlew bootRun",
+    "dev": "concurrently -n frontend,backend -c green,blue \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "build": "npm run build:backend && npm run build:frontend",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "cd backend && ./gradlew build",
     "test": "npm run test:frontend && npm run test:backend",
@@ -17,20 +34,35 @@
     "test:backend": "cd backend && ./gradlew test",
     "lint": "npm run lint:frontend",
     "lint:frontend": "cd frontend && npm run lint",
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "cd frontend && rm -rf dist node_modules",
+    "clean:backend": "cd backend && ./gradlew clean",
     "docker:up": "docker-compose -f infra/docker-compose.yml up -d",
     "docker:down": "docker-compose -f infra/docker-compose.yml down",
-    "docker:logs": "docker-compose -f infra/docker-compose.yml logs -f"
+    "docker:logs": "docker-compose -f infra/docker-compose.yml logs -f",
+    "docker:clean": "docker-compose -f infra/docker-compose.yml down -v",
+    "verify": "node --version && npm --version && java --version && docker --version"
   },
   "keywords": [
     "smart-home",
-    "lighting",
-    "natural-language",
     "iot",
-    "esp32"
+    "lighting-control",
+    "natural-language-processing",
+    "nlp",
+    "esp32",
+    "mqtt",
+    "vue",
+    "spring-boot",
+    "websocket",
+    "home-automation",
+    "artificial-intelligence"
   ],
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "optionalDependencies": {},
+  "config": {
+    "frontend_port": "5173",
+    "backend_port": "8080"
   }
 }

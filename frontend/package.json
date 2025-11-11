@@ -1,14 +1,30 @@
 {
   "name": "smart-lighting-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "Vue 3 frontend application for Smart Lighting Scenes with Google OAuth authentication",
+  "author": {
+    "name": "Smart Lighting Team",
+    "email": "smart-lighting@example.com"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview",
+    "build:analyze": "vite build --mode analyze",
+    "preview": "vite preview --port 4173",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
-    "format": "prettier --write src/"
+    "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "type-check": "vue-tsc --noEmit",
+    "clean": "rm -rf dist node_modules .vite",
+    "test": "echo 'Tests will be added in future iteration' && exit 0"
   },
   "dependencies": {
     "vue": "^3.5.13",
@@ -29,5 +45,14 @@
     "prettier": "^3.4.2",
     "tailwindcss": "^3.4.17",
     "vite": "^6.0.3"
-  }
+  },
+  "keywords": [
+    "vue3",
+    "vite",
+    "tailwindcss",
+    "pinia",
+    "oauth2",
+    "frontend",
+    "smart-home"
+  ]
 }
