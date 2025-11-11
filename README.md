@@ -26,32 +26,196 @@ smart-lighting-scenes/
 └── shared/           # Shared types and utilities
 ```
 
-## Quick Start
+## Prerequisites
 
-### Prerequisites
+Before building, testing, or running the project, ensure you have:
 
-- Node.js 18+ and npm
-- Java 17+ (for Spring Boot)
-- Docker and Docker Compose
-- Android Studio (for mobile development)
-- Google Cloud Console account (for OAuth)
+- **Node.js 18+** and **npm 9+**
+- **Java 21+** (JDK)
+- **Docker** and **Docker Compose**
+- **GNU Make** (optional, for simplified commands)
+- Google Cloud Console account (for OAuth configuration)
 
-### 1. Clone and Install
-
+**Verify prerequisites:**
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/smart-lighting-scenes.git
-cd smart-lighting-scenes
+# Check all required tools
+make check-deps
 
-# Install root dependencies
-npm install
-
-# Install frontend dependencies
-cd frontend && npm install
-cd ..
+# Or manually:
+java --version    # Should be 21+
+node --version    # Should be 18+
+npm --version     # Should be 9+
+docker --version  # Should be 20+
 ```
 
-### 2. Configure Environment
+---
+
+## How to Build
+
+### Option 1: Build Everything (Recommended)
+
+```bash
+# Using Make (recommended)
+make install    # Install all dependencies
+make build      # Build backend + frontend
+
+# Or manually:
+npm install                          # Install root dependencies
+cd backend && ./gradlew build        # Build backend (creates JAR)
+cd ../frontend && npm install && npm run build  # Build frontend (creates dist/)
+```
+
+**Build outputs:**
+- **Backend:** `backend/build/libs/Smart-Lighting-Scenes-0.0.1-SNAPSHOT.jar`
+- **Frontend:** `frontend/dist/` (optimized production bundle)
+
+### Option 2: Build Individual Components
+
+**Backend only:**
+```bash
+cd backend
+./gradlew build
+# Output: backend/build/libs/*.jar
+```
+
+**Frontend only:**
+```bash
+cd frontend
+npm install    # If not done already
+npm run build
+# Output: frontend/dist/
+```
+
+**Build time:** First build ~90 seconds, subsequent builds ~20 seconds (incremental)
+
+---
+
+## How to Test
+
+### Run All Tests
+
+```bash
+# Using Make
+make test
+
+# Or manually:
+cd backend && ./gradlew test          # Backend tests
+cd ../frontend && npm run test        # Frontend tests
+```
+
+### Test Individual Components
+
+**Backend tests (JUnit 5):**
+```bash
+cd backend
+./gradlew test
+
+# View test report:
+# Open: backend/build/reports/tests/test/index.html
+```
+
+**Frontend tests:**
+```bash
+cd frontend
+npm run test
+
+# View coverage:
+# Open: frontend/coverage/index.html
+```
+
+**Test output:**
+- Backend: JUnit test reports in `backend/build/reports/`
+- Frontend: Test results in console + coverage reports
+
+---
+
+## How to Run
+
+### Quick Start (Complete Setup)
+
+```bash
+# Step 1: Start infrastructure services (PostgreSQL, Redis, MQTT)
+make docker-up
+# Or: docker-compose -f infra/docker-compose.yml up -d
+
+# Step 2: Start backend (in terminal 1)
+make dev-backend
+# Or: cd backend && ./gradlew bootRun
+
+# Step 3: Start frontend (in terminal 2)
+make dev-frontend
+# Or: cd frontend && npm run dev
+```
+
+**Access the application:**
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:8080
+- **Database Admin:** http://localhost:8090 (Adminer)
+
+### Run Production Build
+
+**Backend (from JAR):**
+```bash
+# After building (make build)
+java -jar backend/build/libs/Smart-Lighting-Scenes-0.0.1-SNAPSHOT.jar
+```
+
+**Frontend (serve dist):**
+```bash
+cd frontend
+npm run preview
+# Or deploy dist/ folder to any static host (Nginx, Apache, Netlify, etc.)
+```
+
+---
+
+## Quick Reference
+
+| Task | Command | Description |
+|------|---------|-------------|
+| **Install** | `make install` | Install all dependencies |
+| **Build** | `make build` | Build backend + frontend |
+| **Test** | `make test` | Run all tests |
+| **Run** | `make dev` | Show run instructions |
+| **Clean** | `make clean` | Remove build artifacts |
+| **Help** | `make help` | Show all available commands |
+
+**Without Make:**
+```bash
+# Install
+npm install && cd backend && ./gradlew build -x test && cd ../frontend && npm install
+
+# Build
+cd backend && ./gradlew build && cd ../frontend && npm run build
+
+# Test  
+cd backend && ./gradlew test && cd ../frontend && npm run test
+
+# Run
+docker-compose -f infra/docker-compose.yml up -d  # Infrastructure
+cd backend && ./gradlew bootRun &                  # Backend
+cd frontend && npm run dev                          # Frontend
+```
+
+---
+
+## Quick Start (First Time Setup)
+
+### Step 1: Clone Repository
+
+```bash
+git clone https://github.com/yourusername/smart-lighting-scenes.git
+cd smart-lighting-scenes
+```
+
+### Step 2: Install Dependencies
+
+```bash
+make install
+# This installs backend + frontend dependencies automatically
+```
+
+### Step 3: Configure Environment
 
 ```bash
 # Copy the example environment file
@@ -63,49 +227,46 @@ cp infra/env.example .env
 # - JWT secret
 ```
 
-### 3. Start Infrastructure
+### Step 4: Build Project
 
 ```bash
-# Start all infrastructure services
-docker-compose -f infra/docker-compose.yml up -d
-
-# Verify services are running
-docker-compose -f infra/docker-compose.yml ps
+make build
+# Builds both backend and frontend
 ```
 
-Services will be available at:
-- PostgreSQL: `localhost:5432`
-- Redis: `localhost:6379`
-- Mosquitto MQTT: `localhost:1883` (WebSocket: `localhost:9001`)
-- Mailhog: `http://localhost:8025`
-- Adminer: `http://localhost:8090`
-
-### 4. Start Backend
+### Step 5: Start Infrastructure
 
 ```bash
-cd backend
-./gradlew bootRun
+make docker-up
+# Starts PostgreSQL, Redis, MQTT broker
 ```
 
-The API will be available at `http://localhost:8080`
-
-### 5. Start Frontend
+### Step 6: Run Application
 
 ```bash
-cd frontend
-npm run dev
+# In terminal 1 - Backend
+make dev-backend
+
+# In terminal 2 - Frontend  
+make dev-frontend
 ```
 
-The web app will be available at `http://localhost:5173`
+**Access:** http://localhost:5173
 
-### 6. Build Mobile App
+---
 
-```bash
-cd mobile
-./gradlew assembleDebug
-```
+## Detailed Documentation
 
-The APK will be generated in `mobile/app/build/outputs/apk/debug/`
+For comprehensive build automation documentation, see:
+- **[BUILD.md](BUILD.md)** - Complete build system documentation
+
+**Key topics covered:**
+- Tool selection rationale (Make + Gradle + npm)
+- Dependency management (544+ packages)
+- Build process deep-dive
+- Testing automation
+- Packaging procedures
+- Troubleshooting guide
 
 ## UI Design
 
@@ -127,7 +288,7 @@ The system uses Google OAuth 2.0 for authentication:
    - `http://localhost:8080/login/oauth2/code/google` (development)
    - Your production URLs
 
-## 📡 MQTT Topics
+## MQTT Topics
 
 The system uses the following MQTT topic structure:
 
@@ -149,42 +310,39 @@ The PostgreSQL database includes tables for:
 
 See `infra/init-db/01-schema.sql` for the complete schema.
 
+---
+
 ## Development
-
-### Running Tests
-
-```bash
-# Backend tests
-cd backend && ./gradlew test
-
-# Frontend tests
-cd frontend && npm run test
-
-# Mobile tests
-cd mobile && ./gradlew test
-```
 
 ### Code Style
 
-- Backend: Follows Spring Boot conventions
-- Frontend: ESLint + Prettier
-- Mobile: Kotlin code style
+- **Backend:** Spring Boot conventions, Lombok annotations
+- **Frontend:** ESLint + Prettier for Vue 3
+- **Build:** Gradle (backend), npm + Vite (frontend), Make (orchestration)
 
-### Available Scripts
+### Available Make Targets
 
 ```bash
-# Development
+make help          # Show all available commands
+make install       # Install dependencies
+make build         # Build all components
+make test          # Run all tests
+make clean         # Remove build artifacts
+make docker-up     # Start infrastructure
+make docker-down   # Stop infrastructure
+make verify        # Complete verification (build + test + lint)
+```
+
+### npm Scripts (Root)
+
+```bash
 npm run dev:frontend    # Start Vue dev server
 npm run dev:backend     # Start Spring Boot
-
-# Building
 npm run build:frontend  # Build Vue app
 npm run build:backend   # Build Spring Boot JAR
-
-# Docker
+npm run test            # Run all tests
 npm run docker:up       # Start infrastructure
 npm run docker:down     # Stop infrastructure
-npm run docker:logs     # View logs
 ```
 
 ## Mobile App Features
