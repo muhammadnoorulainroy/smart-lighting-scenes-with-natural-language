@@ -3,20 +3,43 @@
 
 .PHONY: help install build test clean run dev docker-up docker-down lint format package check-deps verify all
 
-SHELL := /bin/bash
-.SHELLFLAGS := -eu -o pipefail -c
+# Detect OS
+ifeq ($(OS),Windows_NT)
+	GRADLEW := gradlew.bat
+	SHELL := cmd
+	RM := del /Q /F
+	RMDIR := rmdir /S /Q
+	MKDIR := mkdir
+	SEP := \\
+else
+	GRADLEW := ./gradlew
+	SHELL := /bin/bash
+	.SHELLFLAGS := -eu -o pipefail -c
+	RM := rm -f
+	RMDIR := rm -rf
+	MKDIR := mkdir -p
+	SEP := /
+endif
 
 # Directories
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 INFRA_DIR := infra
 
-# Colors for output
-BLUE := \033[0;34m
-GREEN := \033[0;32m
-YELLOW := \033[0;33m
-RED := \033[0;31m
-NC := \033[0m
+# Colors for output (disable on Windows)
+ifeq ($(OS),Windows_NT)
+	BLUE :=
+	GREEN :=
+	YELLOW :=
+	RED :=
+	NC :=
+else
+	BLUE := \033[0;34m
+	GREEN := \033[0;32m
+	YELLOW := \033[0;33m
+	RED := \033[0;31m
+	NC := \033[0m
+endif
 
 help:
 	@echo "$(BLUE)Smart Lighting Scenes - Build System$(NC)"
@@ -67,36 +90,36 @@ check-deps:
 
 # Installation
 install: check-deps
-	@echo "$(BLUE)Installing dependencies...$(NC)"
+	@echo "Installing dependencies..."
 	@echo "Installing root workspace..."
-	@npm install
+	npm install
 	@echo "Installing frontend dependencies..."
-	@cd $(FRONTEND_DIR) && npm install
+	cd $(FRONTEND_DIR) && npm install
 	@echo "Downloading backend dependencies..."
-	@cd $(BACKEND_DIR) && ./gradlew build -x test --quiet
-	@echo "$(GREEN)Installation complete$(NC)"
+	cd $(BACKEND_DIR) && $(GRADLEW) build -x test --quiet
+	@echo "Installation complete"
 
 # Build
 build: build-backend build-frontend
 	@echo "$(GREEN)Build complete$(NC)"
 
 build-backend:
-	@echo "$(BLUE)Building backend...$(NC)"
-	@cd $(BACKEND_DIR) && ./gradlew clean build -x test
-	@echo "$(GREEN)Backend built: $(BACKEND_DIR)/build/libs/*.jar$(NC)"
+	@echo "Building backend..."
+	cd $(BACKEND_DIR) && $(GRADLEW) clean build -x test
+	@echo "Backend built: $(BACKEND_DIR)/build/libs/*.jar"
 
 build-frontend:
-	@echo "$(BLUE)Building frontend...$(NC)"
-	@cd $(FRONTEND_DIR) && npm run build
-	@echo "$(GREEN)Frontend built: $(FRONTEND_DIR)/dist/$(NC)"
+	@echo "Building frontend..."
+	cd $(FRONTEND_DIR) && npm run build
+	@echo "Frontend built: $(FRONTEND_DIR)/dist/"
 
 # Testing
 test: test-backend test-frontend
 	@echo "$(GREEN)All tests passed$(NC)"
 
 test-backend:
-	@echo "$(BLUE)Running backend tests...$(NC)"
-	@cd $(BACKEND_DIR) && ./gradlew test
+	@echo "Running backend tests..."
+	cd $(BACKEND_DIR) && $(GRADLEW) test
 	@echo "Test report: $(BACKEND_DIR)/build/reports/tests/test/index.html"
 
 test-frontend:
@@ -112,16 +135,20 @@ lint: lint-backend lint-frontend
 	@echo "$(GREEN)Linting complete$(NC)"
 
 lint-backend:
-	@echo "$(BLUE)Linting backend...$(NC)"
-	@if cd $(BACKEND_DIR) && ./gradlew tasks --all | grep -q checkstyle; then \
-		cd $(BACKEND_DIR) && ./gradlew checkstyleMain checkstyleTest; \
+	@echo "Linting backend..."
+ifeq ($(OS),Windows_NT)
+	@echo "Checkstyle not configured"
+else
+	@if cd $(BACKEND_DIR) && $(GRADLEW) tasks --all | grep -q checkstyle; then \
+		cd $(BACKEND_DIR) && $(GRADLEW) checkstyleMain checkstyleTest; \
 	else \
-		echo "$(YELLOW)Checkstyle not configured$(NC)"; \
+		echo "Checkstyle not configured"; \
 	fi
+endif
 
 lint-frontend:
-	@echo "$(BLUE)Linting frontend...$(NC)"
-	@cd $(FRONTEND_DIR) && npm run lint
+	@echo "Linting frontend..."
+	cd $(FRONTEND_DIR) && npm run lint
 
 format:
 	@echo "$(BLUE)Formatting code...$(NC)"
@@ -146,12 +173,12 @@ dev:
 	@echo ""
 
 dev-backend:
-	@echo "$(BLUE)Starting backend (http://localhost:8080)...$(NC)"
-	@cd $(BACKEND_DIR) && ./gradlew bootRun
+	@echo "Starting backend (http://localhost:8080)..."
+	cd $(BACKEND_DIR) && $(GRADLEW) bootRun
 
 dev-frontend:
-	@echo "$(BLUE)Starting frontend (http://localhost:5173)...$(NC)"
-	@cd $(FRONTEND_DIR) && npm run dev
+	@echo "Starting frontend (http://localhost:5173)..."
+	cd $(FRONTEND_DIR) && npm run dev
 
 # Docker infrastructure
 docker-up:
@@ -191,8 +218,8 @@ clean: clean-backend clean-frontend
 	@echo "$(GREEN)Clean complete$(NC)"
 
 clean-backend:
-	@echo "$(BLUE)Cleaning backend...$(NC)"
-	@cd $(BACKEND_DIR) && ./gradlew clean
+	@echo "Cleaning backend..."
+	cd $(BACKEND_DIR) && $(GRADLEW) clean
 
 clean-frontend:
 	@echo "$(BLUE)Cleaning frontend...$(NC)"
