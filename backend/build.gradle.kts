@@ -35,6 +35,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	
+	// WebSocket Messaging
+	implementation("org.springframework:spring-messaging")
+	
 	// Spring Session
 	implementation("org.springframework.session:spring-session-data-redis")
 	

@@ -51,10 +51,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         
         log.info("User {} logged in successfully with role {}", oAuth2User.getEmail(), userRole);
         
-        // Redirect to frontend dashboard
+        // Redirect to frontend auth callback page which will handle the post-auth flow
         return UriComponentsBuilder.fromUriString(frontendUrl)
-                .path("/dashboard")
-                .queryParam("login", "success")
+                .path("/auth/callback")
+                .queryParam("success", "true")
                 .build().toUriString();
     }
 }

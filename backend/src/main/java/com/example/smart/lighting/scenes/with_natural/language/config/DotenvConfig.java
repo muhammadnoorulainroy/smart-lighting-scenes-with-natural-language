@@ -41,7 +41,7 @@ public class DotenvConfig implements ApplicationContextInitializer<ConfigurableA
                 System.err.println("Failed to load .env file: " + e.getMessage());
             }
         } else {
-            System.out.println("⚠ No .env file found");
+            System.out.println("No .env file found");
         }
     }
 }
