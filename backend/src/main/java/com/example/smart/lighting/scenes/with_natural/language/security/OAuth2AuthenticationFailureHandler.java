@@ -38,9 +38,9 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
         String errorMessage = exception.getMessage();
         
         return UriComponentsBuilder.fromUriString(frontendUrl)
-                .path("/")
+                .path("/auth/callback")
                 .queryParam("error", "authentication_failed")
-                .queryParam("message", errorMessage)
+                .queryParam("error_description", errorMessage)
                 .build().toUriString();
     }
 }

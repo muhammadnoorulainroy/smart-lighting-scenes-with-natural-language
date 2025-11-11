@@ -15,9 +15,6 @@ public class WebSocketEventService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    /**
-     * Broadcast device state change to all connected clients
-     */
     public void broadcastDeviceStateChange(UUID deviceId, Map<String, Object> state) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("DEVICE_STATE_CHANGE")
@@ -30,9 +27,6 @@ public class WebSocketEventService {
         log.debug("Broadcasted device state change for device: {}", deviceId);
     }
 
-    /**
-     * Broadcast scene applied event
-     */
     public void broadcastSceneApplied(UUID sceneId, String sceneName, int devicesAffected) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SCENE_APPLIED")
@@ -48,9 +42,6 @@ public class WebSocketEventService {
         log.info("Broadcasted scene applied: {}", sceneName);
     }
 
-    /**
-     * Broadcast rule triggered event
-     */
     public void broadcastRuleTriggered(UUID ruleId, String ruleName) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("RULE_TRIGGERED")
@@ -65,9 +56,6 @@ public class WebSocketEventService {
         log.info("Broadcasted rule triggered: {}", ruleName);
     }
 
-    /**
-     * Broadcast system event (for debugging/monitoring)
-     */
     public void broadcastSystemEvent(String eventType, Map<String, Object> eventData) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SYSTEM_EVENT")

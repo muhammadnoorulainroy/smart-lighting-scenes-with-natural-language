@@ -80,7 +80,7 @@
 
   /* Scene button styles */
   .scene-btn {
-    @apply card p-8 text-center hover:shadow-xl transition-all duration-300 cursor-pointer group;
+    @apply card p-8 text-center hover:shadow-xl transition-all duration-300 cursor-pointer;
   }
 
   .scene-btn:hover {

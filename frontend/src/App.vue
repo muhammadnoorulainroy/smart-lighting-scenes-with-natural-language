@@ -1,15 +1,23 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 import { ref, onMounted } from 'vue'
+import { useAuthStore } from './stores/auth'
+import AuthButton from './components/AuthButton.vue'
+import UserMenu from './components/UserMenu.vue'
+import LoadingSpinner from './components/LoadingSpinner.vue'
 
+const authStore = useAuthStore()
 const isDarkMode = ref(false)
 
-onMounted(() => {
-  // Check system preference
+onMounted(async () => {
+  // Check system preference for dark mode
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     isDarkMode.value = true
     document.documentElement.classList.add('dark')
   }
+  
+  // Check authentication status
+  await authStore.checkAuth()
 })
 
 const toggleDarkMode = () => {
@@ -59,10 +67,12 @@ const toggleDarkMode = () => {
             </svg>
           </button>
 
-          <!-- User menu placeholder -->
-          <button class="btn btn-primary">
-            Login
-          </button>
+          <!-- Authentication: Show login button or user menu -->
+          <div v-if="authStore.isLoading" class="flex items-center">
+            <LoadingSpinner size="sm" :container-class="''" />
+          </div>
+          <UserMenu v-else-if="authStore.isAuthenticated" />
+          <AuthButton v-else />
         </div>
       </nav>
     </header>
