@@ -20,9 +20,15 @@ smart-lighting-scenes/
 ├── backend/          # Spring Boot 3.x backend API
 ├── frontend/         # Vue 3 + Vite web application
 ├── mobile/           # Android app (Kotlin + Jetpack Compose)
-├── embedded/         # ESP32 MicroPython code (future)
+├── embedded/         # ESP32 MicroPython code + WS2812B LEDs
+│   ├── esp32-simulator/   # MicroPython application
+│   ├── YOUR_HARDWARE_GUIDE.md   # Start here for hardware setup
+│   ├── GETTING_STARTED.md       # Quick setup guide
+│   └── test_mqtt.py             # MQTT testing tool
 ├── infra/            # Docker Compose and infrastructure
 ├── docs/             # Additional documentation
+│   ├── SYSTEM_ARCHITECTURE.md      # Complete system design
+│   └── EMBEDDED_DESIGN_SUMMARY.md  # Embedded system details
 └── shared/           # Shared types and utilities
 ```
 
@@ -353,9 +359,45 @@ npm run docker:down     # Stop infrastructure
 - **Scene Management**: Quick access to preset scenes
 - **Push Notifications**: Updates on schedule triggers
 
+## Embedded System (ESP32 + WS2812B LEDs)
+
+### Hardware Setup
+
+The system supports real lighting control via ESP32 and WS2812B RGB LED breakout boards. Each LED represents a room and can be controlled independently.
+
+**Quick Start:**
+1. **Hardware Guide:** See [`embedded/YOUR_HARDWARE_GUIDE.md`](embedded/YOUR_HARDWARE_GUIDE.md) for wiring instructions
+2. **Setup:** Follow [`embedded/GETTING_STARTED.md`](embedded/GETTING_STARTED.md) for complete setup (30 min)
+3. **Testing:** Use `python embedded/test_mqtt.py --test-all` to test MQTT control
+
+**Hardware Requirements:**
+- ESP32 board (Adafruit HUZZAH32 recommended)
+- WS2812B RGB LED breakout boards (one per room)
+- Breadboard and jumper wires
+- 330Ω resistor
+- USB cable for power
+
+**How It Works:**
+```
+User Command → Backend → MQTT Broker → ESP32 → WS2812B LEDs
+                  ↓                        ↓
+            WebSocket ←── State Update ────┘
+```
+
+Each LED is daisy-chained to a single GPIO pin (GPIO13) and mapped to a room:
+- LED 0 = Bedroom
+- LED 1 = Living Room
+- LED 2 = Kitchen
+- LED 3 = Bathroom
+
+**Documentation:**
+- [`embedded/README_OVERVIEW.md`](embedded/README_OVERVIEW.md) - Complete embedded documentation index
+- [`docs/EMBEDDED_DESIGN_SUMMARY.md`](docs/EMBEDDED_DESIGN_SUMMARY.md) - System design and architecture
+- [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md) - Full system overview
+
 ## Future Enhancements
 
-- [ ] ESP32 hardware integration
+- [x] ESP32 hardware integration (complete design)
 - [ ] Local LLaMA model integration
 - [ ] Advanced scheduling with ML predictions
 - [ ] Energy usage analytics
