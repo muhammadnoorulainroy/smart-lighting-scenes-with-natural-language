@@ -40,6 +40,24 @@ public class AuthController {
 
     @GetMapping("/auth/check")
     public ResponseEntity<Boolean> checkAuthentication(@AuthenticationPrincipal CustomOAuth2User principal) {
-        return ResponseEntity.ok(principal != null);
+        boolean isAuth = principal != null;
+        log.debug("Auth check: {}, Principal: {}", isAuth, principal != null ? principal.getEmail() : "null");
+        return ResponseEntity.ok(isAuth);
+    }
+    
+    @GetMapping("/auth/debug")
+    public ResponseEntity<?> debugAuth(@AuthenticationPrincipal CustomOAuth2User principal, 
+                                       jakarta.servlet.http.HttpServletRequest request) {
+        java.util.Map<String, Object> debug = new java.util.HashMap<>();
+        debug.put("authenticated", principal != null);
+        debug.put("user", principal != null ? principal.getEmail() : null);
+        debug.put("sessionId", request.getSession(false) != null ? request.getSession(false).getId() : null);
+        debug.put("cookies", request.getCookies() != null ? 
+            java.util.Arrays.stream(request.getCookies())
+                .collect(java.util.stream.Collectors.toMap(
+                    jakarta.servlet.http.Cookie::getName,
+                    jakarta.servlet.http.Cookie::getValue
+                )) : null);
+        return ResponseEntity.ok(debug);
     }
 }

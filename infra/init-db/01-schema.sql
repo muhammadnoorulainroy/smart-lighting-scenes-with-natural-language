@@ -16,16 +16,16 @@ CREATE SCHEMA IF NOT EXISTS smartlighting;
 -- Set search path
 ALTER DATABASE smartlighting SET search_path TO smartlighting, public;
 
--- Grant schema usage to the smartlighting user
-GRANT ALL PRIVILEGES ON SCHEMA smartlighting TO smartlighting;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA smartlighting TO smartlighting;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA smartlighting TO smartlighting;
+-- Grant schema usage to the postgres user
+GRANT ALL PRIVILEGES ON SCHEMA smartlighting TO postgres;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA smartlighting TO postgres;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA smartlighting TO postgres;
 
 -- Set default privileges for future objects
 ALTER DEFAULT PRIVILEGES IN SCHEMA smartlighting 
-    GRANT ALL PRIVILEGES ON TABLES TO smartlighting;
+    GRANT ALL PRIVILEGES ON TABLES TO postgres;
 ALTER DEFAULT PRIVILEGES IN SCHEMA smartlighting 
-    GRANT ALL PRIVILEGES ON SEQUENCES TO smartlighting;
+    GRANT ALL PRIVILEGES ON SEQUENCES TO postgres;
 
 -- Success message
 DO $$ 

@@ -8,8 +8,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: smartlighting
-      POSTGRES_USER: smartlighting
-      POSTGRES_PASSWORD: smartlighting123
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
@@ -18,7 +18,7 @@ services:
     networks:
       - smart-lighting-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartlighting"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -60,6 +60,14 @@ dependencies {
 	implementation("org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5")
 	implementation("org.springframework.integration:spring-integration-mqtt:6.2.0")
 	
+	// OpenAI for natural language processing
+	implementation("com.theokanning.openai-gpt3-java:service:0.18.2")
+	implementation("com.squareup.okhttp3:okhttp:4.12.0")
+	
+	// YAML parsing
+	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.2")
+	implementation("org.yaml:snakeyaml:2.2")
+	
 	// Utilities
 	implementation("org.apache.commons:commons-lang3:3.14.0")
 	implementation("com.google.guava:guava:32.1.3-jre")

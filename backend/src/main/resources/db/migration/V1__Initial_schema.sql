@@ -7,15 +7,21 @@ CREATE SCHEMA IF NOT EXISTS smartlighting;
 
 SET search_path TO smartlighting;
 
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- ============================================================================
 -- ENUMS
 -- ============================================================================
 
 -- User roles
-CREATE TYPE user_role AS ENUM ('OWNER', 'MEMBER', 'GUEST');
+CREATE TYPE user_role AS ENUM ('ADMIN', 'RESIDENT', 'GUEST');
+
+-- OAuth providers
+CREATE TYPE oauth_provider AS ENUM ('GOOGLE', 'LOCAL');
 
 -- Device types
-CREATE TYPE device_type AS ENUM ('light', 'sensor', 'switch');
+CREATE TYPE device_type AS ENUM ('LIGHT', 'SENSOR', 'SWITCH');
 
 -- Event types
 CREATE TYPE event_type AS ENUM (
@@ -41,23 +47,22 @@ CREATE TYPE controller_status AS ENUM ('online', 'offline', 'error');
 -- ============================================================================
 
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     picture_url VARCHAR(512),
-    role user_role NOT NULL DEFAULT 'GUEST',
+    role VARCHAR(50) NOT NULL DEFAULT 'GUEST',
     
     -- OAuth fields
-    provider VARCHAR(50) NOT NULL,              -- 'google'
-    provider_sub VARCHAR(255) UNIQUE NOT NULL,  -- Google's user ID
+    provider VARCHAR(50) NOT NULL DEFAULT 'LOCAL',
+    provider_sub VARCHAR(255),
+    
+    -- Status
+    is_active BOOLEAN DEFAULT TRUE,
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP,
-    expires_at TIMESTAMP,  -- For temporary guest accounts
-    
-    -- Metadata
-    preferences JSONB DEFAULT '{}'::JSONB,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
@@ -65,22 +70,24 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_provider_sub ON users(provider, provider_sub);
 CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_expires_at ON users(expires_at) WHERE expires_at IS NOT NULL;
 
 COMMENT ON TABLE users IS 'System users with role-based access control';
-COMMENT ON COLUMN users.role IS 'OWNER: full control, MEMBER: daily usage, GUEST: limited access';
-COMMENT ON COLUMN users.expires_at IS 'Auto-expire temporary guest accounts';
+COMMENT ON COLUMN users.role IS 'ADMIN: full control, RESIDENT: daily usage, GUEST: limited access';
+
+-- Fix the comment to reflect actual schema
+UPDATE pg_description SET description = 'Roles: ADMIN, RESIDENT, GUEST' 
+WHERE objoid = 'smartlighting.flyway_schema_history'::regclass;
 
 -- ============================================================================
 -- USER INVITATIONS
 -- ============================================================================
 
 CREATE TABLE user_invitations (
-    id SERIAL PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
     role user_role NOT NULL,
     token VARCHAR(255) UNIQUE NOT NULL,
-    invited_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    invited_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     accepted_at TIMESTAMP,
@@ -99,10 +106,10 @@ COMMENT ON TABLE user_invitations IS 'Pending user invitations';
 -- ============================================================================
 
 CREATE TABLE rooms (
-    id SERIAL PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
-    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -121,7 +128,7 @@ COMMENT ON TABLE rooms IS 'Physical rooms in the home';
 -- ============================================================================
 
 CREATE TABLE esp32_controllers (
-    id SERIAL PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     device_id VARCHAR(100) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     num_leds INTEGER NOT NULL CHECK (num_leds > 0 AND num_leds <= 1000),
@@ -136,7 +143,7 @@ CREATE TABLE esp32_controllers (
     last_seen TIMESTAMP,
     
     -- Management
-    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -162,13 +169,13 @@ COMMENT ON COLUMN esp32_controllers.num_leds IS 'Total number of LEDs connected 
 -- ============================================================================
 
 CREATE TABLE led_mappings (
-    id SERIAL PRIMARY KEY,
-    controller_id INTEGER NOT NULL REFERENCES esp32_controllers(id) ON DELETE CASCADE,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    controller_id UUID NOT NULL REFERENCES esp32_controllers(id) ON DELETE CASCADE,
     led_index INTEGER NOT NULL CHECK (led_index >= 0),
-    room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
     
     -- Management
-    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -187,10 +194,10 @@ COMMENT ON COLUMN led_mappings.led_index IS 'Zero-based index of LED on the cont
 -- ============================================================================
 
 CREATE TABLE devices (
-    id SERIAL PRIMARY KEY,
-    room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    controller_id INTEGER REFERENCES esp32_controllers(id) ON DELETE SET NULL,
-    led_mapping_id INTEGER REFERENCES led_mappings(id) ON DELETE SET NULL,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    controller_id UUID REFERENCES esp32_controllers(id) ON DELETE SET NULL,
+    led_mapping_id UUID REFERENCES led_mappings(id) ON DELETE SET NULL,
     
     type device_type NOT NULL,
     name VARCHAR(100) NOT NULL,
@@ -202,12 +209,15 @@ CREATE TABLE devices (
     mqtt_status_topic VARCHAR(255),
     
     -- Management
-    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Capabilities and metadata
     meta_json JSONB DEFAULT '{}'::JSONB,
+    
+    -- Status
+    is_active BOOLEAN DEFAULT TRUE,
     
     CONSTRAINT device_name_not_empty CHECK (LENGTH(TRIM(name)) > 0)
 );
@@ -225,37 +235,25 @@ COMMENT ON COLUMN devices.meta_json IS 'Device capabilities: led_index, capabili
 -- ============================================================================
 
 CREATE TABLE device_state_latest (
-    device_id INTEGER PRIMARY KEY REFERENCES devices(id) ON DELETE CASCADE,
+    device_id UUID PRIMARY KEY REFERENCES devices(id) ON DELETE CASCADE,
     
     -- Common state
-    on BOOLEAN DEFAULT FALSE,
+    is_on BOOLEAN DEFAULT FALSE,
     brightness_pct INTEGER CHECK (brightness_pct >= 0 AND brightness_pct <= 100),
     
     -- Color
-    rgb INTEGER[3],  -- [r, g, b] where each is 0-255
+    rgb_color VARCHAR(7),  -- Hex color like #FF5733
     color_temp_mired INTEGER,
     
     -- Timestamps
     last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Additional state
-    extra_state JSONB DEFAULT '{}'::JSONB,
-    
-    CONSTRAINT valid_rgb_array CHECK (
-        rgb IS NULL OR (
-            array_length(rgb, 1) = 3 AND
-            rgb[1] >= 0 AND rgb[1] <= 255 AND
-            rgb[2] >= 0 AND rgb[2] <= 255 AND
-            rgb[3] >= 0 AND rgb[3] <= 255
-        )
-    )
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_device_state_last_seen ON device_state_latest(last_seen);
 
 COMMENT ON TABLE device_state_latest IS 'Latest known state of each device';
-COMMENT ON COLUMN device_state_latest.rgb IS 'RGB color array [r, g, b], each 0-255';
+COMMENT ON COLUMN device_state_latest.rgb_color IS 'Hex RGB color like #FF5733';
 
 -- ============================================================================
 -- SENSOR READINGS (Historical)
@@ -263,7 +261,7 @@ COMMENT ON COLUMN device_state_latest.rgb IS 'RGB color array [r, g, b], each 0-
 
 CREATE TABLE sensor_readings (
     id BIGSERIAL PRIMARY KEY,
-    device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Sensor data
@@ -287,26 +285,28 @@ COMMENT ON TABLE sensor_readings IS 'Historical sensor data for analytics';
 -- ============================================================================
 
 CREATE TABLE scenes (
-    id SERIAL PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     
     -- Ownership
-    created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
     -- Scene definition
     actions_json JSONB NOT NULL,  -- Array of {device_id, on, brightness, rgb, ...}
     
+    -- Global flag
+    is_global BOOLEAN DEFAULT FALSE,
+    
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_run_at TIMESTAMP,
     
     CONSTRAINT scene_name_not_empty CHECK (LENGTH(TRIM(name)) > 0),
     CONSTRAINT valid_actions_json CHECK (jsonb_typeof(actions_json) = 'array')
 );
 
-CREATE INDEX idx_scenes_created_by ON scenes(created_by);
+CREATE INDEX idx_scenes_owner_id ON scenes(owner_id);
 CREATE INDEX idx_scenes_name ON scenes(name);
 
 COMMENT ON TABLE scenes IS 'Predefined lighting scenes (e.g., Reading, Movie Night)';
@@ -317,12 +317,12 @@ COMMENT ON COLUMN scenes.actions_json IS 'Array of device actions to apply';
 -- ============================================================================
 
 CREATE TABLE rules (
-    id SERIAL PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     
     -- Ownership
-    created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
     -- Rule definition (DSL)
     json_dsl JSONB NOT NULL,  -- {triggers: [], conditions: [], actions: []}
@@ -357,8 +357,8 @@ COMMENT ON COLUMN rules.priority IS 'Higher priority rules win in conflicts';
 -- ============================================================================
 
 CREATE TABLE schedules (
-    id SERIAL PRIMARY KEY,
-    rule_id INTEGER NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    rule_id UUID NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
     
     -- Schedule specification
     compiled_spec_json JSONB NOT NULL,  -- {cron: '...', timezone: '...', sunset_offset: ...}
@@ -391,10 +391,10 @@ CREATE TABLE events (
     type event_type NOT NULL,
     
     -- Related entities
-    actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    device_id INTEGER REFERENCES devices(id) ON DELETE SET NULL,
-    rule_id INTEGER REFERENCES rules(id) ON DELETE SET NULL,
-    scene_id INTEGER REFERENCES scenes(id) ON DELETE SET NULL,
+    actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    device_id UUID REFERENCES devices(id) ON DELETE SET NULL,
+    rule_id UUID REFERENCES rules(id) ON DELETE SET NULL,
+    scene_id UUID REFERENCES scenes(id) ON DELETE SET NULL,
     
     -- Event details
     details_json JSONB NOT NULL DEFAULT '{}'::JSONB,
@@ -421,12 +421,12 @@ COMMENT ON COLUMN events.cause_chain IS 'Causation chain for explainability';
 -- ============================================================================
 
 CREATE TABLE guest_access_tokens (
-    id SERIAL PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     token VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(100),  -- Descriptive name like "Babysitter access"
     
     -- Creator
-    created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
     -- Expiration
     expires_at TIMESTAMP NOT NULL,
@@ -459,6 +459,9 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 
 -- Auto-update updated_at columns
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_rooms_updated_at BEFORE UPDATE ON rooms
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -544,9 +547,9 @@ SELECT
     d.mqtt_cmd_topic,
     d.mqtt_state_topic,
     d.meta_json,
-    s.on AS is_on,
+    s.is_on,
     s.brightness_pct,
-    s.rgb,
+    s.rgb_color,
     s.last_seen,
     d.created_at
 FROM devices d
@@ -583,15 +586,7 @@ COMMENT ON VIEW v_unmapped_leds IS 'LEDs that have not been mapped to rooms yet'
 -- ============================================================================
 -- GRANTS (if needed for specific database users)
 -- ============================================================================
-
--- Grant usage on schema
-GRANT USAGE ON SCHEMA smartlighting TO smartlighting;
-
--- Grant privileges on all tables
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA smartlighting TO smartlighting;
-
--- Grant usage on sequences
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA smartlighting TO smartlighting;
+-- NOTE: Using postgres superuser, no explicit grants needed
 
 -- ============================================================================
 -- COMPLETION
