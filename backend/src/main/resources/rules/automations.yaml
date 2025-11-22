@@ -1,0 +1,160 @@
+# Smart Lighting Automations
+# Home Assistant-style YAML automation rules
+
+# Example 1: Turn on lights in the evening
+- id: lights_evening
+  alias: "Evening Lights"
+  description: "Turn on lights at sunset with warm color"
+  mode: single
+  triggers:
+    - trigger: sun
+      event: sunset
+      offset: "-00:30:00"
+  conditions:
+    - condition: state
+      entity_id: all
+      state: "home"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.all
+      data:
+        rgb_color: [255, 200, 150]
+        brightness: 80
+
+# Example 2: Turn off lights when everyone leaves
+- id: lights_away
+  alias: "Away Mode - Lights Off"
+  description: "Turn off all lights when nobody is home"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: all
+      to: "not_home"
+  actions:
+    - action: light.turn_off
+      target:
+        entity_id: light.all
+
+# Example 3: Dim lights at night
+- id: lights_night_dim
+  alias: "Night Time Dim"
+  description: "Dim lights after 10 PM"
+  mode: single
+  triggers:
+    - trigger: time
+      at: "22:00:00"
+  conditions:
+    - condition: state
+      entity_id: light.all
+      state: "on"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.all
+      data:
+        brightness: 20
+        rgb_color: [255, 150, 80]
+
+# Example 4: Morning wake up lights (COMMENTED OUT - FIX YAML PARSING LATER)
+# - id: lights_morning_wakeup
+#   alias: "Morning Wake Up"
+#   description: "Gradually brighten lights in the morning"
+#   mode: single
+#   triggers:
+#     - trigger: time
+#       at: "07:00:00"
+#   conditions:
+#     - condition: time
+#       weekday: [mon, tue, wed, thu, fri]
+#   actions:
+#     - action: light.turn_on
+#       target:
+#         entity_id: light.bedroom
+#       data:
+#         brightness: 30
+#         rgb_color: [255, 220, 180]
+#
+# # Example 5: Movie mode scene (COMMENTED OUT - FIX YAML PARSING LATER)
+# # - id: scene_movie_mode
+# #   alias: "Movie Mode"
+# #   description: "Activate movie watching scene"
+# #   mode: single
+# #   triggers:
+# #     - trigger: event
+# #       event_type: scene_activate
+# #       event_data:
+# #         scene: movie
+# #   actions:
+# #     - action: light.turn_on
+# #       target:
+# #         entity_id: light.living
+# #       data:
+# #         brightness: 10
+# #         rgb_color: [100, 50, 200]
+# #     - action: light.turn_off
+# #       target:
+# #         entity_id: light.kitchen
+# #
+# # Example 6: High luminosity - dim LEDs (COMMENTED OUT - FIX YAML PARSING LATER)
+# # - id: sensor_high_luminosity
+# #   alias: "Bright Room - Dim Lights"
+# #   description: "Automatically dim lights when room is bright"
+# #   mode: single
+# #   triggers:
+# #     - trigger: numeric_state
+# #       entity_id: sensor.luminosity
+# #       above: 800
+# #   actions:
+# #     - action: light.turn_on
+# #       target:
+# #         entity_id: light.all
+# #       data:
+# #         brightness: 20
+# #
+# # Example 7: Low luminosity - brighten LEDs (COMMENTED OUT - FIX YAML PARSING LATER)
+# # - id: sensor_low_luminosity
+# #   alias: "Dark Room - Brighten Lights"
+# #   description: "Automatically brighten lights when room is dark"
+# #   mode: single
+# #   triggers:
+# #     - trigger: numeric_state
+# #       entity_id: sensor.luminosity
+# #       below: 50
+# #   actions:
+# #     - action: light.turn_on
+# #       target:
+# #         entity_id: light.all
+# #       data:
+# #         brightness: 80
+# #
+# # Example 8: Temperature-based color (COMMENTED OUT - FIX YAML PARSING LATER)
+# # - id: sensor_temperature_cold
+# #   alias: "Cold Room - Warm Color"
+# #   description: "Use warm colors when room is cold"
+# #   mode: single
+# #   triggers:
+# #     - trigger: numeric_state
+# #       entity_id: sensor.temperature
+# #       below: 18
+# #   actions:
+# #     - action: light.turn_on
+# #       target:
+# #         entity_id: light.all
+# #       data:
+# #         rgb_color: [255, 180, 100]
+# #
+# # Example 9: Audio peak flash (COMMENTED OUT - FIX YAML PARSING LATER)
+# # - id: sensor_audio_flash
+# #   alias: "Audio Flash Effect"
+# #   description: "Flash random color on loud sound"
+# #   mode: single
+# #   triggers:
+# #     - trigger: numeric_state
+# #       entity_id: sensor.audio_peak
+# #       above: 500
+# #   actions:
+# #     - action: scene.turn_on
+# #       target:
+# #         entity_id: scene.audio_flash
+

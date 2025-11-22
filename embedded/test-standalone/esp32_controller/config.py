@@ -15,6 +15,19 @@ OLED_HEIGHT = 64
 OLED_ADDR = 0x3C      # Common: 0x3C or 0x3D
 
 # ============================================
+# WIFI & MQTT CONFIGURATION (Optional)
+# ============================================
+WIFI_ENABLED = False   # Set to True to enable WiFi/MQTT
+WIFI_SSID = "YourWiFiSSID"
+WIFI_PASSWORD = "YourWiFiPassword"
+
+MQTT_ENABLED = False   # Set to True to enable MQTT
+MQTT_BROKER = "192.168.1.100"  # Backend server IP
+MQTT_PORT = 1883
+MQTT_CLIENT_ID = "esp32-001"
+MQTT_TOPIC_PREFIX = "smartlighting"
+
+# ============================================
 # BLE SENSOR CONFIGURATION
 # ============================================
 SENSOR_DEVICES = {

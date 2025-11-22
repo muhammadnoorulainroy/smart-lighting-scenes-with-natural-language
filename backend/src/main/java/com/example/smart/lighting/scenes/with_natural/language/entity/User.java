@@ -47,6 +47,7 @@ public class User implements Serializable {
     private String providerSub;
 
     @Column(name = "is_active")
+    @Builder.Default
     private Boolean isActive = true;
 
     @CreationTimestamp
