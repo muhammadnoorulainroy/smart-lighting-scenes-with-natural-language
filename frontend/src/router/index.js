@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import { requireAuth } from '../utils/routeGuards'
+import { requireAuth, requireOwner } from '../utils/routeGuards'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,6 +23,13 @@ const router = createRouter({
       component: () => import('../views/DashboardView.vue'),
       meta: { requiresAuth: true },
       beforeEnter: requireAuth
+    },
+    {
+      path: '/owner',
+      name: 'owner-dashboard',
+      component: () => import('../views/OwnerDashboardView.vue'),
+      meta: { requiresAuth: true, requiresOwner: true },
+      beforeEnter: requireOwner
     },
     {
       path: '/scenes',

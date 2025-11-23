@@ -14,8 +14,8 @@ export const useAuthStore = defineStore('auth', () => {
   const userEmail = computed(() => user.value?.email || '')
   const userPicture = computed(() => user.value?.pictureUrl || '')
   const userRole = computed(() => user.value?.role || 'GUEST')
-  const isAdmin = computed(() => userRole.value === 'ADMIN')
-  const isResident = computed(() => userRole.value === 'RESIDENT' || userRole.value === 'ADMIN')
+  const isOwner = computed(() => userRole.value === 'OWNER')
+  const isResident = computed(() => userRole.value === 'RESIDENT' || userRole.value === 'OWNER')
 
   // Actions
   const checkAuth = async () => {
@@ -87,7 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
     userEmail,
     userPicture,
     userRole,
-    isAdmin,
+    isOwner,
     isResident,
     // Actions
     checkAuth,

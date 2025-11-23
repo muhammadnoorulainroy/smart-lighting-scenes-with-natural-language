@@ -59,7 +59,7 @@ public class User implements Serializable {
     private LocalDateTime updatedAt;
 
     public enum UserRole {
-        ADMIN,
+        OWNER,
         RESIDENT,
         GUEST
     }
