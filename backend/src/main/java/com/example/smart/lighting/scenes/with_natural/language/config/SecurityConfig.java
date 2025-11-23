@@ -75,9 +75,9 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                .requestMatchers(ADMIN_ENDPOINTS).hasRole("ADMIN")
-                .requestMatchers(RESIDENT_ENDPOINTS).hasAnyRole("ADMIN", "RESIDENT")
-                .requestMatchers(AUTHENTICATED_ENDPOINTS).hasAnyRole("ADMIN", "RESIDENT", "GUEST")
+                .requestMatchers(ADMIN_ENDPOINTS).hasRole("OWNER")
+                .requestMatchers(RESIDENT_ENDPOINTS).hasAnyRole("OWNER", "RESIDENT")
+                .requestMatchers(AUTHENTICATED_ENDPOINTS).hasAnyRole("OWNER", "RESIDENT", "GUEST")
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2

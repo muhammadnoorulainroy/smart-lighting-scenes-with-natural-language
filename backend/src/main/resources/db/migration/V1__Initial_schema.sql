@@ -1,6 +1,6 @@
 -- V1__initial_schema.sql
 -- Initial database schema for Smart Lighting system
--- Single home, three roles (OWNER, MEMBER, GUEST)
+-- Single home, three roles (OWNER, RESIDENT, GUEST)
 
 -- Create schema
 CREATE SCHEMA IF NOT EXISTS smartlighting;
@@ -15,7 +15,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================================
 
 -- User roles
-CREATE TYPE user_role AS ENUM ('ADMIN', 'RESIDENT', 'GUEST');
+CREATE TYPE user_role AS ENUM ('OWNER', 'RESIDENT', 'GUEST');
 
 -- OAuth providers
 CREATE TYPE oauth_provider AS ENUM ('GOOGLE', 'LOCAL');
@@ -72,10 +72,10 @@ CREATE INDEX idx_users_provider_sub ON users(provider, provider_sub);
 CREATE INDEX idx_users_role ON users(role);
 
 COMMENT ON TABLE users IS 'System users with role-based access control';
-COMMENT ON COLUMN users.role IS 'ADMIN: full control, RESIDENT: daily usage, GUEST: limited access';
+COMMENT ON COLUMN users.role IS 'OWNER: full control, RESIDENT: daily usage, GUEST: limited access';
 
 -- Fix the comment to reflect actual schema
-UPDATE pg_description SET description = 'Roles: ADMIN, RESIDENT, GUEST' 
+UPDATE pg_description SET description = 'Roles: OWNER, RESIDENT, GUEST' 
 WHERE objoid = 'smartlighting.flyway_schema_history'::regclass;
 
 -- ============================================================================
@@ -597,5 +597,5 @@ DO $$
 BEGIN 
     RAISE NOTICE 'Smart Lighting schema V1 created successfully';
     RAISE NOTICE 'Tables: users, rooms, esp32_controllers, led_mappings, devices, scenes, rules, schedules, events';
-    RAISE NOTICE 'Roles: OWNER, MEMBER, GUEST';
+    RAISE NOTICE 'Roles: OWNER, RESIDENT, GUEST';
 END $$;
