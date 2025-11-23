@@ -22,49 +22,27 @@ export const requireAuth = async (to, from, next) => {
   }
 }
 
-/**
- * Route guard to check if user is a resident or admin
- */
 export const requireResident = async (to, from, next) => {
   const authStore = useAuthStore()
-  
-  // Wait for auth check if still loading
-  if (authStore.isLoading) {
-    await authStore.checkAuth()
-  }
-  
+  if (authStore.isLoading) await authStore.checkAuth()
   if (authStore.isAuthenticated && authStore.isResident) {
     next()
   } else if (authStore.isAuthenticated) {
     next({ path: '/dashboard', replace: true })
   } else {
-    next({
-      path: '/',
-      query: { redirect: to.fullPath, requiresAuth: 'true' }
-    })
+    next({ path: '/', query: { redirect: to.fullPath, requiresAuth: 'true' } })
   }
 }
 
-/**
- * Route guard to check if user is an admin
- */
-export const requireAdmin = async (to, from, next) => {
+export const requireOwner = async (to, from, next) => {
   const authStore = useAuthStore()
-  
-  // Wait for auth check if still loading
-  if (authStore.isLoading) {
-    await authStore.checkAuth()
-  }
-  
-  if (authStore.isAuthenticated && authStore.isAdmin) {
+  if (authStore.isLoading) await authStore.checkAuth()
+  if (authStore.isAuthenticated && authStore.isOwner) {
     next()
   } else if (authStore.isAuthenticated) {
     next({ path: '/dashboard', replace: true })
   } else {
-    next({
-      path: '/',
-      query: { redirect: to.fullPath, requiresAuth: 'true' }
-    })
+    next({ path: '/', query: { redirect: to.fullPath, requiresAuth: 'true' } })
   }
 }
 

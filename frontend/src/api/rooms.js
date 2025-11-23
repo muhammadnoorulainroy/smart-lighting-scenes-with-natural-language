@@ -1,10 +1,11 @@
 import apiClient from './axios'
 
 export const roomsApi = {
-  /**
-   * Get all rooms
-   * @returns {Promise<Array>}
-   */
+  async getAll() {
+    const response = await apiClient.get('/api/rooms')
+    return response.data
+  },
+
   async getRooms() {
     const response = await apiClient.get('/api/rooms')
     return response.data
