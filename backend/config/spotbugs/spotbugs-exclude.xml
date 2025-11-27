@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter
+    xmlns="https://github.com/spotbugs/filter/3.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd">
+
+    <!--
+        SpotBugs Exclusion Filter for Smart Lighting Backend
+        Excludes false positives and intentional patterns
+    -->
+
+    <!-- Exclude Lombok-generated code -->
+    <Match>
+        <Source name="~.*\.java"/>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+        </Or>
+        <Class name="~.*\.(dto|entity)\..*"/>
+    </Match>
+
+    <!-- Exclude Spring-managed beans from unread field warnings -->
+    <Match>
+        <Or>
+            <Annotation name="org.springframework.stereotype.Service"/>
+            <Annotation name="org.springframework.stereotype.Component"/>
+            <Annotation name="org.springframework.stereotype.Repository"/>
+            <Annotation name="org.springframework.stereotype.Controller"/>
+            <Annotation name="org.springframework.web.bind.annotation.RestController"/>
+            <Annotation name="org.springframework.context.annotation.Configuration"/>
+        </Or>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+
+    <!-- Exclude test classes -->
+    <Match>
+        <Class name="~.*Test"/>
+    </Match>
+    <Match>
+        <Class name="~.*Tests"/>
+    </Match>
+    <Match>
+        <Package name="~.*\.test\..*"/>
+    </Match>
+
+    <!-- Exclude configuration classes -->
+    <Match>
+        <Class name="~.*Config"/>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+    </Match>
+
+    <!-- Exclude DTOs from mutable object warnings (intentional design) -->
+    <Match>
+        <Class name="~.*Dto"/>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+            <Bug pattern="MS_EXPOSE_REP"/>
+        </Or>
+    </Match>
+
+    <!-- Exclude entity classes from serialization warnings -->
+    <Match>
+        <Package name="~.*\.entity"/>
+        <Bug pattern="SE_BAD_FIELD"/>
+    </Match>
+
+    <!-- Exclude Spring Security related false positives -->
+    <Match>
+        <Class name="~.*Security.*"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+
+    <!-- Exclude WebSocket handlers -->
+    <Match>
+        <Class name="~.*WebSocket.*"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+
+</FindBugsFilter>
+

@@ -7,6 +7,9 @@ plugins {
 	java
 	id("org.springframework.boot") version "3.5.6"
 	id("io.spring.dependency-management") version "1.1.7"
+	checkstyle
+	pmd
+	id("com.github.spotbugs") version "6.0.26"
 }
 
 group = "com.example"
@@ -120,4 +123,62 @@ tasks.register("deps") {
 	doLast {
 		println("Run './gradlew dependencies' to view the dependency tree")
 	}
+}
+
+// Static Code Analysis Configuration
+
+checkstyle {
+	toolVersion = "10.20.1"
+	configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+	isIgnoreFailures = false
+	maxWarnings = 0
+}
+
+pmd {
+	toolVersion = "7.7.0"
+	isConsoleOutput = true
+	isIgnoreFailures = false
+	rulesMinimumPriority = 3
+	ruleSets = listOf()
+	ruleSetFiles = files("${rootDir}/config/pmd/pmd-rules.xml")
+}
+
+spotbugs {
+	toolVersion = "4.8.6"
+	ignoreFailures = false
+	showStackTraces = true
+	showProgress = true
+	effort = com.github.spotbugs.snom.Effort.MAX
+	reportLevel = com.github.spotbugs.snom.Confidence.MEDIUM
+	excludeFilter = file("${rootDir}/config/spotbugs/spotbugs-exclude.xml")
+}
+
+tasks.withType<com.github.spotbugs.snom.SpotBugsTask> {
+	reports.create("html") {
+		required = true
+		outputLocation = file("${layout.buildDirectory.get()}/reports/spotbugs/${name}.html")
+	}
+	reports.create("xml") {
+		required = false
+	}
+}
+
+tasks.withType<Checkstyle> {
+	reports {
+		xml.required = false
+		html.required = true
+	}
+}
+
+tasks.withType<Pmd> {
+	reports {
+		xml.required = false
+		html.required = true
+	}
+}
+
+tasks.register("analyze") {
+	group = "verification"
+	description = "Run all static code analysis tools"
+	dependsOn("checkstyleMain", "pmdMain", "spotbugsMain")
 }
