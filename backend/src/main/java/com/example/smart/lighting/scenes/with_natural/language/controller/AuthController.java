@@ -13,6 +13,17 @@ import com.example.smart.lighting.scenes.with_natural.language.security.CustomOA
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * REST controller for authentication-related endpoints.
+ * 
+ * <p>Handles user authentication state, profile retrieval, and session
+ * management. Works in conjunction with Spring Security OAuth2.</p>
+ * 
+ * @author Smart Lighting Team
+ * @version 1.0
+ * @see CustomOAuth2User
+ * @see UserDto
+ */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -20,6 +31,12 @@ import lombok.extern.slf4j.Slf4j;
 @CrossOrigin(origins = "${cors.allowed-origins}", allowCredentials = "true")
 public class AuthController {
 
+    /**
+     * Retrieves the current authenticated user's profile.
+     * 
+     * @param principal the authenticated OAuth2 user, or null if not authenticated
+     * @return the user profile DTO, or 404 if not authenticated
+     */
     @GetMapping("/me")
     public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal CustomOAuth2User principal) {
         if (principal == null) {
@@ -42,6 +59,12 @@ public class AuthController {
         return ResponseEntity.ok(userDto);
     }
 
+    /**
+     * Checks if the current request is authenticated.
+     * 
+     * @param principal the authenticated OAuth2 user, or null
+     * @return true if authenticated, false otherwise
+     */
     @GetMapping("/auth/check")
     public ResponseEntity<Boolean> checkAuthentication(@AuthenticationPrincipal CustomOAuth2User principal) {
         boolean isAuth = principal != null;

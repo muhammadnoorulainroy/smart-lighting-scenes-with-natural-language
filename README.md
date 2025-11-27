@@ -1,6 +1,11 @@
 # Smart Lighting Scenes with Natural Language
 
-A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-green.svg)](https://spring.io/projects/spring-boot)
+[![Vue.js](https://img.shields.io/badge/Vue.js-3.5-brightgreen.svg)](https://vuejs.org/)
+
+A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes. Control your home lighting through voice commands, scheduled automations, and real-time IoT integration.
 
 ## Features
 
@@ -132,6 +137,45 @@ npm run test
 **Test output:**
 - Backend: JUnit test reports in `backend/build/reports/`
 - Frontend: Test results in console + coverage reports
+
+---
+
+## API Documentation
+
+Generate reference documentation for both backend and frontend codebases.
+
+### Backend (Javadoc)
+
+```bash
+cd backend
+./gradlew docs
+
+# Output: backend/build/docs/javadoc/index.html
+```
+
+The Javadoc includes documentation for:
+- REST Controllers (`AuthController`, `DevicesController`)
+- Services (`MqttService`)
+- Entities (`Device`, `User`, `Room`, `DeviceState`)
+- Repositories (`DeviceRepository`, `RoomRepository`)
+- DTOs (`DeviceDto`, `UserDto`)
+- Security configuration (`SecurityConfig`)
+
+### Frontend (JSDoc)
+
+```bash
+cd frontend
+npm install    # If not done already
+npm run docs
+
+# Output: frontend/docs/jsdoc/index.html
+```
+
+The JSDoc includes documentation for:
+- API clients (`axios.js`, `auth.js`, `devices.js`, `rooms.js`)
+- Pinia stores (`auth.js`)
+- Route guards (`routeGuards.js`)
+- Utilities (`logger.js`)
 
 ---
 
@@ -391,18 +435,11 @@ Each LED is daisy-chained to a single GPIO pin (GPIO13) and mapped to a room:
 - LED 3 = Bathroom
 
 **Documentation:**
+- [`docs/tutorials/tutorial.md`](docs/tutorials/tutorial.md) - Getting started tutorial
 - [`embedded/README_OVERVIEW.md`](embedded/README_OVERVIEW.md) - Complete embedded documentation index
 - [`docs/EMBEDDED_DESIGN_SUMMARY.md`](docs/EMBEDDED_DESIGN_SUMMARY.md) - System design and architecture
 - [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md) - Full system overview
 
-## Future Enhancements
-
-- [x] ESP32 hardware integration (complete design)
-- [ ] Local LLaMA model integration
-- [ ] Advanced scheduling with ML predictions
-- [ ] Energy usage analytics
-- [ ] Multi-home support
-- [ ] Apple HomeKit integration
 
 ## Contributing
 
@@ -412,12 +449,6 @@ Each LED is daisy-chained to a single GPIO pin (GPIO13) and mapped to a room:
 4. Push to the branch
 5. Open a Pull Request
 
-## Acknowledgments
-
-- Spring Boot team for the excellent framework
-- Vue.js team for the reactive framework
-- Google for OAuth and Material Design
-- Eclipse for Mosquitto MQTT broker
 
 ## Support
 
@@ -425,3 +456,7 @@ For issues and questions:
 - Create an issue on GitHub
 - Check the documentation in `/docs`
 - Review the development plan in the project docs
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

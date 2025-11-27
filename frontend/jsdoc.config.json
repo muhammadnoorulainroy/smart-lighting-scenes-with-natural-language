@@ -1,0 +1,26 @@
+{
+  "source": {
+    "include": ["src"],
+    "includePattern": ".+\\.js$",
+    "excludePattern": "(node_modules|dist|coverage|\\.test\\.js$)"
+  },
+  "opts": {
+    "destination": "docs/jsdoc",
+    "recurse": true,
+    "readme": "../README.md"
+  },
+  "plugins": ["plugins/markdown"],
+  "templates": {
+    "cleverLinks": true,
+    "monospaceLinks": true,
+    "default": {
+      "outputSourceFiles": true,
+      "includeDate": false
+    }
+  },
+  "metadata": {
+    "title": "Smart Lighting Frontend API Documentation",
+    "version": "1.0.0"
+  }
+}
+

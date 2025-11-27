@@ -1,20 +1,39 @@
+/**
+ * @fileoverview API client for room management operations.
+ * @module api/rooms
+ * @author Smart Lighting Team
+ * @version 1.0.0
+ */
+
 import apiClient from './axios'
 
+/**
+ * Room API methods for CRUD operations.
+ * @namespace
+ */
 export const roomsApi = {
+  /**
+   * Retrieves all rooms.
+   * @returns {Promise<Array>} Array of room objects
+   */
   async getAll() {
     const response = await apiClient.get('/api/rooms')
     return response.data
   },
 
+  /**
+   * Retrieves all rooms (alias for getAll).
+   * @returns {Promise<Array>} Array of room objects
+   */
   async getRooms() {
     const response = await apiClient.get('/api/rooms')
     return response.data
   },
 
   /**
-   * Get room by ID
-   * @param {number} id - Room ID
-   * @returns {Promise<Object>}
+   * Retrieves a room by its UUID.
+   * @param {string} id - Room UUID
+   * @returns {Promise<Object>} Room object with devices
    */
   async getRoomById(id) {
     const response = await apiClient.get(`/api/rooms/${id}`)
@@ -51,9 +70,3 @@ export const roomsApi = {
     await apiClient.delete(`/api/rooms/${id}`)
   }
 }
-
-
-
-
-
-

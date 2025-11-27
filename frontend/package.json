@@ -26,15 +26,16 @@
     "clean": "rm -rf dist node_modules .vite",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "docs": "jsdoc -c jsdoc.config.json"
   },
   "dependencies": {
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0",
-    "pinia": "^2.3.0",
-    "axios": "^1.7.9",
     "@vueuse/core": "^11.3.0",
-    "socket.io-client": "^4.8.1"
+    "axios": "^1.7.9",
+    "pinia": "^2.3.0",
+    "socket.io-client": "^4.8.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.10.4",
@@ -44,6 +45,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-plugin-vue": "^9.31.0",
+    "jsdoc": "^4.0.5",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",

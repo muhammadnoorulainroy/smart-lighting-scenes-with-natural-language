@@ -16,6 +16,21 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * REST controller for managing smart lighting devices.
+ * 
+ * <p>Provides CRUD operations for devices within rooms. Access is restricted
+ * based on user roles:</p>
+ * <ul>
+ *   <li>OWNER - Full access (create, read, update, delete)</li>
+ *   <li>RESIDENT - Read-only access</li>
+ * </ul>
+ * 
+ * @author Smart Lighting Team
+ * @version 1.0
+ * @see Device
+ * @see DeviceDto
+ */
 @RestController
 @RequestMapping("/api/devices")
 @RequiredArgsConstructor

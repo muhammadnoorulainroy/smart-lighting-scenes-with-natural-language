@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Pinia store for authentication state management.
+ * @module stores/auth
+ * @author Smart Lighting Team
+ * @version 1.0.0
+ */
+
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '../api/auth'
@@ -5,6 +12,14 @@ import logger from '../utils/logger'
 
 const MODULE = 'AuthStore'
 
+/**
+ * Authentication store using Pinia composition API.
+ * 
+ * Manages user authentication state, profile data, and role-based access.
+ * Integrates with Google OAuth via the backend API.
+ * 
+ * @returns {Object} Store instance with state, getters, and actions
+ */
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const isAuthenticated = ref(false)

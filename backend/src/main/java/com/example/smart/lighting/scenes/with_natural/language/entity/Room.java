@@ -13,6 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Entity representing a room in the smart home.
+ * 
+ * <p>Rooms are containers for {@link Device} entities and provide logical
+ * grouping for lighting control. Each room can have multiple devices and
+ * tracks which user created it.</p>
+ * 
+ * <p>Room names must be unique across the system.</p>
+ * 
+ * @author Smart Lighting Team
+ * @version 1.0
+ * @see Device
+ * @see User
+ */
 @Entity
 @Table(name = "rooms", schema = "smartlighting")
 @Data

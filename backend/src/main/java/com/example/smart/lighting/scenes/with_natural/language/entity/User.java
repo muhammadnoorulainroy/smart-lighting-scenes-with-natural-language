@@ -12,6 +12,22 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Entity representing a user in the smart lighting system.
+ * 
+ * <p>Users authenticate via OAuth (Google) and are assigned roles that
+ * determine their access level:</p>
+ * <ul>
+ *   <li>{@link UserRole#OWNER} - Full system access, can manage users and settings</li>
+ *   <li>{@link UserRole#RESIDENT} - Can control devices and create scenes</li>
+ *   <li>{@link UserRole#GUEST} - Limited read-only access</li>
+ * </ul>
+ * 
+ * @author Smart Lighting Team
+ * @version 1.0
+ * @see UserRole
+ * @see OAuthProvider
+ */
 @Entity
 @Table(name = "users", schema = "smartlighting")
 @Data
@@ -58,14 +74,25 @@ public class User implements Serializable {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    /**
+     * User roles defining access levels in the system.
+     */
     public enum UserRole {
+        /** Full administrative access */
         OWNER,
+        /** Can control devices and manage scenes */
         RESIDENT,
+        /** Limited read-only access */
         GUEST
     }
 
+    /**
+     * Supported OAuth authentication providers.
+     */
     public enum OAuthProvider {
+        /** Google OAuth 2.0 */
         GOOGLE,
+        /** Local authentication (reserved for future use) */
         LOCAL
     }
 }

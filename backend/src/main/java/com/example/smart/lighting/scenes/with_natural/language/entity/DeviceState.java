@@ -10,6 +10,23 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Entity representing the current state of a lighting device.
+ * 
+ * <p>Stores real-time device state including:</p>
+ * <ul>
+ *   <li>Power state (on/off)</li>
+ *   <li>Brightness percentage (0-100)</li>
+ *   <li>Color temperature in mireds</li>
+ *   <li>RGB color as hex string (#RRGGBB)</li>
+ * </ul>
+ * 
+ * <p>State is updated via MQTT messages from ESP32 controllers.</p>
+ * 
+ * @author Smart Lighting Team
+ * @version 1.0
+ * @see Device
+ */
 @Entity
 @Table(name = "device_state_latest", schema = "smartlighting")
 @Data
