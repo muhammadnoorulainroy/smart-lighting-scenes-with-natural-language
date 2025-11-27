@@ -435,6 +435,7 @@ Each LED is daisy-chained to a single GPIO pin (GPIO13) and mapped to a room:
 - LED 3 = Bathroom
 
 **Documentation:**
+- [`docs/tutorials/tutorial.md`](docs/tutorials/tutorial.md) - Getting started tutorial
 - [`embedded/README_OVERVIEW.md`](embedded/README_OVERVIEW.md) - Complete embedded documentation index
 - [`docs/EMBEDDED_DESIGN_SUMMARY.md`](docs/EMBEDDED_DESIGN_SUMMARY.md) - System design and architecture
 - [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md) - Full system overview
