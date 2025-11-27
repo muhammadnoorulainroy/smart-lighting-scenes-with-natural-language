@@ -1,6 +1,11 @@
 # Smart Lighting Scenes with Natural Language
 
-A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-green.svg)](https://spring.io/projects/spring-boot)
+[![Vue.js](https://img.shields.io/badge/Vue.js-3.5-brightgreen.svg)](https://vuejs.org/)
+
+A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes. Control your home lighting through voice commands, scheduled automations, and real-time IoT integration.
 
 ## Features
 
@@ -395,14 +400,6 @@ Each LED is daisy-chained to a single GPIO pin (GPIO13) and mapped to a room:
 - [`docs/EMBEDDED_DESIGN_SUMMARY.md`](docs/EMBEDDED_DESIGN_SUMMARY.md) - System design and architecture
 - [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md) - Full system overview
 
-## Future Enhancements
-
-- [x] ESP32 hardware integration (complete design)
-- [ ] Local LLaMA model integration
-- [ ] Advanced scheduling with ML predictions
-- [ ] Energy usage analytics
-- [ ] Multi-home support
-- [ ] Apple HomeKit integration
 
 ## Contributing
 
@@ -412,12 +409,6 @@ Each LED is daisy-chained to a single GPIO pin (GPIO13) and mapped to a room:
 4. Push to the branch
 5. Open a Pull Request
 
-## Acknowledgments
-
-- Spring Boot team for the excellent framework
-- Vue.js team for the reactive framework
-- Google for OAuth and Material Design
-- Eclipse for Mosquitto MQTT broker
 
 ## Support
 
@@ -425,3 +416,7 @@ For issues and questions:
 - Create an issue on GitHub
 - Check the documentation in `/docs`
 - Review the development plan in the project docs
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
