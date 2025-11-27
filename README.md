@@ -140,6 +140,45 @@ npm run test
 
 ---
 
+## API Documentation
+
+Generate reference documentation for both backend and frontend codebases.
+
+### Backend (Javadoc)
+
+```bash
+cd backend
+./gradlew docs
+
+# Output: backend/build/docs/javadoc/index.html
+```
+
+The Javadoc includes documentation for:
+- REST Controllers (`AuthController`, `DevicesController`)
+- Services (`MqttService`)
+- Entities (`Device`, `User`, `Room`, `DeviceState`)
+- Repositories (`DeviceRepository`, `RoomRepository`)
+- DTOs (`DeviceDto`, `UserDto`)
+- Security configuration (`SecurityConfig`)
+
+### Frontend (JSDoc)
+
+```bash
+cd frontend
+npm install    # If not done already
+npm run docs
+
+# Output: frontend/docs/jsdoc/index.html
+```
+
+The JSDoc includes documentation for:
+- API clients (`axios.js`, `auth.js`, `devices.js`, `rooms.js`)
+- Pinia stores (`auth.js`)
+- Route guards (`routeGuards.js`)
+- Utilities (`logger.js`)
+
+---
+
 ## How to Run
 
 ### Quick Start (Complete Setup)

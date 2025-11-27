@@ -182,3 +182,32 @@ tasks.register("analyze") {
 	description = "Run all static code analysis tools"
 	dependsOn("checkstyleMain", "pmdMain", "spotbugsMain")
 }
+
+// Javadoc Configuration
+tasks.withType<Javadoc> {
+	options {
+		this as StandardJavadocDocletOptions
+		encoding = "UTF-8"
+		docEncoding = "UTF-8"
+		charSet = "UTF-8"
+		addStringOption("Xdoclint:none", "-quiet")
+		windowTitle = "Smart Lighting API Documentation"
+		docTitle = "Smart Lighting Scenes API"
+		header = "<b>Smart Lighting Scenes</b>"
+		bottom = "Copyright &copy; 2025 Smart Lighting Team. MIT License."
+		links("https://docs.oracle.com/en/java/javase/21/docs/api/")
+		links("https://docs.spring.io/spring-framework/docs/current/javadoc-api/")
+	}
+	source = sourceSets["main"].allJava
+	classpath = configurations["compileClasspath"]
+	setDestinationDir(file("${layout.buildDirectory.get()}/docs/javadoc"))
+}
+
+tasks.register("docs") {
+	group = "documentation"
+	description = "Generate Javadoc API documentation"
+	dependsOn("javadoc")
+	doLast {
+		println("Javadoc generated at: ${layout.buildDirectory.get()}/docs/javadoc/index.html")
+	}
+}

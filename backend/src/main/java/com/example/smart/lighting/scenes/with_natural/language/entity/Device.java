@@ -15,6 +15,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Entity representing a smart lighting device in the system.
+ * 
+ * <p>A device belongs to a {@link Room} and communicates via MQTT topics.
+ * Each device has a type (LIGHT, SENSOR, or SWITCH) and maintains its
+ * current state through a linked {@link DeviceState} entity.</p>
+ * 
+ * <p>Device names must be unique within a room (enforced by database constraint).</p>
+ * 
+ * @author Smart Lighting Team
+ * @version 1.0
+ * @see Room
+ * @see DeviceState
+ */
 @Entity
 @Table(name = "devices", schema = "smartlighting", uniqueConstraints = @UniqueConstraint(columnNames = { "room_id",
         "name" }))
@@ -65,9 +79,15 @@ public class Device {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    /**
+     * Enumeration of supported device types.
+     */
     public enum DeviceType {
+        /** RGB or white light fixture */
         LIGHT,
+        /** Environmental sensor (temperature, humidity, motion) */
         SENSOR,
+        /** Physical wall switch or relay */
         SWITCH
     }
 }

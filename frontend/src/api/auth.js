@@ -1,5 +1,16 @@
+/**
+ * @fileoverview Authentication API client for OAuth operations.
+ * @module api/auth
+ * @author Smart Lighting Team
+ * @version 1.0.0
+ */
+
 import apiClient from './axios'
 
+/**
+ * Authentication API methods.
+ * @namespace
+ */
 export const authApi = {
   /**
    * Check if user is authenticated
@@ -42,9 +53,3 @@ export const authApi = {
     }
   }
 }
-
-
-
-
-
-

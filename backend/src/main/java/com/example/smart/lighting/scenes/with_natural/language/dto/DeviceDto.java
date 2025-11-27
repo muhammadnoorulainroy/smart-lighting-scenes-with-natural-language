@@ -10,6 +10,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Data Transfer Object for Device entities.
+ * 
+ * <p>Used for API request/response serialization. Contains device
+ * configuration, MQTT topics, and current state information.</p>
+ * 
+ * @author Smart Lighting Team
+ * @version 1.0
+ * @see DeviceStateDto
+ */
 @Data
 @Builder
 @NoArgsConstructor

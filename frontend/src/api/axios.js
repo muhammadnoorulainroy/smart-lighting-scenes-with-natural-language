@@ -1,9 +1,32 @@
+/**
+ * @fileoverview Axios HTTP client configuration with interceptors.
+ * @module api/axios
+ * @author Smart Lighting Team
+ * @version 1.0.0
+ */
+
 import axios from 'axios'
 import logger from '../utils/logger'
 
 const MODULE = 'ApiClient'
+
+/**
+ * Base URL for API requests.
+ * @type {string}
+ */
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
+/**
+ * Pre-configured Axios instance for API communication.
+ * 
+ * Includes:
+ * - Base URL configuration
+ * - Credential support for session cookies
+ * - Request/response logging
+ * - Centralized error handling
+ * 
+ * @type {Object}
+ */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
