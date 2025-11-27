@@ -144,6 +144,79 @@ npm run format:check
 - No trailing commas
 - 100 character line width
 
+## Pre-commit Hooks
+
+Static code analysis runs automatically before each commit using the `pre-commit` framework.
+
+### Installation
+
+1. Install pre-commit (requires Python):
+
+```bash
+pip install pre-commit
+```
+
+2. Install the git hooks:
+
+```bash
+pre-commit install
+```
+
+### Configuration
+
+The configuration file `.pre-commit-config.yaml` in the project root defines:
+
+| Hook | Files | Action |
+|------|-------|--------|
+| frontend-eslint | `*.vue, *.js` | Runs ESLint on frontend code |
+| frontend-prettier | `*.vue, *.js, *.json, *.css` | Checks Prettier formatting |
+| backend-checkstyle | `*.java` | Runs Checkstyle on backend code |
+| backend-pmd | `*.java` | Runs PMD on backend code |
+| backend-spotbugs | `*.java` | Runs SpotBugs on backend code |
+| trailing-whitespace | all files | Removes trailing whitespace |
+| end-of-file-fixer | all files | Ensures files end with newline |
+| check-yaml | `*.yaml, *.yml` | Validates YAML syntax |
+| check-json | `*.json` | Validates JSON syntax |
+| check-merge-conflict | all files | Detects merge conflict markers |
+| detect-private-key | all files | Prevents committing private keys |
+
+### Usage
+
+After installation, hooks run automatically on `git commit`:
+
+```bash
+git add .
+git commit -m "Your message"
+# Hooks run automatically before commit
+```
+
+Run hooks manually on all files:
+
+```bash
+pre-commit run --all-files
+```
+
+Run a specific hook:
+
+```bash
+pre-commit run frontend-eslint --all-files
+pre-commit run backend-checkstyle --all-files
+```
+
+Skip hooks temporarily (not recommended):
+
+```bash
+git commit --no-verify -m "Emergency fix"
+```
+
+### Updating Hooks
+
+Update to latest versions:
+
+```bash
+pre-commit autoupdate
+```
+
 ## Suppressing Warnings
 
 ### Backend
