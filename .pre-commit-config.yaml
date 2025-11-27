@@ -1,0 +1,54 @@
+repos:
+  # Frontend: ESLint and Prettier
+  - repo: local
+    hooks:
+      - id: frontend-eslint
+        name: Frontend ESLint
+        entry: bash -c 'cd frontend && npm run lint:check'
+        language: system
+        files: ^frontend/.*\.(vue|js|jsx|cjs|mjs)$
+        pass_filenames: false
+
+      - id: frontend-prettier
+        name: Frontend Prettier
+        entry: bash -c 'cd frontend && npm run format:check'
+        language: system
+        files: ^frontend/.*\.(vue|js|jsx|cjs|mjs|json|css)$
+        pass_filenames: false
+
+  # Backend: Checkstyle, PMD, SpotBugs
+  - repo: local
+    hooks:
+      - id: backend-checkstyle
+        name: Backend Checkstyle
+        entry: bash -c 'cd backend && ./gradlew checkstyleMain --quiet'
+        language: system
+        files: ^backend/src/main/java/.*\.java$
+        pass_filenames: false
+
+      - id: backend-pmd
+        name: Backend PMD
+        entry: bash -c 'cd backend && ./gradlew pmdMain --quiet'
+        language: system
+        files: ^backend/src/main/java/.*\.java$
+        pass_filenames: false
+
+      - id: backend-spotbugs
+        name: Backend SpotBugs
+        entry: bash -c 'cd backend && ./gradlew spotbugsMain --quiet'
+        language: system
+        files: ^backend/src/main/java/.*\.java$
+        pass_filenames: false
+
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(backend/build/|frontend/dist/|node_modules/)
+      - id: end-of-file-fixer
+        exclude: ^(backend/build/|frontend/dist/|node_modules/)
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key

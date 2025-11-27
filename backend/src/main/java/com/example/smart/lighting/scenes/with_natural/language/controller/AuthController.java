@@ -23,8 +23,12 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal CustomOAuth2User principal) {
         if (principal == null) {
+            log.debug("GET /api/me called without authentication");
             return ResponseEntity.notFound().build();
         }
+        
+        log.info("User profile accessed: email={}, role={}", 
+            principal.getUser().getEmail(), principal.getUser().getRole());
         
         UserDto userDto = UserDto.builder()
             .id(principal.getUser().getId())

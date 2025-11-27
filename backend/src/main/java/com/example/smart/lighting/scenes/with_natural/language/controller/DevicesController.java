@@ -29,11 +29,15 @@ public class DevicesController {
 
     @GetMapping
     public ResponseEntity<List<DeviceDto>> getAllDevices(@RequestParam(required = false) UUID roomId) {
+        log.debug("Fetching devices with roomId filter: {}", roomId);
+        
         List<Device> devices;
         if (roomId != null) {
             devices = deviceRepository.findByRoomId(roomId);
+            log.info("Retrieved {} devices for room {}", devices.size(), roomId);
         } else {
             devices = deviceRepository.findAll();
+            log.info("Retrieved {} total devices", devices.size());
         }
         
         List<DeviceDto> deviceDtos = devices.stream()
@@ -45,8 +49,14 @@ public class DevicesController {
     @PostMapping
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<DeviceDto> createDevice(@RequestBody DeviceDto deviceDto) {
+        log.debug("Creating device: name={}, type={}, roomId={}", 
+            deviceDto.getName(), deviceDto.getType(), deviceDto.getRoomId());
+        
         Room room = roomRepository.findById(deviceDto.getRoomId())
-            .orElseThrow(() -> new RuntimeException("Room not found"));
+            .orElseThrow(() -> {
+                log.error("Failed to create device: room {} not found", deviceDto.getRoomId());
+                return new RuntimeException("Room not found");
+            });
         
         Device device = Device.builder()
             .room(room)
@@ -59,39 +69,71 @@ public class DevicesController {
             .build();
         
         device = deviceRepository.save(device);
+        log.info("Device created: id={}, name={}, room={}", device.getId(), device.getName(), room.getName());
         return ResponseEntity.ok(toDto(device));
     }
 
     @PutMapping("/{deviceId}")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<DeviceDto> updateDevice(@PathVariable UUID deviceId, @RequestBody DeviceDto deviceDto) {
+        log.debug("Updating device: id={}", deviceId);
+        
         Device device = deviceRepository.findById(deviceId)
-            .orElseThrow(() -> new RuntimeException("Device not found"));
+            .orElseThrow(() -> {
+                log.error("Failed to update device: device {} not found", deviceId);
+                return new RuntimeException("Device not found");
+            });
         
         if (deviceDto.getRoomId() != null && !deviceDto.getRoomId().equals(device.getRoom().getId())) {
             Room room = roomRepository.findById(deviceDto.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Room not found"));
+                .orElseThrow(() -> {
+                    log.error("Failed to update device: room {} not found", deviceDto.getRoomId());
+                    return new RuntimeException("Room not found");
+                });
+            log.info("Moving device {} from room {} to room {}", 
+                device.getName(), device.getRoom().getName(), room.getName());
             device.setRoom(room);
         }
         
-        if (deviceDto.getName() != null) device.setName(deviceDto.getName());
-        if (deviceDto.getType() != null) device.setType(Device.DeviceType.valueOf(deviceDto.getType()));
-        if (deviceDto.getMqttCmdTopic() != null) device.setMqttCmdTopic(deviceDto.getMqttCmdTopic());
-        if (deviceDto.getMqttStateTopic() != null) device.setMqttStateTopic(deviceDto.getMqttStateTopic());
-        if (deviceDto.getMetaJson() != null) device.setMetaJson(deviceDto.getMetaJson());
-        if (deviceDto.getIsActive() != null) device.setIsActive(deviceDto.getIsActive());
+        if (deviceDto.getName() != null) {
+            device.setName(deviceDto.getName());
+        }
+        if (deviceDto.getType() != null) {
+            device.setType(Device.DeviceType.valueOf(deviceDto.getType()));
+        }
+        if (deviceDto.getMqttCmdTopic() != null) {
+            device.setMqttCmdTopic(deviceDto.getMqttCmdTopic());
+        }
+        if (deviceDto.getMqttStateTopic() != null) {
+            device.setMqttStateTopic(deviceDto.getMqttStateTopic());
+        }
+        if (deviceDto.getMetaJson() != null) {
+            device.setMetaJson(deviceDto.getMetaJson());
+        }
+        if (deviceDto.getIsActive() != null) {
+            if (!deviceDto.getIsActive() && device.getIsActive()) {
+                log.warn("Deactivating device: id={}, name={}", deviceId, device.getName());
+            }
+            device.setIsActive(deviceDto.getIsActive());
+        }
         
         device = deviceRepository.save(device);
+        log.info("Device updated: id={}, name={}", device.getId(), device.getName());
         return ResponseEntity.ok(toDto(device));
     }
 
     @DeleteMapping("/{deviceId}")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<Void> deleteDevice(@PathVariable UUID deviceId) {
+        log.debug("Deleting device: id={}", deviceId);
+        
         if (!deviceRepository.existsById(deviceId)) {
+            log.warn("Attempted to delete non-existent device: id={}", deviceId);
             return ResponseEntity.notFound().build();
         }
+        
         deviceRepository.deleteById(deviceId);
+        log.info("Device deleted: id={}", deviceId);
         return ResponseEntity.noContent().build();
     }
 

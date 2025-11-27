@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -42,8 +41,12 @@ public class MqttService {
                 .setHeader(MqttHeaders.TOPIC, topic)
                 .build();
             
-            mqttOutputChannel.send(message);
-            log.debug("Published to {}: {}", topic, jsonPayload);
+            boolean sent = mqttOutputChannel.send(message, 5000);
+            if (sent) {
+                log.debug("Published to {}: {}", topic, jsonPayload);
+            } else {
+                log.warn("MQTT message send timed out for topic: {}", topic);
+            }
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize payload for topic {}: {}", topic, e.getMessage());
         }

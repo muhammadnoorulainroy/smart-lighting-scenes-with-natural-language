@@ -1,72 +1,61 @@
 import axios from 'axios'
+import logger from '../utils/logger'
 
+const MODULE = 'ApiClient'
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
-// Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Important for session cookies
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    Accept: 'application/json'
   }
 })
 
-// Request interceptor
 apiClient.interceptors.request.use(
-  (config) => {
-    // You can add auth tokens here if needed
+  config => {
+    logger.debug(MODULE, `${config.method?.toUpperCase()} ${config.url}`)
     return config
   },
-  (error) => {
+  error => {
+    logger.error(MODULE, 'Request configuration error', error)
     return Promise.reject(error)
   }
 )
 
-// Response interceptor
 apiClient.interceptors.response.use(
-  (response) => {
+  response => {
+    logger.debug(MODULE, `Response ${response.status} from ${response.config.url}`)
     return response
   },
-  (error) => {
+  error => {
     if (error.response) {
-      // Handle specific error status codes
-      switch (error.response.status) {
+      const { status, config } = error.response
+      switch (status) {
         case 401:
-          // Unauthorized - could redirect to login
-          console.error('Unauthorized access')
+          logger.warn(MODULE, `Unauthorized: ${config.url}`)
           break
         case 403:
-          // Forbidden
-          console.error('Access forbidden')
+          logger.warn(MODULE, `Forbidden: ${config.url}`)
           break
         case 404:
-          // Not found
-          console.error('Resource not found')
+          logger.warn(MODULE, `Not found: ${config.url}`)
           break
         case 500:
-          // Server error
-          console.error('Server error')
+          logger.error(MODULE, `Server error: ${config.url}`, error.response.data)
           break
         default:
-          console.error('API error:', error.response.status)
+          logger.error(MODULE, `API error ${status}: ${config.url}`)
       }
     } else if (error.request) {
-      // Request was made but no response received
-      console.error('No response from server')
+      logger.error(MODULE, 'No response from server - network error or timeout')
     } else {
-      // Something else happened
-      console.error('Error:', error.message)
+      logger.error(MODULE, 'Request error', error.message)
     }
-    
+
     return Promise.reject(error)
   }
 )
 
 export default apiClient
-
-
-
-
-
-
