@@ -22,10 +22,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private String[] allowedOrigins;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, 
-                                        HttpServletResponse response, 
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
-        
+
         String targetUrl = determineTargetUrl(request, response, authentication);
 
         if (response.isCommitted()) {
@@ -38,19 +38,19 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     }
 
     @Override
-    protected String determineTargetUrl(HttpServletRequest request, 
-                                         HttpServletResponse response, 
+    protected String determineTargetUrl(HttpServletRequest request,
+                                         HttpServletResponse response,
                                          Authentication authentication) {
-        
+
         // Get the frontend URL (default to first allowed origin)
         String frontendUrl = allowedOrigins.length > 0 ? allowedOrigins[0] : "http://localhost:5173";
-        
+
         // Get user information
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
         String userRole = oAuth2User.getRole().name();
-        
+
         log.info("User {} logged in successfully with role {}", oAuth2User.getEmail(), userRole);
-        
+
         // Redirect to frontend auth callback page which will handle the post-auth flow
         return UriComponentsBuilder.fromUriString(frontendUrl)
                 .path("/auth/callback")

@@ -1,5 +1,6 @@
 package com.example.smart.lighting.scenes.with_natural.language.service;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.mqtt.support.MqttHeaders;
@@ -12,14 +13,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  * Service for MQTT communication with IoT devices.
- * 
+ *
  * <p>Handles publishing commands to ESP32 controllers and receiving
  * status updates and sensor data from connected devices.</p>
- * 
+ *
  * <p>Topic structure follows the pattern:</p>
  * <ul>
  *   <li>{@code {prefix}/command/{controllerId}/led/{index}} - LED commands</li>
@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
  *   <li>{@code {prefix}/status/{controllerId}} - Status updates</li>
  *   <li>{@code {prefix}/sensor/{sensorId}} - Sensor data</li>
  * </ul>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  * @since 2025-01-01
@@ -36,29 +36,29 @@ import org.springframework.beans.factory.annotation.Qualifier;
 @Service
 public class MqttService {
 
+    @Value("${mqtt.topic.prefix}")
+    private String topicPrefix;
+
     private final MessageChannel mqttOutputChannel;
     private final ObjectMapper objectMapper;
 
     /**
      * Constructs the MQTT service with required dependencies.
-     * 
+     *
      * @param mqttOutputChannel the Spring Integration channel for outbound messages
      * @param objectMapper Jackson mapper for JSON serialization
      */
-    public MqttService(@Qualifier("mqttOutputChannel") MessageChannel mqttOutputChannel, 
+    public MqttService(@Qualifier("mqttOutputChannel") MessageChannel mqttOutputChannel,
                        ObjectMapper objectMapper) {
         this.mqttOutputChannel = mqttOutputChannel;
         this.objectMapper = objectMapper;
     }
 
-    @Value("${mqtt.topic.prefix}")
-    private String topicPrefix;
-
     /**
      * Publishes a message to an MQTT topic.
-     * 
+     *
      * <p>The payload is automatically serialized to JSON before sending.</p>
-     * 
+     *
      * @param topic the MQTT topic to publish to
      * @param payload the message payload (will be JSON-serialized)
      */
@@ -69,7 +69,7 @@ public class MqttService {
                 .withPayload(jsonPayload)
                 .setHeader(MqttHeaders.TOPIC, topic)
                 .build();
-            
+
             boolean sent = mqttOutputChannel.send(message, 5000);
             if (sent) {
                 log.debug("Published to {}: {}", topic, jsonPayload);
@@ -83,22 +83,27 @@ public class MqttService {
 
     /**
      * Handles incoming MQTT messages from IoT devices.
-     * 
+     *
      * <p>Routes messages to appropriate handlers based on topic:</p>
      * <ul>
      *   <li>Status topics → {@link #handleStatusMessage}</li>
      *   <li>Sensor topics → {@link #handleSensorMessage}</li>
      * </ul>
-     * 
+     *
      * @param message the incoming Spring Integration message
      */
     @ServiceActivator(inputChannel = "mqttInputChannel")
     public void handleIncomingMessage(Message<?> message) {
         String topic = (String) message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC);
+        if (topic == null) {
+            log.warn("Received MQTT message without topic header");
+            return;
+        }
+
         String payload = message.getPayload().toString();
-        
+
         log.debug("Received from {}: {}", topic, payload);
-        
+
         // Route to appropriate handler based on topic
         if (topic.contains("/status/")) {
             handleStatusMessage(topic, payload);
@@ -108,7 +113,7 @@ public class MqttService {
     }
 
     /**
-     * Handle device status messages
+     * Handle device status messages.
      */
     private void handleStatusMessage(String topic, String payload) {
         try {
@@ -125,7 +130,7 @@ public class MqttService {
     }
 
     /**
-     * Handle sensor data messages
+     * Handle sensor data messages.
      */
     private void handleSensorMessage(String topic, String payload) {
         try {
@@ -143,7 +148,7 @@ public class MqttService {
 
     /**
      * Sends a command to control a specific LED.
-     * 
+     *
      * @param controllerId the ESP32 controller identifier
      * @param ledIndex the LED index (0-based, corresponds to room)
      * @param command the LED command with RGB, brightness, and on/off state
@@ -155,7 +160,7 @@ public class MqttService {
 
     /**
      * Sends a scene activation command to a controller.
-     * 
+     *
      * @param controllerId the ESP32 controller identifier
      * @param sceneName the name of the scene to activate (e.g., "evening", "movie")
      */
@@ -166,7 +171,7 @@ public class MqttService {
 
     /**
      * Sends a global command affecting all LEDs on a controller.
-     * 
+     *
      * @param controllerId the ESP32 controller identifier
      * @param command the global command (on/off, brightness, mode)
      */
@@ -177,7 +182,7 @@ public class MqttService {
 
     /**
      * Command payload for controlling individual LEDs.
-     * 
+     *
      * @param rgb RGB color values as array [r, g, b] (0-255 each)
      * @param brightness brightness level (0-100)
      * @param on whether the LED should be on or off
@@ -186,20 +191,20 @@ public class MqttService {
         int[] rgb,
         int brightness,
         boolean on
-    ) {}
+    ) { }
 
     /**
      * Command payload for activating lighting scenes.
-     * 
+     *
      * @param sceneName the predefined scene name
      */
     public record SceneCommand(
         String sceneName
-    ) {}
+    ) { }
 
     /**
      * Command payload for global lighting operations.
-     * 
+     *
      * @param action the action: "on", "off", or "brightness"
      * @param brightness optional brightness level (0-100)
      * @param mode operation mode: "auto" or "manual"
@@ -208,6 +213,5 @@ public class MqttService {
         String action,
         Integer brightness,
         String mode
-    ) {}
+    ) { }
 }
-

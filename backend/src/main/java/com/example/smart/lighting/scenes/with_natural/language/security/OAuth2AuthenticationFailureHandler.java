@@ -20,23 +20,23 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
     private String[] allowedOrigins;
 
     @Override
-    public void onAuthenticationFailure(HttpServletRequest request, 
+    public void onAuthenticationFailure(HttpServletRequest request,
                                         HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
-        
+
         String targetUrl = getFailureUrl(exception);
 
         log.error("OAuth2 authentication failed", exception);
-        
+
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 
     private String getFailureUrl(AuthenticationException exception) {
         // Get the frontend URL
         String frontendUrl = allowedOrigins.length > 0 ? allowedOrigins[0] : "http://localhost:5173";
-        
+
         String errorMessage = exception.getMessage();
-        
+
         return UriComponentsBuilder.fromUriString(frontendUrl)
                 .path("/auth/callback")
                 .queryParam("error", "authentication_failed")

@@ -58,6 +58,7 @@ public class CustomOAuth2User implements OidcUser, Serializable {
         return oidcUser.getIdToken();
     }
 
+    @Override
     public String getEmail() {
         return user.getEmail();
     }

@@ -14,11 +14,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +27,7 @@ public class AutomationService {
 
     private final MqttService mqttService;
     private final ResourceLoader resourceLoader;
-    
+
     @Value("${rules.file-path}")
     private String rulesFilePath;
 
@@ -49,8 +45,9 @@ public class AutomationService {
     }
 
     /**
-     * Load automations from YAML file
+     * Load automations from YAML file.
      */
+    @SuppressWarnings("unchecked")
     public void loadAutomations() {
         try {
             Resource resource = resourceLoader.getResource(rulesFilePath);
@@ -59,13 +56,13 @@ public class AutomationService {
                     resource.getInputStream(),
                     List.class
                 );
-                
+
                 for (Map<String, Object> yamlMap : yamlList) {
                     Automation automation = yamlMapper.convertValue(yamlMap, Automation.class);
                     automations.put(automation.getId(), automation);
                     log.info("Loaded automation: {} ({})", automation.getId(), automation.getAlias());
                 }
-                
+
                 log.info("Loaded {} automations from {}", automations.size(), rulesFilePath);
             } else {
                 log.warn("Automation file not found: {}", rulesFilePath);
@@ -76,7 +73,7 @@ public class AutomationService {
     }
 
     /**
-     * Reload automations from file
+     * Reload automations from file.
      */
     public void reloadAutomations() {
         automations.clear();
@@ -84,21 +81,21 @@ public class AutomationService {
     }
 
     /**
-     * Get all automations
+     * Get all automations.
      */
     public List<Automation> getAllAutomations() {
         return new ArrayList<>(automations.values());
     }
 
     /**
-     * Get automation by ID
+     * Get automation by ID.
      */
     public Automation getAutomation(String id) {
         return automations.get(id);
     }
 
     /**
-     * Execute automation action
+     * Execute automation action.
      */
     public void executeAutomation(String automationId) {
         Automation automation = automations.get(automationId);
@@ -113,18 +110,18 @@ public class AutomationService {
         }
 
         log.info("Executing automation: {} ({})", automationId, automation.getAlias());
-        
+
         for (Automation.Action action : automation.getActions()) {
             executeAction(action);
         }
     }
 
     /**
-     * Execute a single action
+     * Execute a single action.
      */
     private void executeAction(Automation.Action action) {
         String service = action.getAction() != null ? action.getAction() : action.getService();
-        
+
         if (service == null) {
             log.warn("Action has no service defined");
             return;
@@ -145,7 +142,7 @@ public class AutomationService {
             if ("light".equals(domain)) {
                 handleLightService(serviceName, action.getTarget(), action.getData());
             } else if ("scene".equals(domain)) {
-                handleSceneService(serviceName, action.getTarget(), action.getData());
+                handleSceneService(serviceName, action.getTarget());
             } else {
                 log.warn("Unknown service domain: {}", domain);
             }
@@ -155,42 +152,43 @@ public class AutomationService {
     }
 
     /**
-     * Handle light service calls
+     * Handle light service calls.
      */
     private void handleLightService(String service, Map<String, Object> target, Map<String, Object> data) {
-        // Get entity IDs from target
-        Object entityId = target != null ? target.get("entity_id") : null;
-        
-        String controllerId = "esp32-001"; // TODO: Get from entity registry
-        
+        // Extract controller ID from target if provided, otherwise use default
+        String controllerId = "esp32-001";
+        if (target != null && target.containsKey("controller_id")) {
+            controllerId = (String) target.get("controller_id");
+        }
+
         switch (service) {
             case "turn_on":
-                int[] rgb = data != null && data.containsKey("rgb_color") 
-                    ? parseRgbColor(data.get("rgb_color")) 
+                int[] rgb = data != null && data.containsKey("rgb_color")
+                    ? parseRgbColor(data.get("rgb_color"))
                     : new int[]{255, 255, 255};
-                    
-                int brightness = data != null && data.containsKey("brightness") 
-                    ? ((Number) data.get("brightness")).intValue() 
+
+                int brightness = data != null && data.containsKey("brightness")
+                    ? ((Number) data.get("brightness")).intValue()
                     : 100;
-                    
+
                 mqttService.sendLedCommand(controllerId, 0, new MqttService.LedCommand(rgb, brightness, true));
                 log.info("Sent turn_on command: RGB={}, Brightness={}", rgb, brightness);
                 break;
-                
+
             case "turn_off":
                 mqttService.sendGlobalCommand(controllerId, new MqttService.GlobalCommand("off", null, null));
                 log.info("Sent turn_off command");
                 break;
-                
+
             default:
                 log.warn("Unknown light service: {}", service);
         }
     }
 
     /**
-     * Handle scene service calls
+     * Handle scene service calls.
      */
-    private void handleSceneService(String service, Map<String, Object> target, Map<String, Object> data) {
+    private void handleSceneService(String service, Map<String, Object> target) {
         if ("turn_on".equals(service) && target != null) {
             String sceneName = (String) target.get("entity_id");
             if (sceneName != null) {
@@ -202,7 +200,7 @@ public class AutomationService {
     }
 
     /**
-     * Parse RGB color from various formats
+     * Parse RGB color from various formats.
      */
     private int[] parseRgbColor(Object colorObj) {
         if (colorObj instanceof List) {
@@ -217,15 +215,16 @@ public class AutomationService {
     }
 
     /**
-     * Check if a trigger condition is met
+     * Check if a trigger condition is met.
      */
     public boolean evaluateTrigger(Automation.Trigger trigger, Map<String, Object> context) {
         // TODO: Implement trigger evaluation based on type
+        log.debug("Evaluating trigger: {}", trigger);
         return false;
     }
 
     /**
-     * Check if all conditions are met
+     * Check if all conditions are met.
      */
     public boolean evaluateConditions(List<Automation.Condition> conditions, Map<String, Object> context) {
         if (conditions == null || conditions.isEmpty()) {
@@ -233,7 +232,7 @@ public class AutomationService {
         }
 
         for (Automation.Condition condition : conditions) {
-            if (!evaluateCondition(condition, context)) {
+            if (!evaluateCondition(condition)) {
                 return false;
             }
         }
@@ -241,11 +240,11 @@ public class AutomationService {
     }
 
     /**
-     * Evaluate a single condition
+     * Evaluate a single condition.
      */
-    private boolean evaluateCondition(Automation.Condition condition, Map<String, Object> context) {
+    private boolean evaluateCondition(Automation.Condition condition) {
         // TODO: Implement condition evaluation based on type
+        log.debug("Evaluating condition: {}", condition);
         return true;
     }
 }
-

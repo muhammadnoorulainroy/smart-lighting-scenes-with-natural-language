@@ -37,11 +37,11 @@ public class OpenAIService {
     }
 
     /**
-     * Parse natural language command into structured format
+     * Parse natural language command into structured format.
      */
     public ParsedCommand parseCommand(String userInput, List<String> availableRooms) {
         String systemPrompt = buildSystemPrompt(availableRooms);
-        
+
         List<ChatMessage> messages = new ArrayList<>();
         messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
         messages.add(new ChatMessage(ChatMessageRole.USER.value(), userInput));
@@ -67,9 +67,9 @@ public class OpenAIService {
     private String buildSystemPrompt(List<String> availableRooms) {
         return String.format("""
             You are a smart home lighting assistant. Parse user commands into JSON format.
-            
+
             Available rooms: %s
-            
+
             Output ONLY valid JSON in this format:
             {
               "action": "set_color|set_brightness|turn_on|turn_off|create_scene",
@@ -78,20 +78,20 @@ public class OpenAIService {
               "brightness": number 0-100 or null,
               "rgb": [r,g,b] or null
             }
-            
+
             Examples:
-            - "turn on bedroom lights" → {"action":"turn_on","room":"bedroom","color":null,"brightness":null,"rgb":null}
-            - "set living room to red" → {"action":"set_color","room":"living","color":"red","brightness":null,"rgb":[255,0,0]}
-            - "dim kitchen to 30%%" → {"action":"set_brightness","room":"kitchen","color":null,"brightness":30,"rgb":null}
-            - "turn off all lights" → {"action":"turn_off","room":null,"color":null,"brightness":null,"rgb":null}
-            - "make bedroom purple 50%%" → {"action":"set_color","room":"bedroom","color":"purple","brightness":50,"rgb":[128,0,128]}
-            
+            - "turn on bedroom lights" -> {"action":"turn_on","room":"bedroom"}
+            - "set living room to red" -> {"action":"set_color","room":"living","color":"red","rgb":[255,0,0]}
+            - "dim kitchen to 30%%" -> {"action":"set_brightness","room":"kitchen","brightness":30}
+            - "turn off all lights" -> {"action":"turn_off","room":null}
+            - "make bedroom purple 50%%" -> {"action":"set_color","room":"bedroom","brightness":50,"rgb":[128,0,128]}
+
             Color mappings:
             - red: [255,0,0], green: [0,255,0], blue: [0,0,255]
             - yellow: [255,255,0], cyan: [0,255,255], magenta: [255,0,255]
             - orange: [255,128,0], purple: [128,0,255], pink: [255,0,128]
             - white: [255,255,255], warm: [255,200,150], cool: [200,220,255]
-            
+
             Always respond with valid JSON only, no explanations.
             """, String.join(", ", availableRooms));
     }
@@ -100,14 +100,14 @@ public class OpenAIService {
         try {
             // Remove markdown code blocks if present
             String json = response.replaceAll("```json\n?", "").replaceAll("```\n?", "").trim();
-            
+
             // Simple JSON parsing (you can use Jackson for more robust parsing)
             String action = extractValue(json, "action");
             String room = extractValue(json, "room");
             String color = extractValue(json, "color");
             Integer brightness = extractIntValue(json, "brightness");
             int[] rgb = extractRgbValue(json, "rgb");
-            
+
             return new ParsedCommand(action, room, color, brightness, rgb, null);
         } catch (Exception e) {
             log.error("Failed to parse OpenAI response: {}", e.getMessage());
@@ -156,6 +156,5 @@ public class OpenAIService {
         Integer brightness,
         int[] rgb,
         String error
-    ) {}
+    ) { }
 }
-

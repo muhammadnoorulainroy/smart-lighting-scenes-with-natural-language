@@ -22,7 +22,7 @@ public class WebSocketEventService {
             .data(state)
             .timestamp(System.currentTimeMillis())
             .build();
-        
+
         messagingTemplate.convertAndSend("/topic/device-state", message);
         log.debug("Broadcasted device state change for device: {}", deviceId);
     }
@@ -37,7 +37,7 @@ public class WebSocketEventService {
             ))
             .timestamp(System.currentTimeMillis())
             .build();
-        
+
         messagingTemplate.convertAndSend("/topic/scenes", message);
         log.info("Broadcasted scene applied: {}", sceneName);
     }
@@ -51,7 +51,7 @@ public class WebSocketEventService {
             ))
             .timestamp(System.currentTimeMillis())
             .build();
-        
+
         messagingTemplate.convertAndSend("/topic/rules", message);
         log.info("Broadcasted rule triggered: {}", ruleName);
     }
@@ -65,7 +65,7 @@ public class WebSocketEventService {
             ))
             .timestamp(System.currentTimeMillis())
             .build();
-        
+
         messagingTemplate.convertAndSend("/topic/system", message);
         log.debug("Broadcasted system event: {}", eventType);
     }
