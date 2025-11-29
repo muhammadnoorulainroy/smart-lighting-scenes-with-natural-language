@@ -10,7 +10,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,14 +27,14 @@ import java.util.stream.Collectors;
 
 /**
  * REST controller for managing smart lighting devices.
- * 
+ *
  * <p>Provides CRUD operations for devices within rooms. Access is restricted
  * based on user roles:</p>
  * <ul>
  *   <li>OWNER - Full access (create, read, update, delete)</li>
  *   <li>RESIDENT - Read-only access</li>
  * </ul>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  * @see Device
@@ -45,7 +54,7 @@ public class DevicesController {
     @GetMapping
     public ResponseEntity<List<DeviceDto>> getAllDevices(@RequestParam(required = false) UUID roomId) {
         log.debug("Fetching devices with roomId filter: {}", roomId);
-        
+
         List<Device> devices;
         if (roomId != null) {
             devices = deviceRepository.findByRoomId(roomId);
@@ -54,7 +63,7 @@ public class DevicesController {
             devices = deviceRepository.findAll();
             log.info("Retrieved {} total devices", devices.size());
         }
-        
+
         List<DeviceDto> deviceDtos = devices.stream()
             .map(this::toDto)
             .collect(Collectors.toList());
@@ -64,15 +73,15 @@ public class DevicesController {
     @PostMapping
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<DeviceDto> createDevice(@RequestBody DeviceDto deviceDto) {
-        log.debug("Creating device: name={}, type={}, roomId={}", 
+        log.debug("Creating device: name={}, type={}, roomId={}",
             deviceDto.getName(), deviceDto.getType(), deviceDto.getRoomId());
-        
+
         Room room = roomRepository.findById(deviceDto.getRoomId())
             .orElseThrow(() -> {
                 log.error("Failed to create device: room {} not found", deviceDto.getRoomId());
                 return new RuntimeException("Room not found");
             });
-        
+
         Device device = Device.builder()
             .room(room)
             .type(Device.DeviceType.valueOf(deviceDto.getType()))
@@ -80,9 +89,9 @@ public class DevicesController {
             .mqttCmdTopic(deviceDto.getMqttCmdTopic())
             .mqttStateTopic(deviceDto.getMqttStateTopic())
             .metaJson(deviceDto.getMetaJson() != null ? deviceDto.getMetaJson() : new java.util.HashMap<>())
-            .isActive(deviceDto.getIsActive() != null ? deviceDto.getIsActive() : true)
+            .isActive(deviceDto.getIsActive() != null && deviceDto.getIsActive())
             .build();
-        
+
         device = deviceRepository.save(device);
         log.info("Device created: id={}, name={}, room={}", device.getId(), device.getName(), room.getName());
         return ResponseEntity.ok(toDto(device));
@@ -92,24 +101,24 @@ public class DevicesController {
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<DeviceDto> updateDevice(@PathVariable UUID deviceId, @RequestBody DeviceDto deviceDto) {
         log.debug("Updating device: id={}", deviceId);
-        
+
         Device device = deviceRepository.findById(deviceId)
             .orElseThrow(() -> {
                 log.error("Failed to update device: device {} not found", deviceId);
                 return new RuntimeException("Device not found");
             });
-        
+
         if (deviceDto.getRoomId() != null && !deviceDto.getRoomId().equals(device.getRoom().getId())) {
             Room room = roomRepository.findById(deviceDto.getRoomId())
                 .orElseThrow(() -> {
                     log.error("Failed to update device: room {} not found", deviceDto.getRoomId());
                     return new RuntimeException("Room not found");
                 });
-            log.info("Moving device {} from room {} to room {}", 
+            log.info("Moving device {} from room {} to room {}",
                 device.getName(), device.getRoom().getName(), room.getName());
             device.setRoom(room);
         }
-        
+
         if (deviceDto.getName() != null) {
             device.setName(deviceDto.getName());
         }
@@ -131,7 +140,7 @@ public class DevicesController {
             }
             device.setIsActive(deviceDto.getIsActive());
         }
-        
+
         device = deviceRepository.save(device);
         log.info("Device updated: id={}, name={}", device.getId(), device.getName());
         return ResponseEntity.ok(toDto(device));
@@ -141,12 +150,12 @@ public class DevicesController {
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<Void> deleteDevice(@PathVariable UUID deviceId) {
         log.debug("Deleting device: id={}", deviceId);
-        
+
         if (!deviceRepository.existsById(deviceId)) {
             log.warn("Attempted to delete non-existent device: id={}", deviceId);
             return ResponseEntity.notFound().build();
         }
-        
+
         deviceRepository.deleteById(deviceId);
         log.info("Device deleted: id={}", deviceId);
         return ResponseEntity.noContent().build();
@@ -165,7 +174,7 @@ public class DevicesController {
             .isActive(device.getIsActive())
             .createdAt(device.getCreatedAt())
             .updatedAt(device.getUpdatedAt());
-        
+
         if (device.getDeviceState() != null) {
             builder.deviceState(DeviceStateDto.builder()
                 .isOn(device.getDeviceState().getIsOn())
@@ -176,8 +185,7 @@ public class DevicesController {
                 .updatedAt(device.getDeviceState().getUpdatedAt())
                 .build());
         }
-        
+
         return builder.build();
     }
 }
-

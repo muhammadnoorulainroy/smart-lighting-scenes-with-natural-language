@@ -8,7 +8,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -24,7 +28,7 @@ public class LightingController {
     private final AutomationService automationService;
 
     /**
-     * Natural language command endpoint
+     * Natural language command endpoint.
      */
     @PostMapping("/command")
     public ResponseEntity<?> sendCommand(@RequestBody CommandRequest request) {
@@ -66,7 +70,7 @@ public class LightingController {
     }
 
     /**
-     * Direct LED control
+     * Direct LED control.
      */
     @PostMapping("/led/{controllerId}/{ledIndex}")
     public ResponseEntity<?> controlLed(
@@ -87,7 +91,7 @@ public class LightingController {
     }
 
     /**
-     * Global control (all LEDs)
+     * Global control (all LEDs).
      */
     @PostMapping("/global/{controllerId}")
     public ResponseEntity<?> globalControl(
@@ -106,7 +110,7 @@ public class LightingController {
     }
 
     /**
-     * Activate scene
+     * Activate scene.
      */
     @PostMapping("/scene/{controllerId}/{sceneName}")
     public ResponseEntity<?> activateScene(
@@ -119,7 +123,7 @@ public class LightingController {
     }
 
     /**
-     * Execute automation
+     * Execute automation.
      */
     @PostMapping("/automation/{automationId}/execute")
     public ResponseEntity<?> executeAutomation(@PathVariable String automationId) {
@@ -129,7 +133,7 @@ public class LightingController {
     }
 
     /**
-     * Execute parsed command
+     * Execute parsed command.
      */
     private void executeCommand(String controllerId, OpenAIService.ParsedCommand parsed) {
         switch (parsed.action()) {
@@ -168,10 +172,12 @@ public class LightingController {
     }
 
     /**
-     * Map room name to LED index
+     * Map room name to LED index.
      */
     private int getLedIndexForRoom(String room) {
-        if (room == null) return 0;
+        if (room == null) {
+            return 0;
+        }
         return switch (room.toLowerCase()) {
             case "living" -> 0;
             case "bedroom" -> 1;
@@ -183,8 +189,7 @@ public class LightingController {
     }
 
     // Request DTOs
-    public record CommandRequest(String command, String controllerId) {}
-    public record LedControlRequest(int[] rgb, int brightness, boolean on) {}
-    public record GlobalControlRequest(String action, Integer brightness, String mode) {}
+    public record CommandRequest(String command, String controllerId) { }
+    public record LedControlRequest(int[] rgb, int brightness, boolean on) { }
+    public record GlobalControlRequest(String action, Integer brightness, String mode) { }
 }
-

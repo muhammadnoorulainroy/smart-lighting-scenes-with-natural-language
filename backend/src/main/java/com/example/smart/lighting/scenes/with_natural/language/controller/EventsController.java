@@ -10,7 +10,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,14 +35,15 @@ public class EventsController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Integer limit) {
-        
+
+        int effectiveSize = size;
         if (limit != null && limit > 0) {
-            size = limit;
+            effectiveSize = limit;
         }
-        
-        Pageable pageable = PageRequest.of(page, size);
+
+        Pageable pageable = PageRequest.of(page, effectiveSize);
         Page<Event> eventPage = eventRepository.findAllByOrderByTimestampDesc(pageable);
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("content", eventPage.getContent().stream()
             .map(this::toDto)
@@ -47,7 +52,7 @@ public class EventsController {
         response.put("totalPages", eventPage.getTotalPages());
         response.put("size", eventPage.getSize());
         response.put("number", eventPage.getNumber());
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -58,26 +63,25 @@ public class EventsController {
             .type(event.getType().name())
             .detailsJson(event.getDetailsJson() != null ? event.getDetailsJson() : new HashMap<>())
             .causeChain(event.getCauseChain());
-        
+
         if (event.getActorUser() != null) {
             builder.actorUserId(event.getActorUser().getId())
                 .actorUserName(event.getActorUser().getName());
         }
-        
+
         if (event.getDevice() != null) {
             builder.deviceId(event.getDevice().getId())
                 .deviceName(event.getDevice().getName());
         }
-        
+
         if (event.getRuleId() != null) {
             builder.ruleId(event.getRuleId());
         }
-        
+
         if (event.getScene() != null) {
             builder.sceneId(event.getScene().getId());
         }
-        
+
         return builder.build();
     }
 }
-
