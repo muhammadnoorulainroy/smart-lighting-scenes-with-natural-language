@@ -21,4 +21,3 @@ export const usersApi = {
     return response.data
   }
 }
-

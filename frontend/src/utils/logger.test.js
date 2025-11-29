@@ -32,10 +32,7 @@ describe('Logger Utility', () => {
       const data = { key: 'value' }
       logger.debug('TestModule', 'With data', data)
 
-      expect(consoleSpy.debug).toHaveBeenCalledWith(
-        expect.stringContaining('With data'),
-        data
-      )
+      expect(consoleSpy.debug).toHaveBeenCalledWith(expect.stringContaining('With data'), data)
     })
   })
 
@@ -105,13 +102,12 @@ describe('Logger Utility', () => {
       const levels = ['DEBUG', 'INFO', 'WARN', 'ERROR']
       const spies = [consoleSpy.debug, consoleSpy.info, consoleSpy.warn, consoleSpy.error]
 
-      spies.forEach((spy, index) => {
-        const call = spy.mock.calls[0][0]
-        expect(call).toContain(`[${levels[index]}]`)
+      for (let i = 0; i < spies.length; i++) {
+        const call = spies[i].mock.calls[0][0]
+        expect(call).toContain(`[${levels[i]}]`)
         expect(call).toContain(`[${module}]`)
         expect(call).toContain(message)
-      })
+      }
     })
   })
 })
-

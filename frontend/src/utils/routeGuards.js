@@ -10,7 +10,7 @@ import { useAuthStore } from '../stores/auth'
 /**
  * Route guard requiring authentication.
  * Redirects unauthenticated users to home with redirect query.
- * 
+ *
  * @param {Object} to - Target route
  * @param {Object} from - Current route
  * @param {Function} next - Navigation resolver
@@ -37,7 +37,7 @@ export const requireAuth = async (to, from, next) => {
 /**
  * Route guard requiring RESIDENT or OWNER role.
  * Redirects guests to home, unauthorized users to dashboard.
- * 
+ *
  * @param {Object} to - Target route
  * @param {Object} from - Current route
  * @param {Function} next - Navigation resolver
@@ -60,7 +60,7 @@ export const requireResident = async (to, from, next) => {
 /**
  * Route guard requiring OWNER role.
  * Redirects non-owners to dashboard, guests to home.
- * 
+ *
  * @param {Object} to - Target route
  * @param {Object} from - Current route
  * @param {Function} next - Navigation resolver

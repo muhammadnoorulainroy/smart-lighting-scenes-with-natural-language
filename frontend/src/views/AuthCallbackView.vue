@@ -2,18 +2,11 @@
   <div class="flex items-center justify-center min-h-[60vh]">
     <div class="text-center">
       <LoadingSpinner size="lg" message="Completing authentication..." />
-      
+
       <div v-if="error" class="mt-8 max-w-md mx-auto">
-        <ErrorAlert 
-          type="error"
-          title="Authentication Failed"
-          :message="error"
-          @dismiss="goHome"
-        />
-        
-        <button @click="goHome" class="btn btn-primary mt-4">
-          Return Home
-        </button>
+        <ErrorAlert type="error" title="Authentication Failed" :message="error" @dismiss="goHome" />
+
+        <button class="btn btn-primary mt-4" @click="goHome">Return Home</button>
       </div>
     </div>
   </div>
@@ -38,13 +31,13 @@ onMounted(async () => {
       error.value = route.query.error_description || 'Authentication failed. Please try again.'
       return
     }
-    
+
     // Wait a bit for the backend to set the session cookie
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
+
     // Fetch user data
     await authStore.checkAuth()
-    
+
     if (authStore.isAuthenticated) {
       // Redirect to the intended page or dashboard
       const redirect = route.query.redirect || '/dashboard'
@@ -62,9 +55,3 @@ const goHome = () => {
   router.push('/')
 }
 </script>
-
-
-
-
-
-

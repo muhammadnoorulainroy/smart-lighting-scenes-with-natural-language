@@ -64,9 +64,8 @@ const router = createRouter({
       return savedPosition
     } else if (to.hash) {
       return { el: to.hash, behavior: 'smooth' }
-    } else {
-      return { top: 0 }
     }
+    return { top: 0 }
   }
 })
 
@@ -75,7 +74,7 @@ router.beforeEach((to, from, next) => {
   // Set page title
   const baseTitle = 'Smart Lighting Scenes'
   document.title = to.meta.title ? `${to.meta.title} - ${baseTitle}` : baseTitle
-  
+
   next()
 })
 

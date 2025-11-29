@@ -14,10 +14,10 @@ const MODULE = 'AuthStore'
 
 /**
  * Authentication store using Pinia composition API.
- * 
+ *
  * Manages user authentication state, profile data, and role-based access.
  * Integrates with Google OAuth via the backend API.
- * 
+ *
  * @returns {Object} Store instance with state, getters, and actions
  */
 export const useAuthStore = defineStore('auth', () => {

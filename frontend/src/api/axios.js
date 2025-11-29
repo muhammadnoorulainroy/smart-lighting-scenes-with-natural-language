@@ -18,13 +18,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 /**
  * Pre-configured Axios instance for API communication.
- * 
+ *
  * Includes:
  * - Base URL configuration
  * - Credential support for session cookies
  * - Request/response logging
  * - Centralized error handling
- * 
+ *
  * @type {Object}
  */
 const apiClient = axios.create({
