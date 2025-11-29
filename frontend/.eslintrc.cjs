@@ -25,15 +25,14 @@ module.exports = {
     'vue/define-macros-order': ['error', {
       order: ['defineProps', 'defineEmits']
     }],
-    'vue/html-closing-bracket-newline': ['error', {
-      singleline: 'never',
-      multiline: 'always'
-    }],
-    'vue/html-indent': ['error', 2],
-    'vue/max-attributes-per-line': ['error', {
-      singleline: { max: 3 },
-      multiline: { max: 1 }
-    }],
+    // Formatting rules disabled - handled by Prettier
+    'vue/html-closing-bracket-newline': 'off',
+    'vue/html-closing-bracket-spacing': 'off',
+    'vue/html-indent': 'off',
+    'vue/max-attributes-per-line': 'off',
+    'vue/singleline-html-element-content-newline': 'off',
+    'vue/html-self-closing': 'off',
+    'vue/attributes-order': 'off',
     'vue/multi-word-component-names': 'off',
     'vue/no-unused-vars': 'error',
     'vue/no-v-html': 'warn',
@@ -87,4 +86,3 @@ module.exports = {
     'coverage'
   ]
 }
-
