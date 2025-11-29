@@ -6,12 +6,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/smart-lighting-scenes.git"
+    "url": "https://github.com/muhammadnoorulainroy/smart-lighting-scenes.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/smart-lighting-scenes/issues"
+    "url": "https://github.com/muhammadnoorulainroy/smart-lighting-scenes/issues"
   },
-  "homepage": "https://github.com/yourusername/smart-lighting-scenes#readme",
+  "homepage": "https://github.com/muhammadnoorulainroy/smart-lighting-scenes#readme",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"

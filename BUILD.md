@@ -541,7 +541,7 @@ backend/build/libs/Smart-Lighting-Scenes-0.0.1-SNAPSHOT.jar
 **JAR Structure:**
 ```
 BOOT-INF/
-├── classes/           # Your compiled code
+├── classes/           # compiled code
 ├── lib/               # Dependencies (200+ JARs)
 └── classpath.idx      # Classpath index
 META-INF/
