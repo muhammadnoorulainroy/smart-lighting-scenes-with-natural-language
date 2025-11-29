@@ -12,31 +12,31 @@ import java.util.UUID;
 
 /**
  * Repository for {@link Device} entity persistence operations.
- * 
+ *
  * <p>Provides CRUD operations and custom queries for device management,
  * including eager fetching of device state when needed.</p>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  * @see Device
  */
 @Repository
 public interface DeviceRepository extends JpaRepository<Device, UUID> {
-    
+
     /**
      * Finds all devices in a specific room.
      * @param roomId the room UUID
      * @return list of devices in the room
      */
     List<Device> findByRoomId(UUID roomId);
-    
+
     /**
      * Finds all devices of a specific type.
      * @param type the device type
      * @return list of matching devices
      */
     List<Device> findByType(Device.DeviceType type);
-    
+
     /**
      * Finds a device by ID with its state eagerly loaded.
      * @param id the device UUID
@@ -44,7 +44,7 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
      */
     @Query("SELECT d FROM Device d LEFT JOIN FETCH d.deviceState WHERE d.id = :id")
     Optional<Device> findByIdWithState(@Param("id") UUID id);
-    
+
     /**
      * Finds all devices in a room with states eagerly loaded.
      * @param roomId the room UUID
@@ -52,7 +52,7 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
      */
     @Query("SELECT d FROM Device d LEFT JOIN FETCH d.deviceState WHERE d.room.id = :roomId")
     List<Device> findByRoomIdWithState(@Param("roomId") UUID roomId);
-    
+
     /**
      * Finds a device by room and name.
      * @param roomId the room UUID
@@ -60,7 +60,7 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
      * @return optional containing the device
      */
     Optional<Device> findByRoomIdAndName(UUID roomId, String name);
-    
+
     /**
      * Checks if a device with the given name exists in the room.
      * @param roomId the room UUID

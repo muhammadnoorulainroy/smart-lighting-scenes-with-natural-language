@@ -13,14 +13,14 @@ import java.util.List;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
-    
+
     Page<Event> findAllByOrderByTimestampDesc(Pageable pageable);
-    
+
     Page<Event> findByTypeOrderByTimestampDesc(Event.EventType type, Pageable pageable);
-    
+
     @Query("SELECT e FROM Event e WHERE e.timestamp >= :since ORDER BY e.timestamp DESC")
     Page<Event> findRecentEvents(@Param("since") LocalDateTime since, Pageable pageable);
-    
+
     List<Event> findTop10ByOrderByTimestampDesc();
 }
 

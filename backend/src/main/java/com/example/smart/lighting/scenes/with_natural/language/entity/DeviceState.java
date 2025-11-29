@@ -1,6 +1,13 @@
 package com.example.smart.lighting.scenes.with_natural.language.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +19,7 @@ import java.util.UUID;
 
 /**
  * Entity representing the current state of a lighting device.
- * 
+ *
  * <p>Stores real-time device state including:</p>
  * <ul>
  *   <li>Power state (on/off)</li>
@@ -20,9 +27,9 @@ import java.util.UUID;
  *   <li>Color temperature in mireds</li>
  *   <li>RGB color as hex string (#RRGGBB)</li>
  * </ul>
- * 
+ *
  * <p>State is updated via MQTT messages from ESP32 controllers.</p>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  * @see Device

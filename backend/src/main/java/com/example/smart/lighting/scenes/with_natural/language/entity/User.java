@@ -1,6 +1,13 @@
 package com.example.smart.lighting.scenes.with_natural.language.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +21,7 @@ import java.util.UUID;
 
 /**
  * Entity representing a user in the smart lighting system.
- * 
+ *
  * <p>Users authenticate via OAuth (Google) and are assigned roles that
  * determine their access level:</p>
  * <ul>
@@ -22,7 +29,7 @@ import java.util.UUID;
  *   <li>{@link UserRole#RESIDENT} - Can control devices and create scenes</li>
  *   <li>{@link UserRole#GUEST} - Limited read-only access</li>
  * </ul>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  * @see UserRole
@@ -78,11 +85,11 @@ public class User implements Serializable {
      * User roles defining access levels in the system.
      */
     public enum UserRole {
-        /** Full administrative access */
+        /** Full administrative access. */
         OWNER,
-        /** Can control devices and manage scenes */
+        /** Can control devices and manage scenes. */
         RESIDENT,
-        /** Limited read-only access */
+        /** Limited read-only access. */
         GUEST
     }
 
@@ -90,9 +97,9 @@ public class User implements Serializable {
      * Supported OAuth authentication providers.
      */
     public enum OAuthProvider {
-        /** Google OAuth 2.0 */
+        /** Google OAuth 2.0. */
         GOOGLE,
-        /** Local authentication (reserved for future use) */
+        /** Local authentication (reserved for future use). */
         LOCAL
     }
 }

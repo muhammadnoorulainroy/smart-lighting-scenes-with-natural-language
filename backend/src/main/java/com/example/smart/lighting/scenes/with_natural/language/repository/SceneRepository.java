@@ -11,13 +11,13 @@ import java.util.UUID;
 
 @Repository
 public interface SceneRepository extends JpaRepository<Scene, UUID> {
-    
+
     List<Scene> findByOwnerId(UUID ownerId);
-    
+
     List<Scene> findByIsGlobalTrue();
-    
+
     @Query("SELECT s FROM Scene s WHERE s.owner.id = :ownerId OR s.isGlobal = true")
     List<Scene> findAvailableForUser(@Param("ownerId") UUID ownerId);
-    
+
     boolean existsByNameAndOwnerId(String name, UUID ownerId);
 }

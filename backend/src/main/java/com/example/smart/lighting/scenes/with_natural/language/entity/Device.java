@@ -1,6 +1,19 @@
 package com.example.smart.lighting.scenes.with_natural.language.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,13 +30,13 @@ import java.util.UUID;
 
 /**
  * Entity representing a smart lighting device in the system.
- * 
+ *
  * <p>A device belongs to a {@link Room} and communicates via MQTT topics.
  * Each device has a type (LIGHT, SENSOR, or SWITCH) and maintains its
  * current state through a linked {@link DeviceState} entity.</p>
- * 
+ *
  * <p>Device names must be unique within a room (enforced by database constraint).</p>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  * @see Room
@@ -83,11 +96,11 @@ public class Device {
      * Enumeration of supported device types.
      */
     public enum DeviceType {
-        /** RGB or white light fixture */
+        /** RGB or white light fixture. */
         LIGHT,
-        /** Environmental sensor (temperature, humidity, motion) */
+        /** Environmental sensor (temperature, humidity, motion). */
         SENSOR,
-        /** Physical wall switch or relay */
+        /** Physical wall switch or relay. */
         SWITCH
     }
 }
