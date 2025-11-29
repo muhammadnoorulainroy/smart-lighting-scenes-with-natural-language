@@ -55,6 +55,10 @@ public class Room {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "is_default")
+    @Builder.Default
+    private Boolean isDefault = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;

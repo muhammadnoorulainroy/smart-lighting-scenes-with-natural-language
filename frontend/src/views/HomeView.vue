@@ -199,8 +199,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AuthButton from '../components/AuthButton.vue'
 import AuthModal from '../components/AuthModal.vue'
@@ -215,6 +215,7 @@ import {
 } from '../components/home/icons.js'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const demoCommand = ref('')
 const demoResult = ref('')
@@ -235,11 +236,27 @@ const examples = [
   'Turn off all lights at 11 PM'
 ]
 
-onMounted(() => {
+// Show auth modal when redirected from protected route
+const checkAuthRequired = () => {
   if (route.query.requiresAuth === 'true') {
     showAuthModal.value = true
+    // Clean up the URL query param
+    router.replace({ query: {} })
   }
-})
+}
+
+onMounted(checkAuthRequired)
+
+// Watch for query changes (when already on home page)
+watch(
+  () => route.query.requiresAuth,
+  newVal => {
+    if (newVal === 'true') {
+      showAuthModal.value = true
+      router.replace({ query: {} })
+    }
+  }
+)
 
 const scrollToDemo = () => demoSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 

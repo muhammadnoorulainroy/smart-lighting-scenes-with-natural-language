@@ -94,8 +94,12 @@ public class RoomsController {
     @DeleteMapping("/{roomId}")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<Void> deleteRoom(@PathVariable UUID roomId) {
-        if (!roomRepository.existsById(roomId)) {
+        Room room = roomRepository.findById(roomId).orElse(null);
+        if (room == null) {
             return ResponseEntity.notFound().build();
+        }
+        if (Boolean.TRUE.equals(room.getIsDefault())) {
+            return ResponseEntity.badRequest().build();
         }
         roomRepository.deleteById(roomId);
         return ResponseEntity.noContent().build();
@@ -110,6 +114,7 @@ public class RoomsController {
             .id(room.getId())
             .name(room.getName())
             .description(room.getDescription())
+            .isDefault(room.getIsDefault() != null && room.getIsDefault())
             .devices(deviceDtos)
             .devicesList(deviceDtos)
             .createdAt(room.getCreatedAt())

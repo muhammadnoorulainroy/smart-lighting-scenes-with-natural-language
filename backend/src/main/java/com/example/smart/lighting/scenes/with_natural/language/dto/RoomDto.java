@@ -18,6 +18,7 @@ public class RoomDto {
     private UUID id;
     private String name;
     private String description;
+    private Boolean isDefault;
     private UUID createdBy;
     private String createdByName;
     private List<DeviceDto> devices;

@@ -52,7 +52,7 @@ const toggleDarkMode = () => {
           <!-- Main Navigation -->
           <div class="hidden md:flex items-center space-x-6">
             <RouterLink to="/dashboard" class="nav-link"> Dashboard </RouterLink>
-            <RouterLink v-if="authStore.isOwner" to="/owner" class="nav-link"> Owner </RouterLink>
+            <RouterLink to="/rooms" class="nav-link"> Rooms </RouterLink>
             <RouterLink to="/scenes" class="nav-link"> Scenes </RouterLink>
             <RouterLink to="/routines" class="nav-link"> Routines </RouterLink>
             <RouterLink to="/schedules" class="nav-link"> Schedules </RouterLink>
