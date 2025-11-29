@@ -16,7 +16,7 @@ public class StartupRunner implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         String port = env.getProperty("server.port", "8080");
-        
+
         log.info("================================================");
         log.info("  Smart Lighting Backend Started Successfully!");
         log.info("================================================");

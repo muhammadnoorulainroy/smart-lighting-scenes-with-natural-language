@@ -30,11 +30,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOrigins(allowedOrigins)
                 .withSockJS(); // Enable SockJS fallback
-        
+
         // Also register without SockJS for native WebSocket clients
         registry.addEndpoint("/ws-native")
                 .setAllowedOrigins(allowedOrigins);
-        
+
         log.info("WebSocket endpoints registered at /ws and /ws-native");
     }
 }

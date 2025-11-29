@@ -23,17 +23,17 @@ import java.util.List;
 
 /**
  * Spring Security configuration for the Smart Lighting application.
- * 
+ *
  * <p>Configures OAuth2 login with Google, role-based access control,
  * CORS settings, and session management.</p>
- * 
+ *
  * <h3>Role Hierarchy:</h3>
  * <ul>
  *   <li>OWNER - Full access to all endpoints</li>
  *   <li>RESIDENT - Access to devices, rooms, and scenes</li>
  *   <li>GUEST - Basic read-only access</li>
  * </ul>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  * @see CustomOAuth2UserService
@@ -131,7 +131,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

@@ -1,7 +1,6 @@
 package com.example.smart.lighting.scenes.with_natural.language.config;
 
 import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
-import org.eclipse.paho.mqttv5.common.MqttException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,7 +9,6 @@ import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.mqtt.core.Mqttv5ClientManager;
 import org.springframework.integration.mqtt.inbound.Mqttv5PahoMessageDrivenChannelAdapter;
 import org.springframework.integration.mqtt.outbound.Mqttv5PahoMessageHandler;
-import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 
@@ -61,14 +59,14 @@ public class MqttConfig {
         options.setConnectionTimeout(connectionTimeout);
         options.setKeepAliveInterval(keepAliveInterval);
         options.setCleanStart(false);
-        
+
         if (username != null && !username.isEmpty()) {
             options.setUserName(username);
         }
         if (password != null && !password.isEmpty()) {
             options.setPassword(password.getBytes());
         }
-        
+
         log.info("MQTT Connection Options configured for broker: {}", brokerUrl);
         return options;
     }
@@ -91,7 +89,7 @@ public class MqttConfig {
     @Bean
     public Mqttv5PahoMessageDrivenChannelAdapter mqttStatusInbound() {
         String[] topics = {statusTopic, sensorTopic};
-        Mqttv5PahoMessageDrivenChannelAdapter adapter = 
+        Mqttv5PahoMessageDrivenChannelAdapter adapter =
             new Mqttv5PahoMessageDrivenChannelAdapter(mqttClientManager(), topics);
         // Using default message converter
         adapter.setQos(qos);
@@ -119,4 +117,3 @@ public class MqttConfig {
         return messageHandler;
     }
 }
-
