@@ -10,10 +10,10 @@ import java.util.UUID;
 
 /**
  * Data Transfer Object for User entities.
- * 
+ *
  * <p>Used for API responses containing user profile information.
  * Excludes sensitive data like OAuth tokens.</p>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  */

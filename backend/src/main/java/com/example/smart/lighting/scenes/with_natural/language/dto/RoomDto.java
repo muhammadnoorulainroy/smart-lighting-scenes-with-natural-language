@@ -23,7 +23,7 @@ public class RoomDto {
     private List<DeviceDto> devices;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     @Builder.Default
     private List<DeviceDto> devicesList = new ArrayList<>();
 }

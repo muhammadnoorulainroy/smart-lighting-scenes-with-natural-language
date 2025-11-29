@@ -26,7 +26,7 @@ public class EventDto {
     private UUID sceneId;
     private Map<String, Object> detailsJson;
     private Map<String, Object> causeChain;
-    
+
     @Builder.Default
     private Map<String, Object> details = new HashMap<>();
 }

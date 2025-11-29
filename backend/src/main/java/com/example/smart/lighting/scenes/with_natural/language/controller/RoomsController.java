@@ -14,7 +14,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
@@ -52,16 +60,16 @@ public class RoomsController {
     public ResponseEntity<RoomDto> createRoom(
             @RequestBody RoomDto roomDto,
             @AuthenticationPrincipal CustomOAuth2User currentUser) {
-        
+
         User creator = userRepository.findById(currentUser.getUser().getId())
             .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         Room room = Room.builder()
             .name(roomDto.getName())
             .description(roomDto.getDescription())
             .createdBy(creator)
             .build();
-        
+
         room = roomRepository.save(room);
         return ResponseEntity.ok(toDto(room));
     }
@@ -71,10 +79,14 @@ public class RoomsController {
     public ResponseEntity<RoomDto> updateRoom(@PathVariable UUID roomId, @RequestBody RoomDto roomDto) {
         Room room = roomRepository.findById(roomId)
             .orElseThrow(() -> new RuntimeException("Room not found"));
-        
-        if (roomDto.getName() != null) room.setName(roomDto.getName());
-        if (roomDto.getDescription() != null) room.setDescription(roomDto.getDescription());
-        
+
+        if (roomDto.getName() != null) {
+            room.setName(roomDto.getName());
+        }
+        if (roomDto.getDescription() != null) {
+            room.setDescription(roomDto.getDescription());
+        }
+
         room = roomRepository.save(room);
         return ResponseEntity.ok(toDto(room));
     }
@@ -93,7 +105,7 @@ public class RoomsController {
         List<DeviceDto> deviceDtos = room.getDevices().stream()
             .map(this::deviceToDto)
             .collect(Collectors.toList());
-        
+
         RoomDto.RoomDtoBuilder builder = RoomDto.builder()
             .id(room.getId())
             .name(room.getName())
@@ -102,12 +114,12 @@ public class RoomsController {
             .devicesList(deviceDtos)
             .createdAt(room.getCreatedAt())
             .updatedAt(room.getUpdatedAt());
-        
+
         if (room.getCreatedBy() != null) {
             builder.createdBy(room.getCreatedBy().getId())
                 .createdByName(room.getCreatedBy().getName());
         }
-        
+
         return builder.build();
     }
 
@@ -124,7 +136,7 @@ public class RoomsController {
             .isActive(device.getIsActive())
             .createdAt(device.getCreatedAt())
             .updatedAt(device.getUpdatedAt());
-        
+
         if (device.getDeviceState() != null) {
             builder.deviceState(DeviceStateDto.builder()
                 .isOn(device.getDeviceState().getIsOn())
@@ -135,8 +147,7 @@ public class RoomsController {
                 .updatedAt(device.getDeviceState().getUpdatedAt())
                 .build());
         }
-        
+
         return builder.build();
     }
 }
-

@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Automation configuration (similar to Home Assistant automations)
- * Loaded from YAML file
+ * Automation configuration (similar to Home Assistant automations).
+ * Loaded from YAML file.
  */
 @Data
 public class Automation {
@@ -24,10 +24,10 @@ public class Automation {
     @Data
     public static class Trigger {
         private String trigger; // state, time, sun, numeric_state, event, mqtt
-        
+
         @JsonProperty("entity_id")
         private String entityId;
-        
+
         private String from;
         private String to;
         private String platform;
@@ -41,17 +41,17 @@ public class Automation {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Condition {
         private String condition; // state, numeric_state, time, template
-        
+
         @JsonProperty("entity_id")
         private String entityId;
-        
+
         private String state;
         private Integer above;
         private Integer below;
         private String after;
         private String before;
         private List<String> weekday; // List of: mon, tue, wed, thu, fri, sat, sun
-        
+
         @JsonProperty("value_template")
         private String valueTemplate;
     }
@@ -63,9 +63,8 @@ public class Automation {
         private Map<String, Object> target;
         private Map<String, Object> data;
         private String service; // Alternative to action
-        
+
         @JsonProperty("entity_id")
         private String entityId; // Alternative to target
     }
 }
-

@@ -10,7 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,14 +46,14 @@ public class UsersController {
             @PathVariable UUID userId,
             @RequestBody UpdateUserRoleRequest request,
             @AuthenticationPrincipal CustomOAuth2User currentUser) {
-        
+
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         if (user.getId().equals(currentUser.getUser().getId())) {
             return ResponseEntity.badRequest().build();
         }
-        
+
         try {
             user.setRole(User.UserRole.valueOf(request.getRole()));
             user = userRepository.save(user);
@@ -61,14 +67,14 @@ public class UsersController {
     public ResponseEntity<UserDto> disableUser(
             @PathVariable UUID userId,
             @AuthenticationPrincipal CustomOAuth2User currentUser) {
-        
+
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         if (user.getId().equals(currentUser.getUser().getId())) {
             return ResponseEntity.badRequest().build();
         }
-        
+
         user.setIsActive(false);
         user = userRepository.save(user);
         return ResponseEntity.ok(toDto(user));
@@ -78,7 +84,7 @@ public class UsersController {
     public ResponseEntity<UserDto> enableUser(@PathVariable UUID userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         user.setIsActive(true);
         user = userRepository.save(user);
         return ResponseEntity.ok(toDto(user));
@@ -95,4 +101,3 @@ public class UsersController {
             .build();
     }
 }
-

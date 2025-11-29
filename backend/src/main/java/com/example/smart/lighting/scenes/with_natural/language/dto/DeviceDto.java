@@ -12,10 +12,10 @@ import java.util.UUID;
 
 /**
  * Data Transfer Object for Device entities.
- * 
+ *
  * <p>Used for API request/response serialization. Contains device
  * configuration, MQTT topics, and current state information.</p>
- * 
+ *
  * @author Smart Lighting Team
  * @version 1.0
  * @see DeviceStateDto
@@ -37,8 +37,7 @@ public class DeviceDto {
     private DeviceStateDto deviceState;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     @Builder.Default
     private Map<String, Object> metaJsonMap = new HashMap<>();
 }
-
