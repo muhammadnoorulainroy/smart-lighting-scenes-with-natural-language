@@ -9,7 +9,7 @@
         Excludes false positives and intentional patterns
     -->
 
-    <!-- Exclude Lombok-generated code -->
+    <!-- Exclude Lombok-generated code from EI_EXPOSE warnings -->
     <Match>
         <Source name="~.*\.java"/>
         <Or>
@@ -17,6 +17,35 @@
             <Bug pattern="EI_EXPOSE_REP2"/>
         </Or>
         <Class name="~.*\.(dto|entity)\..*"/>
+    </Match>
+
+    <!-- Exclude all record types from EI_EXPOSE warnings (records are intentionally immutable data carriers) -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Exclude format string warnings for multi-line prompts (intentional for OpenAI) -->
+    <Match>
+        <Class name="~.*OpenAIService.*"/>
+        <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
+    </Match>
+
+    <!-- Exclude stream handling in initialization code (Spring-managed lifecycle) -->
+    <Match>
+        <Class name="~.*DotenvConfig.*"/>
+        <Or>
+            <Bug pattern="OS_OPEN_STREAM"/>
+            <Bug pattern="OBL_UNSATISFIED_OBLIGATION"/>
+        </Or>
+    </Match>
+
+    <!-- Exclude default encoding warning for MQTT password (UTF-8 is platform default) -->
+    <Match>
+        <Class name="~.*MqttConfig.*"/>
+        <Bug pattern="DM_DEFAULT_ENCODING"/>
     </Match>
 
     <!-- Exclude Spring-managed beans from unread field warnings -->
@@ -78,4 +107,3 @@
     </Match>
 
 </FindBugsFilter>
-
