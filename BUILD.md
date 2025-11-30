@@ -91,6 +91,7 @@ make clean      # Remove build artifacts
 - Redis client (Lettuce)
 - JWT libraries
 - MQTT client (Eclipse Paho)
+- OpenAI GPT-3 Java client (NLP features)
 - Testing frameworks (JUnit, Mockito, Testcontainers)
 
 **Build Output:**
@@ -177,6 +178,13 @@ frontend/dist/
 | **Docker** | 20+ | Infrastructure | `docker --version` |
 | **Docker Compose** | 2+ | Multi-container orchestration | `docker-compose --version` |
 | **GNU Make** | 3.8+ (optional) | Build orchestration | `make --version` |
+
+### Required API Keys & Credentials
+
+| Credential | Purpose | How to Obtain |
+|------------|---------|---------------|
+| **Google OAuth** | User authentication | [Google Cloud Console](https://console.cloud.google.com) |
+| **OpenAI API Key** | Natural language processing | [OpenAI Platform](https://platform.openai.com) |
 
 ### Quick Check
 
@@ -556,6 +564,29 @@ java -jar backend/build/libs/Smart-Lighting-Scenes-0.0.1-SNAPSHOT.jar
 ```
 
 **Environment Variables:**
+
+Required environment variables (set in `.env` or export):
+```bash
+# Authentication
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+# Natural Language Processing
+OPENAI_API_KEY=sk-your-api-key
+
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=smartlighting
+DB_USER=postgres
+DB_PASSWORD=your-password
+
+# MQTT
+MQTT_BROKER=localhost
+MQTT_PORT=1883
+```
+
+**Run with custom settings:**
 ```bash
 java -jar app.jar \
   --server.port=8080 \
@@ -840,10 +871,18 @@ This project demonstrates professional build automation using:
 - Build time: Minutes of manual work → 60 seconds automated
 - Testing: Automatic test discovery and execution
 - Packaging: One-command deployment artifacts
+- External APIs: OpenAI integration for NLP features
 
 **Key metrics:**
 - Backend: ~200 dependencies, 60s build time, 45MB output
 - Frontend: ~344 dependencies, 20s build time, 180KB output
 - Total: 544 dependencies automatically managed
+
+**Key integrations:**
+- Google OAuth for authentication
+- OpenAI GPT for natural language command processing
+- MQTT for real-time device communication
+- PostgreSQL for data persistence
+- Redis for caching
 
 This multi-tool approach showcases understanding of **appropriate technology selection** and demonstrates the power of modern build automation.

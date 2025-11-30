@@ -49,12 +49,12 @@ Response:
 }
 ```
 
-#### List Users (ADMIN)
+#### List Users (OWNER)
 ```http
 GET /api/users
 ```
 
-#### Update User Role (ADMIN)
+#### Update User Role (OWNER)
 ```http
 PUT /api/users/{userId}/role
 ```
@@ -96,7 +96,7 @@ Response:
 ]
 ```
 
-#### Create Room (ADMIN)
+#### Create Room (OWNER)
 ```http
 POST /api/rooms
 ```
@@ -109,12 +109,12 @@ Body:
 }
 ```
 
-#### Update Room (ADMIN)
+#### Update Room (OWNER)
 ```http
 PUT /api/rooms/{roomId}
 ```
 
-#### Delete Room (ADMIN)
+#### Delete Room (OWNER)
 ```http
 DELETE /api/rooms/{roomId}
 ```
@@ -129,7 +129,7 @@ GET /api/devices
 Query Parameters:
 - `roomId` (optional): Filter by room
 
-#### Create Device (ADMIN)
+#### Create Device (OWNER)
 ```http
 POST /api/devices
 ```
@@ -140,8 +140,8 @@ Body:
   "roomId": "uuid",
   "type": "LIGHT",
   "name": "Desk Lamp",
-  "mqttCmdTopic": "home/bedroom/desk_lamp/cmd",
-  "mqttStateTopic": "home/bedroom/desk_lamp/state",
+  "mqttCmdTopic": "smartlighting/command/esp32-001/led/0",
+  "mqttStateTopic": "smartlighting/status/esp32-001/led/0",
   "meta": {
     "manufacturer": "Philips",
     "model": "Hue Go"
@@ -191,6 +191,25 @@ Query Parameters:
 - `global` (boolean): Include global scenes
 - `ownerId` (uuid): Filter by owner
 
+Response:
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Movie Time",
+    "description": "Dim lighting for movies",
+    "isPreset": false,
+    "target": "living_room",
+    "settings": {
+      "brightness": 20,
+      "colorTemp": "warm",
+      "rgb": [255, 147, 41]
+    },
+    "createdAt": "2025-01-01T12:00:00Z"
+  }
+]
+```
+
 #### Create Scene
 ```http
 POST /api/scenes
@@ -201,29 +220,29 @@ Body:
 {
   "name": "Movie Time",
   "description": "Dim lighting for movies",
-  "actions": [
-    {
-      "deviceId": "uuid",
-      "on": true,
-      "brightness": 20,
-      "colorTemp": "warm"
-    }
-  ],
-  "global": false
+  "target": "living_room",
+  "settings": {
+    "brightness": 20,
+    "colorTemp": "warm",
+    "rgb": [255, 147, 41]
+  }
 }
 ```
 
 #### Apply Scene
 ```http
-POST /api/act/scene/{sceneId}
+POST /api/scenes/{sceneId}/apply
 ```
+
+Query Parameters:
+- `target` (optional): Override target room (e.g., "bedroom", "all")
 
 Response:
 ```json
 {
   "success": true,
   "devicesAffected": 3,
-  "eventId": "uuid"
+  "target": "living_room"
 }
 ```
 
@@ -237,11 +256,11 @@ PUT /api/scenes/{sceneId}
 DELETE /api/scenes/{sceneId}
 ```
 
-### Natural Language & Rules
+### Natural Language Processing (NLP)
 
-#### Parse Natural Language
+#### Parse Command (Preview)
 ```http
-POST /api/nl/parse
+POST /api/nlp/parse
 ```
 
 Body:
@@ -255,33 +274,30 @@ Response:
 ```json
 {
   "understood": true,
-  "dsl": {
-    "triggers": [
-      {
-        "type": "CRON",
-        "expression": "0 7 * * MON-FRI"
-      }
-    ],
-    "conditions": [],
-    "actions": [
-      {
-        "type": "SET_DEVICE_STATE",
-        "target": "living_room_lights",
-        "state": {
-          "on": true,
-          "brightness": 50,
-          "colorTemp": "warm"
-        }
-      }
-    ]
+  "commandType": "schedule",
+  "intent": "create_schedule",
+  "target": "living_room",
+  "action": {
+    "type": "light",
+    "on": true,
+    "brightness": 50,
+    "colorTemp": "warm"
   },
-  "explanation": "This will turn on your living room lights to 50% brightness with warm color every weekday at 7:00 AM"
+  "schedule": {
+    "cronExpression": "0 7 * * MON-FRI",
+    "description": "Every weekday at 7:00 AM"
+  },
+  "explanation": "This will turn on your living room lights to 50% brightness with warm color every weekday at 7:00 AM",
+  "conflictAnalysis": {
+    "hasConflicts": false,
+    "conflicts": []
+  }
 }
 ```
 
-#### Parse and Execute
+#### Execute Command
 ```http
-POST /api/nl/parse_and_execute
+POST /api/nlp/execute
 ```
 
 Body:
@@ -291,45 +307,55 @@ Body:
 }
 ```
 
-#### List Rules
-```http
-GET /api/rules
+Response:
+```json
+{
+  "success": true,
+  "commandType": "immediate",
+  "devicesAffected": 1,
+  "message": "Bedroom lights dimmed to 25%"
+}
 ```
 
-#### Create Rule
+#### Confirm Parsed Command
 ```http
-POST /api/rules
+POST /api/nlp/confirm
+```
+
+Body (from parse response):
+```json
+{
+  "commandType": "schedule",
+  "intent": "create_schedule",
+  "target": "living_room",
+  "action": {...},
+  "schedule": {...}
+}
+```
+
+#### Resolve Schedule Conflict
+```http
+POST /api/nlp/resolve-conflict
 ```
 
 Body:
 ```json
 {
-  "name": "Morning Routine",
-  "description": "Weekday morning lighting",
-  "priority": 100,
-  "jsonDsl": {
-    "triggers": [...],
-    "conditions": [...],
-    "actions": [...]
-  },
-  "naturalLanguageInput": "Original text command",
-  "enabled": true
+  "scheduleId": "uuid",
+  "resolutionId": "adjust_time",
+  "params": {
+    "newTime": "06:45"
+  }
 }
 ```
 
-#### Update Rule
-```http
-PUT /api/rules/{ruleId}
-```
-
-#### Delete Rule
-```http
-DELETE /api/rules/{ruleId}
-```
-
-#### Enable/Disable Rule
-```http
-POST /api/rules/{ruleId}/toggle
+Response:
+```json
+{
+  "success": true,
+  "message": "Schedule adjusted to 6:45 AM to avoid conflict",
+  "updatedSchedule": {...}
+}
 ```
 
 ### Schedules
@@ -342,20 +368,63 @@ GET /api/schedules
 Query Parameters:
 - `from` (datetime): Start date
 - `to` (datetime): End date
-- `active` (boolean): Only active schedules
+- `enabled` (boolean): Only enabled schedules
 
 Response:
 ```json
 [
   {
     "id": "uuid",
-    "ruleId": "uuid",
-    "ruleName": "Evening Lights",
-    "nextFireAt": "2025-01-01T18:00:00Z",
-    "lastFiredAt": "2024-12-31T18:00:00Z",
-    "active": true
+    "name": "Morning Lights",
+    "description": "Turn on lights every morning",
+    "cronExpression": "0 7 * * *",
+    "action": {
+      "type": "scene",
+      "sceneName": "morning",
+      "target": "all"
+    },
+    "enabled": true,
+    "nextFireAt": "2025-01-02T07:00:00Z",
+    "lastFiredAt": "2025-01-01T07:00:00Z",
+    "createdAt": "2025-01-01T00:00:00Z"
   }
 ]
+```
+
+#### Create Schedule
+```http
+POST /api/schedules
+```
+
+Body:
+```json
+{
+  "name": "Evening Lights",
+  "description": "Dim lights for evening",
+  "cronExpression": "0 19 * * *",
+  "action": {
+    "type": "light",
+    "on": true,
+    "brightness": 60,
+    "colorTemp": "warm"
+  },
+  "target": "living_room"
+}
+```
+
+#### Update Schedule
+```http
+PUT /api/schedules/{scheduleId}
+```
+
+#### Delete Schedule
+```http
+DELETE /api/schedules/{scheduleId}
+```
+
+#### Toggle Schedule
+```http
+POST /api/schedules/{scheduleId}/toggle
 ```
 
 #### Get Schedule Conflicts
@@ -365,21 +434,163 @@ GET /api/schedules/conflicts
 
 Response:
 ```json
-[
-  {
-    "device": "living_room_light",
-    "conflicts": [
-      {
-        "rule1Id": "uuid",
-        "rule1Name": "Evening Scene",
-        "rule2Id": "uuid", 
-        "rule2Name": "Movie Time",
-        "overlapTime": "2025-01-01T20:00:00Z",
-        "suggestion": "Consider using priority or merging rules"
-      }
-    ]
+{
+  "hasConflicts": true,
+  "conflicts": [
+    {
+      "schedule1": {
+        "id": "uuid",
+        "name": "Evening Scene"
+      },
+      "schedule2": {
+        "id": "uuid",
+        "name": "Movie Time"
+      },
+      "overlapTime": "2025-01-01T20:00:00Z",
+      "affectedTarget": "living_room",
+      "resolutions": [
+        {
+          "id": "adjust_time",
+          "description": "Move 'Movie Time' to 20:30",
+          "params": {"newTime": "20:30"}
+        },
+        {
+          "id": "disable_one",
+          "description": "Disable 'Evening Scene' on Fridays"
+        },
+        {
+          "id": "merge",
+          "description": "Merge both into a combined evening scene"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### System Configuration (OWNER)
+
+#### Get All Config
+```http
+GET /api/config
+```
+
+Response:
+```json
+{
+  "lighting": {
+    "globalMode": "auto",
+    "autoDimEnabled": true,
+    "sensorOverrideEnabled": true,
+    "minBrightness": 0,
+    "maxBrightness": 100,
+    "luxMin": 50,
+    "luxMax": 2000
+  },
+  "climate": {
+    "tempMin": 20,
+    "tempMax": 28,
+    "tempBlendStrength": 95,
+    "humidityMin": 30,
+    "humidityMax": 70,
+    "saturationAtMinHumidity": 60,
+    "saturationAtMaxHumidity": 100
+  },
+  "audio": {
+    "discoEnabled": true,
+    "audioThreshold": 25,
+    "discoDuration": 3000,
+    "discoSpeed": 100,
+    "flashBrightness": 100
+  },
+  "display": {
+    "oledAutoSleep": true,
+    "oledTimeout": 15,
+    "showSensorData": true,
+    "showTime": true
   }
-]
+}
+```
+
+#### Get Config Category
+```http
+GET /api/config/{category}
+```
+
+Categories: `lighting`, `climate`, `audio`, `display`
+
+#### Update Config Category
+```http
+PUT /api/config/{category}
+```
+
+Body:
+```json
+{
+  "maxBrightness": 80,
+  "autoDimEnabled": false
+}
+```
+
+#### Update All Config
+```http
+PUT /api/config
+```
+
+Body:
+```json
+{
+  "lighting": {...},
+  "climate": {...},
+  "audio": {...},
+  "display": {...}
+}
+```
+
+#### Reset Category to Defaults
+```http
+POST /api/config/{category}/reset
+```
+
+#### Reset All to Defaults
+```http
+POST /api/config/reset
+```
+
+#### Sync Config to Devices
+```http
+POST /api/config/sync
+```
+
+Manually pushes current config to all ESP32 devices via MQTT.
+
+### Lighting Control
+
+#### Set Mode (Auto/Manual)
+```http
+POST /api/lighting/mode
+```
+
+Body:
+```json
+{
+  "mode": "auto",
+  "target": "all"
+}
+```
+
+#### Control Room Lights
+```http
+POST /api/lighting/room/{roomName}
+```
+
+Body:
+```json
+{
+  "on": true,
+  "brightness": 75,
+  "rgb": [255, 200, 150]
+}
 ```
 
 ### Events & Logs
@@ -407,7 +618,8 @@ Response:
       "type": "SCENE_APPLIED",
       "details": {
         "sceneName": "Reading",
-        "devicesAffected": 2
+        "devicesAffected": 2,
+        "target": "bedroom"
       },
       "actorUserId": "uuid",
       "sceneId": "uuid"
@@ -429,55 +641,20 @@ Response:
 ```json
 {
   "eventId": "uuid",
-  "explanation": "The 'Evening Lights' rule triggered at sunset (6:47 PM) because today is Monday and the condition 'weekday' was met. This caused the living room lights to turn on at 60% brightness with warm color temperature.",
+  "explanation": "The 'Evening Lights' schedule triggered at 7:00 PM. This caused the living room lights to turn on at 60% brightness with warm color temperature.",
   "chain": [
     {
       "step": 1,
       "type": "TRIGGER",
-      "description": "Sunset trigger activated at 6:47 PM"
+      "description": "Schedule triggered at 7:00 PM"
     },
     {
       "step": 2,
-      "type": "CONDITION",
-      "description": "Weekday condition evaluated to true"
-    },
-    {
-      "step": 3,
       "type": "ACTION",
       "description": "Living room lights set to 60% warm"
     }
   ]
 }
-```
-
-### System Settings (ADMIN)
-
-#### Get Settings
-```http
-GET /api/settings
-```
-
-Response:
-```json
-{
-  "mqtt": {
-    "host": "localhost",
-    "port": 1883
-  },
-  "location": {
-    "latitude": 37.7749,
-    "longitude": -122.4194
-  },
-  "llm": {
-    "model": "llama2",
-    "apiUrl": "http://localhost:11434"
-  }
-}
-```
-
-#### Update Settings
-```http
-PUT /api/settings
 ```
 
 ## WebSocket Events
@@ -494,10 +671,11 @@ ws://localhost:8080/ws
 {
   "type": "DEVICE_STATE_CHANGE",
   "deviceId": "uuid",
+  "roomId": "uuid",
   "state": {
     "on": true,
     "brightness": 75,
-    "colorTemp": 350
+    "rgb": [255, 200, 150]
   },
   "timestamp": "2025-01-01T12:00:00Z"
 }
@@ -509,18 +687,33 @@ ws://localhost:8080/ws
   "type": "SCENE_APPLIED",
   "sceneId": "uuid",
   "sceneName": "Movie Time",
+  "target": "living_room",
   "affectedDevices": ["uuid1", "uuid2"],
   "timestamp": "2025-01-01T12:00:00Z"
 }
 ```
 
-#### Rule Triggered
+#### Schedule Triggered
 ```json
 {
-  "type": "RULE_TRIGGERED",
-  "ruleId": "uuid",
-  "ruleName": "Morning Routine",
+  "type": "SCHEDULE_TRIGGERED",
+  "scheduleId": "uuid",
+  "scheduleName": "Morning Routine",
+  "action": {...},
   "timestamp": "2025-01-01T07:00:00Z"
+}
+```
+
+#### Config Updated
+```json
+{
+  "type": "CONFIG_UPDATED",
+  "category": "lighting",
+  "changes": {
+    "maxBrightness": 80
+  },
+  "updatedBy": "user@example.com",
+  "timestamp": "2025-01-01T12:00:00Z"
 }
 ```
 
@@ -528,9 +721,9 @@ ws://localhost:8080/ws
 ```json
 {
   "type": "CONFLICT_DETECTED",
-  "conflictingRules": ["uuid1", "uuid2"],
-  "device": "living_room_light",
-  "resolution": "HIGHER_PRIORITY_WINS",
+  "conflictingSchedules": ["uuid1", "uuid2"],
+  "target": "living_room",
+  "suggestedResolutions": [...],
   "timestamp": "2025-01-01T18:00:00Z"
 }
 ```
@@ -559,7 +752,7 @@ ws://localhost:8080/ws
 ```json
 {
   "error": "FORBIDDEN",
-  "message": "Insufficient permissions",
+  "message": "Insufficient permissions. OWNER role required.",
   "timestamp": "2025-01-01T12:00:00Z"
 }
 ```
@@ -569,6 +762,16 @@ ws://localhost:8080/ws
 {
   "error": "NOT_FOUND",
   "message": "Device not found",
+  "timestamp": "2025-01-01T12:00:00Z"
+}
+```
+
+### 409 Conflict
+```json
+{
+  "error": "SCHEDULE_CONFLICT",
+  "message": "This schedule conflicts with 'Evening Lights'",
+  "conflictDetails": {...},
   "timestamp": "2025-01-01T12:00:00Z"
 }
 ```

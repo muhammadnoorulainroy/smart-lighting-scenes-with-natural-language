@@ -5,16 +5,50 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-green.svg)](https://spring.io/projects/spring-boot)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.5-brightgreen.svg)](https://vuejs.org/)
 
-A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes. Control your home lighting through voice commands, scheduled automations, and real-time IoT integration.
+A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes. Control your home lighting through voice commands, scheduled automations, and real-time IoT integration with environmental sensor adaptation.
 
 ## Features
 
-- **Natural Language Control**: Simply speak or type commands like "dim the living room lights to 30% warm"
-- **Smart Scheduling**: Create intelligent rules that adapt to sunrise/sunset and your daily routines
-- **Multi-Platform Support**: Web dashboard, Android app, and ESP32 hardware integration
-- **Real-time Updates**: WebSocket-powered live updates across all platforms
-- **Conflict Resolution**: Smart conflict detection and resolution for overlapping rules
-- **Role-Based Access**: Admin, Resident, and Guest roles with appropriate permissions
+### Natural Language Processing
+- **Voice & Text Commands**: Speak or type commands like "dim the living room lights to 30% warm" or "apply movie scene to bedroom at 8pm"
+- **OpenAI Integration**: Powered by GPT for intelligent command parsing
+- **Preview Before Execute**: See what will happen before confirming a command
+- **Ambiguous Command Handling**: Clear error messages when commands need clarification
+
+### Smart Scenes
+- **Preset Scenes**: Pre-configured scenes (Relax, Focus, Movie, etc.)
+- **Custom Scenes**: Create personalized lighting configurations
+- **Room Targeting**: Apply scenes to specific rooms or all rooms
+- **Scene Scheduling**: Schedule scenes for specific times with natural language
+
+### Intelligent Scheduling
+- **AI-Powered Conflict Detection**: Automatically detects overlapping schedules
+- **Smart Resolution Suggestions**: Get realistic suggestions to resolve conflicts
+- **Flexible Triggers**: Time-based, sunrise/sunset, and sensor-triggered schedules
+- **Enable/Disable**: Toggle schedules without deleting them
+
+### Environmental Adaptation
+- **Temperature Color Shift**: Lights adjust color warmth based on room temperature
+- **Humidity Saturation**: Color saturation adapts to humidity levels
+- **Auto-Dimming**: Brightness automatically adjusts to ambient light (lux)
+- **Disco Mode**: Sound-reactive lighting effects triggered by audio sensors
+- **Sensor Override Toggle**: Enable/disable sensor adjustments per preference
+
+### Runtime Configuration
+- **Centralized Settings**: Configure all ESP32 behavior from the web dashboard
+- **Live Updates via MQTT**: Settings sync to devices instantly
+- **Categories**: Lighting, Climate, Audio, Display settings
+- **Per-Setting Control**: Fine-tune min/max brightness, temperature ranges, thresholds
+
+### Role-Based Access
+- **Owner**: Full access to settings, users, devices, and rooms
+- **Resident**: Control devices, create scenes, view all data
+- **Guest**: View-only access
+
+### Multi-Platform Support
+- **Web Dashboard**: Vue 3 + Vite responsive web application
+- **Android App**: Kotlin + Jetpack Compose (Material Design 3)
+- **ESP32 Hardware**: Real-time LED control with sensor integration
 
 ## Architecture
 
@@ -22,19 +56,63 @@ This is a monorepo containing all components of the Smart Lighting system:
 
 ```
 smart-lighting-scenes/
-├── backend/          # Spring Boot 3.x backend API
-├── frontend/         # Vue 3 + Vite web application
-├── mobile/           # Android app (Kotlin + Jetpack Compose)
-├── embedded/         # ESP32 MicroPython code + WS2812B LEDs
-│   ├── esp32-simulator/   # MicroPython application
-│   ├── YOUR_HARDWARE_GUIDE.md   # Start here for hardware setup
-│   ├── GETTING_STARTED.md       # Quick setup guide
-│   └── test_mqtt.py             # MQTT testing tool
-├── infra/            # Docker Compose and infrastructure
-├── docs/             # Additional documentation
-│   ├── SYSTEM_ARCHITECTURE.md      # Complete system design
-│   └── EMBEDDED_DESIGN_SUMMARY.md  # Embedded system details
-└── shared/           # Shared types and utilities
+├── backend/                    # Spring Boot 3.x backend API
+│   └── src/main/java/.../
+│       ├── config/             # MqttConfig, SecurityConfig, WebSocketConfig
+│       ├── controller/         # REST controllers
+│       │   ├── AuthController.java
+│       │   ├── ConfigController.java      # NEW: System settings
+│       │   ├── NlpController.java         # NEW: NLP commands
+│       │   ├── ScenesController.java
+│       │   ├── SchedulesController.java
+│       │   └── ...
+│       ├── service/            # Business logic
+│       │   ├── NlpService.java            # NEW: OpenAI NLP parsing
+│       │   ├── ScheduleConflictService.java # NEW: AI conflict detection
+│       │   ├── ConfigService.java         # NEW: Runtime config management
+│       │   ├── MqttService.java
+│       │   ├── SchedulerService.java
+│       │   └── ...
+│       ├── entity/             # JPA entities
+│       │   ├── Scene.java, Schedule.java  # NEW
+│       │   ├── NlpCommand.java            # NEW
+│       │   ├── SystemConfig.java          # NEW
+│       │   └── ...
+│       └── dto/                # Data transfer objects
+│           ├── NlpCommandDto.java         # NEW
+│           ├── ConflictAnalysisDto.java   # NEW
+│           └── ...
+├── frontend/                   # Vue 3 + Vite web application
+│   └── src/
+│       ├── api/                # API clients
+│       │   ├── nlp.js          # NEW: NLP API
+│       │   ├── config.js       # NEW: Settings API
+│       │   ├── scenes.js
+│       │   ├── schedules.js
+│       │   └── ...
+│       ├── views/              # Page components
+│       │   ├── SettingsView.vue    # NEW: System settings page
+│       │   ├── ScenesView.vue      # With voice input
+│       │   ├── SchedulesView.vue   # With conflict resolution
+│       │   └── ...
+│       └── components/         # Reusable components
+├── embedded/                   # ESP32 MicroPython + nRF52840 CircuitPython
+│   ├── esp32_controller_2/     # Main controller with sensors
+│   │   ├── main.py             # Application entry point
+│   │   ├── runtime_config.py   # NEW: Dynamic config from backend
+│   │   ├── sensor_logic_async.py
+│   │   ├── mqtt_client_async.py
+│   │   ├── oled_display_async.py
+│   │   └── ...
+│   ├── esp32_controller_1/     # BLE sensor hub
+│   └── nrf52840_sensor_*/      # Environmental sensors
+├── mobile/                     # Android app (Kotlin + Jetpack Compose)
+├── infra/                      # Docker Compose and infrastructure
+└── docs/                       # Documentation
+    ├── API.md                  # Complete API reference
+    ├── EMBEDDED_SYSTEM.md      # Hardware documentation
+    ├── DEVELOPMENT.md          # Development guide
+    └── tutorials/              # Setup tutorials
 ```
 
 ## Prerequisites
@@ -46,6 +124,7 @@ Before building, testing, or running the project, ensure you have:
 - **Docker** and **Docker Compose**
 - **GNU Make** (optional, for simplified commands)
 - Google Cloud Console account (for OAuth configuration)
+- OpenAI API key (for NLP features)
 
 **Verify prerequisites:**
 ```bash
@@ -134,48 +213,39 @@ npm run test
 # Open: frontend/coverage/index.html
 ```
 
-**Test output:**
-- Backend: JUnit test reports in `backend/build/reports/`
-- Frontend: Test results in console + coverage reports
-
 ---
 
-## API Documentation
+## Configuration
 
-Generate reference documentation for both backend and frontend codebases.
+### Environment Variables
 
-### Backend (Javadoc)
-
-```bash
-cd backend
-./gradlew docs
-
-# Output: backend/build/docs/javadoc/index.html
-```
-
-The Javadoc includes documentation for:
-- REST Controllers (`AuthController`, `DevicesController`)
-- Services (`MqttService`)
-- Entities (`Device`, `User`, `Room`, `DeviceState`)
-- Repositories (`DeviceRepository`, `RoomRepository`)
-- DTOs (`DeviceDto`, `UserDto`)
-- Security configuration (`SecurityConfig`)
-
-### Frontend (JSDoc)
+Copy the example environment file and configure:
 
 ```bash
-cd frontend
-npm install    # If not done already
-npm run docs
-
-# Output: frontend/docs/jsdoc/index.html
+cp infra/env.example .env
 ```
 
-The JSDoc includes documentation for:
-- API clients (`axios.js`, `auth.js`, `devices.js`, `rooms.js`)
-- Pinia stores (`auth.js`)
-- Route guards (`routeGuards.js`)
-- Utilities (`logger.js`)
+Required variables:
+
+```bash
+# Google OAuth
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+# OpenAI (for NLP features)
+OPENAI_API_KEY=sk-your-api-key
+
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=smartlighting
+DB_USER=postgres
+DB_PASSWORD=your-password
+
+# MQTT Broker
+MQTT_BROKER=localhost
+MQTT_PORT=1883
+```
 
 ---
 
@@ -249,79 +319,163 @@ cd frontend && npm run dev                          # Frontend
 
 ---
 
-## Quick Start (First Time Setup)
+## Natural Language Commands
 
-### Step 1: Clone Repository
+The system understands various natural language commands:
 
-```bash
-git clone https://github.com/muhammadnoorulainroy/smart-lighting-scenes.git
-cd smart-lighting-scenes
+### Immediate Commands
+```
+"Turn on the living room lights"
+"Dim bedroom to 30%"
+"Set kitchen lights to warm orange"
+"Apply movie scene"
+"All lights off"
 ```
 
-### Step 2: Install Dependencies
-
-```bash
-make install
-# This installs backend + frontend dependencies automatically
+### Scene Commands
+```
+"Apply relax scene to bedroom"
+"Create a cozy scene with warm dim lights"
+"Apply work scene to all rooms"
 ```
 
-### Step 3: Configure Environment
-
-```bash
-# Copy the example environment file
-cp infra/env.example .env
-
-# Edit .env with your configuration:
-# - Google OAuth credentials
-# - Database passwords
-# - JWT secret
+### Schedule Commands
+```
+"Turn on porch light at sunset"
+"Dim bedroom to 20% at 10pm every night"
+"Apply morning scene at 7am on weekdays"
 ```
 
-### Step 4: Build Project
-
-```bash
-make build
-# Builds both backend and frontend
-```
-
-### Step 5: Start Infrastructure
-
-```bash
-make docker-up
-# Starts PostgreSQL, Redis, MQTT broker
-```
-
-### Step 6: Run Application
-
-```bash
-# In terminal 1 - Backend
-make dev-backend
-
-# In terminal 2 - Frontend  
-make dev-frontend
-```
-
-**Access:** http://localhost:5173
+### Voice Input
+- Click the microphone icon in the Scenes or Dashboard view
+- Speak your command
+- Review the preview and confirm
 
 ---
 
-## Detailed Documentation
+## System Settings
 
-For comprehensive build automation documentation, see:
-- **[BUILD.md](BUILD.md)** - Complete build system documentation
+Owners can configure ESP32 behavior from the Settings page:
 
-**Key topics covered:**
-- Tool selection rationale (Make + Gradle + npm)
-- Dependency management (544+ packages)
-- Build process deep-dive
-- Testing automation
-- Packaging procedures
-- Troubleshooting guide
+### Lighting Settings
+- **Global Mode**: Auto (sensor-based) or Manual
+- **Auto-Dim**: Enable/disable lux-based brightness
+- **Sensor Override**: Allow sensors to adjust scene values
+- **Brightness Limits**: Min/Max brightness percentages
+
+### Climate Settings
+- **Temperature Range**: Color temperature adjustment thresholds
+- **Blend Strength**: How much temperature affects color
+- **Humidity Range**: Saturation adjustment thresholds
+
+### Audio Settings
+- **Disco Mode**: Enable/disable sound-reactive effects
+- **Audio Threshold**: Sensitivity for disco trigger
+- **Flash Brightness**: Brightness during disco mode
+
+### Display Settings
+- **OLED Auto-Sleep**: Power save for ESP32 display
+- **Show Time**: Display clock on home screen
+- **Show Sensor Data**: Display readings on detail pages
+
+---
+
+## MQTT Topics
+
+The system uses the following MQTT topic structure:
+
+```
+smartlighting/
+├── command/
+│   ├── lights              # "on", "off", "toggle"
+│   ├── mode                # "auto", "manual"
+│   └── scene               # {"sceneName": "relax", "target": "bedroom"}
+├── led/{index}/
+│   ├── power               # "on", "off"
+│   ├── brightness          # 0-100
+│   └── color               # {"r":255,"g":100,"b":50}
+├── room/{name}/
+│   ├── power               # "on", "off"
+│   └── brightness          # 0-100
+├── config/
+│   ├── lighting            # Lighting settings JSON
+│   ├── climate             # Climate settings JSON
+│   ├── audio               # Audio settings JSON
+│   └── display             # Display settings JSON
+└── status/
+    ├── online              # Connection status (retained)
+    ├── led/{index}/state   # LED state (retained)
+    └── sensor/{name}       # Sensor readings
+```
+
+---
+
+## Embedded System
+
+### Hardware Components
+
+| Component | Role | Connection |
+|-----------|------|------------|
+| **ESP32 #1** | BLE sensor hub | UART TX → ESP32 #2 |
+| **ESP32 #2** | Main controller | WiFi/MQTT, LEDs, OLED |
+| **nRF52840 x2** | Environmental sensors | BLE → ESP32 #1 |
+| **WS2812B LEDs** | Room lighting (5 LEDs) | GPIO 13 |
+| **SH1107 OLED** | Status display | I2C (GPIO 22/23) |
+
+### LED to Room Mapping
+
+| LED Index | Room | Sensor |
+|-----------|------|--------|
+| 0 | Living Room | SmartLight-Sensor-2 |
+| 1 | Bedroom | SmartLight-Sensor-1 |
+| 2 | Kitchen | - |
+| 3 | Bathroom | - |
+| 4 | Hallway | - |
+
+### Runtime Configuration
+
+The ESP32 receives configuration updates from the backend via MQTT:
+
+```python
+# runtime_config.py wraps config.py defaults with backend overrides
+cfg = RuntimeConfig()
+
+# Access settings (uses backend value if available, else default)
+brightness = cfg.MAX_BRIGHTNESS  # From backend or config.py
+```
+
+Settings are automatically synced when changed in the web dashboard.
+
+### WiFi Provisioning
+
+If WiFi credentials aren't configured:
+1. Hold Button A for 5 seconds during boot
+2. Connect to "SmartLight-Setup" WiFi AP
+3. Navigate to 192.168.4.1
+4. Enter your WiFi credentials
+5. ESP32 reboots and connects
+
+---
+
+## Database Schema
+
+The PostgreSQL database includes tables for:
+- **Users** (with OAuth integration and roles)
+- **Rooms** and **Devices**
+- **Scenes** (preset and custom with target rooms)
+- **Schedules** (with actions and triggers)
+- **NLP Commands** (command history)
+- **System Config** (runtime settings)
+- **Events** and **Sensor Readings**
+
+See `backend/src/main/resources/db/migration/` for Flyway migrations.
+
+---
 
 ## UI Design
 
 The system features a modern, sophisticated design with:
-- **Color Scheme**: Warm yellows and greens (avoiding blue/purple)
+- **Color Scheme**: Warm yellows and greens
 - **Typography**: Clean, readable Inter font family
 - **Responsive Design**: Works seamlessly on desktop and mobile
 - **Dark Mode**: Full dark mode support across all platforms
@@ -338,37 +492,26 @@ The system uses Google OAuth 2.0 for authentication:
    - `http://localhost:8080/login/oauth2/code/google` (development)
    - Your production URLs
 
-## MQTT Topics
-
-The system uses the following MQTT topic structure:
-
-```
-home/<room>/<device>/cmd     # Commands (QoS 1, non-retained)
-home/<room>/<device>/state   # State updates (QoS 1, retained)
-home/<room>/<device>/tele    # Telemetry (QoS 0/1)
-home/<room>/<device>/status  # Online/Offline (retained, LWT)
-```
-
-## Database Schema
-
-The PostgreSQL database includes tables for:
-- Users (with OAuth integration)
-- Rooms and Devices
-- Scenes and Rules
-- Schedules and Events
-- Device states and sensor readings
-
-See `infra/init-db/01-schema.sql` for the complete schema.
-
 ---
 
 ## Development
 
 ### Code Style
 
-- **Backend:** Spring Boot conventions, Lombok annotations
+- **Backend:** Spring Boot conventions, Lombok annotations, `@Slf4j` logging
 - **Frontend:** ESLint + Prettier for Vue 3
+- **Embedded:** MicroPython async/await patterns
 - **Build:** Gradle (backend), npm + Vite (frontend), Make (orchestration)
+
+### Logging Configuration
+
+Backend logging is configured in `application.properties`:
+
+```properties
+logging.level.root=INFO
+logging.level.com.example.smart.lighting=DEBUG
+logging.level.org.springframework.security=DEBUG
+```
 
 ### Available Make Targets
 
@@ -395,51 +538,20 @@ npm run docker:up       # Start infrastructure
 npm run docker:down     # Stop infrastructure
 ```
 
-## Mobile App Features
+---
 
-- **Google Sign-In**: Seamless authentication
-- **Real-time Control**: Instant lighting adjustments
-- **Voice Commands**: Natural language input via microphone
-- **Scene Management**: Quick access to preset scenes
-- **Push Notifications**: Updates on schedule triggers
+## Detailed Documentation
 
-## Embedded System (ESP32 + WS2812B LEDs)
+For comprehensive documentation, see:
+- **[docs/API.md](docs/API.md)** - Complete API reference
+- **[docs/EMBEDDED_SYSTEM.md](docs/EMBEDDED_SYSTEM.md)** - Hardware documentation
+- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development guide
 
-### Hardware Setup
+For comprehensive build automation documentation, see:
+- **[BUILD.md](BUILD.md)** - Complete build system documentation
+- **[docs/tutorials/tutorial.md](docs/tutorials/tutorial.md)** - Getting started tutorial
 
-The system supports real lighting control via ESP32 and WS2812B RGB LED breakout boards. Each LED represents a room and can be controlled independently.
-
-**Quick Start:**
-1. **Hardware Guide:** See [`embedded/YOUR_HARDWARE_GUIDE.md`](embedded/YOUR_HARDWARE_GUIDE.md) for wiring instructions
-2. **Setup:** Follow [`embedded/GETTING_STARTED.md`](embedded/GETTING_STARTED.md) for complete setup (30 min)
-3. **Testing:** Use `python embedded/test_mqtt.py --test-all` to test MQTT control
-
-**Hardware Requirements:**
-- ESP32 board (Adafruit HUZZAH32 recommended)
-- WS2812B RGB LED breakout boards (one per room)
-- Breadboard and jumper wires
-- 330Ω resistor
-- USB cable for power
-
-**How It Works:**
-```
-User Command → Backend → MQTT Broker → ESP32 → WS2812B LEDs
-                  ↓                        ↓
-            WebSocket ←── State Update ────┘
-```
-
-Each LED is daisy-chained to a single GPIO pin (GPIO13) and mapped to a room:
-- LED 0 = Bedroom
-- LED 1 = Living Room
-- LED 2 = Kitchen
-- LED 3 = Bathroom
-
-**Documentation:**
-- [`docs/tutorials/tutorial.md`](docs/tutorials/tutorial.md) - Getting started tutorial
-- [`embedded/README_OVERVIEW.md`](embedded/README_OVERVIEW.md) - Complete embedded documentation index
-- [`docs/EMBEDDED_DESIGN_SUMMARY.md`](docs/EMBEDDED_DESIGN_SUMMARY.md) - System design and architecture
-- [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md) - Full system overview
-
+---
 
 ## Contributing
 
@@ -449,6 +561,7 @@ Each LED is daisy-chained to a single GPIO pin (GPIO13) and mapped to a room:
 4. Push to the branch
 5. Open a Pull Request
 
+---
 
 ## Support
 
@@ -456,6 +569,8 @@ For issues and questions:
 - Create an issue on GitHub
 - Check the documentation in `/docs`
 - Review the development plan in the project docs
+
+---
 
 ## License
 

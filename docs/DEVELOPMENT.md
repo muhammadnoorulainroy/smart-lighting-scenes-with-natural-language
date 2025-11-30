@@ -7,19 +7,72 @@
 ```
 backend/
 ├── src/main/java/
-│   └── com/example/smart/lighting/
-│       ├── config/         # Configuration classes
-│       ├── controller/     # REST controllers
-│       ├── service/        # Business logic
-│       ├── repository/     # Data access layer
-│       ├── entity/         # JPA entities
-│       ├── dto/            # Data transfer objects
-│       ├── security/       # Security configuration
-│       ├── websocket/      # WebSocket handlers
-│       └── mqtt/           # MQTT integration
+│   └── com/example/smart/lighting/scenes/with_natural/language/
+│       ├── config/              # Configuration classes
+│       │   ├── AppConfig.java
+│       │   ├── DotenvConfig.java
+│       │   ├── MqttConfig.java
+│       │   ├── SecurityConfig.java
+│       │   ├── StartupRunner.java
+│       │   └── WebSocketConfig.java
+│       ├── controller/          # REST controllers
+│       │   ├── AuthController.java
+│       │   ├── AutomationController.java
+│       │   ├── ConfigController.java      # System settings
+│       │   ├── DevicesController.java
+│       │   ├── EventsController.java
+│       │   ├── LightingController.java
+│       │   ├── NlpController.java         # Natural language
+│       │   ├── RoomsController.java
+│       │   ├── ScenesController.java
+│       │   ├── SchedulesController.java
+│       │   └── UsersController.java
+│       ├── service/             # Business logic
+│       │   ├── AutomationService.java
+│       │   ├── ConfigService.java         # Runtime config
+│       │   ├── MqttService.java
+│       │   ├── NlpService.java            # OpenAI integration
+│       │   ├── OpenAIService.java
+│       │   ├── ScheduleConflictService.java # Conflict detection
+│       │   └── SchedulerService.java
+│       ├── repository/          # Data access layer
+│       │   ├── DeviceRepository.java
+│       │   ├── NlpCommandRepository.java
+│       │   ├── RoomRepository.java
+│       │   ├── SceneRepository.java
+│       │   ├── ScheduleRepository.java
+│       │   ├── SystemConfigRepository.java
+│       │   └── UserRepository.java
+│       ├── entity/              # JPA entities
+│       │   ├── Device.java
+│       │   ├── NlpCommand.java
+│       │   ├── Room.java
+│       │   ├── Scene.java
+│       │   ├── Schedule.java
+│       │   ├── SystemConfig.java
+│       │   └── User.java
+│       ├── dto/                 # Data transfer objects
+│       │   ├── ConflictAnalysisDto.java
+│       │   ├── DeviceDto.java
+│       │   ├── NlpCommandDto.java
+│       │   ├── RoomDto.java
+│       │   ├── SceneDto.java
+│       │   ├── ScheduleDto.java
+│       │   └── UserDto.java
+│       ├── security/            # Security configuration
+│       │   ├── CustomOAuth2User.java
+│       │   ├── CustomOAuth2UserService.java
+│       │   ├── OAuth2AuthenticationFailureHandler.java
+│       │   └── OAuth2AuthenticationSuccessHandler.java
+│       └── websocket/           # WebSocket handlers
+│           ├── WebSocketEventService.java
+│           └── WebSocketMessage.java
 ├── src/main/resources/
 │   ├── application.properties
-│   └── db/migration/       # Flyway migrations
+│   └── db/migration/            # Flyway migrations
+│       ├── V1__Initial_schema.sql
+│       ├── V10__Add_scenes_and_schedules.sql
+│       └── V11__Add_system_config.sql
 └── build.gradle.kts
 ```
 
@@ -28,15 +81,69 @@ backend/
 ```
 frontend/
 ├── src/
-│   ├── assets/            # Static assets
-│   ├── components/        # Reusable components
-│   ├── views/             # Page components
-│   ├── router/            # Vue Router config
-│   ├── stores/            # Pinia stores
-│   ├── api/               # API client
-│   └── utils/             # Utility functions
-├── public/                # Public assets
-└── vite.config.js         # Vite configuration
+│   ├── api/                     # API client modules
+│   │   ├── auth.js
+│   │   ├── axios.js             # Base API client
+│   │   ├── config.js            # System settings API
+│   │   ├── devices.js
+│   │   ├── events.js
+│   │   ├── lighting.js          # Mode control
+│   │   ├── nlp.js               # Natural language API
+│   │   ├── rooms.js
+│   │   ├── scenes.js
+│   │   ├── schedules.js
+│   │   └── users.js
+│   ├── components/              # Reusable components
+│   │   ├── rooms/
+│   │   ├── schedules/
+│   │   ├── ThemeToggle.vue
+│   │   └── UserMenu.vue
+│   ├── views/                   # Page components
+│   │   ├── AuthCallbackView.vue
+│   │   ├── DashboardView.vue
+│   │   ├── HomeView.vue
+│   │   ├── NotFoundView.vue
+│   │   ├── RoomsView.vue
+│   │   ├── RoutinesView.vue
+│   │   ├── ScenesView.vue       # With voice input
+│   │   ├── SchedulesView.vue    # With conflict resolution
+│   │   └── SettingsView.vue     # System configuration
+│   ├── router/                  # Vue Router config
+│   │   └── index.js
+│   ├── stores/                  # Pinia stores
+│   │   └── auth.js
+│   └── utils/                   # Utility functions
+│       ├── logger.js
+│       └── routeGuards.js
+├── public/                      # Public assets
+└── vite.config.js               # Vite configuration
+```
+
+### Embedded (ESP32 + nRF52840)
+
+```
+embedded/
+├── esp32_controller_2/          # Main controller
+│   ├── main.py                  # Entry point
+│   ├── config.py                # Static defaults
+│   ├── runtime_config.py        # Dynamic config
+│   ├── boot.py                  # Boot sequence
+│   ├── mqtt_client_async.py     # MQTT wrapper
+│   ├── uart_receiver_async.py   # Sensor data receiver
+│   ├── oled_display_async.py    # Display manager
+│   ├── led_controller_async.py  # LED control
+│   ├── sensor_logic_async.py    # Environmental effects
+│   ├── wifi_provisioning.py     # Captive portal
+│   ├── config_manager.py        # NVS storage
+│   ├── config_bridge.py         # Config loader
+│   ├── logger.py                # Logging utility
+│   └── sh1107.py                # OLED driver
+├── esp32_controller_1/          # BLE hub
+│   ├── main.py
+│   ├── ble_central.py
+│   └── config.py
+└── nrf52840_sensor_*/           # Sensors
+    └── code.py                  # CircuitPython
 ```
 
 ### Mobile (Android/Kotlin)
@@ -45,18 +152,28 @@ frontend/
 mobile/
 ├── app/src/main/
 │   ├── java/com/smartlighting/mobile/
-│   │   ├── ui/           # Composables and screens
-│   │   ├── data/         # Data layer
-│   │   ├── domain/       # Business logic
-│   │   ├── di/           # Dependency injection
-│   │   └── util/         # Utilities
-│   └── res/              # Resources
+│   │   ├── ui/                  # Composables and screens
+│   │   ├── data/                # Data layer
+│   │   ├── domain/              # Business logic
+│   │   ├── di/                  # Dependency injection
+│   │   └── util/                # Utilities
+│   └── res/                     # Resources
 └── build.gradle.kts
 ```
 
 ## Setting Up Development Environment
 
-### 1. Google OAuth Setup
+### 1. Prerequisites
+
+```bash
+# Check required tools
+java --version    # 21+
+node --version    # 18+
+npm --version     # 9+
+docker --version  # 20+
+```
+
+### 2. Google OAuth Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create a new project or select existing
@@ -67,7 +184,27 @@ mobile/
    - Authorized redirect URIs: `http://localhost:8080/login/oauth2/code/google`
 5. Copy Client ID and Client Secret to `.env`
 
-### 2. Backend Development
+### 3. OpenAI API Setup (for NLP)
+
+1. Go to [OpenAI Platform](https://platform.openai.com)
+2. Create an API key
+3. Add to `.env`: `OPENAI_API_KEY=sk-your-key`
+
+### 4. Environment Configuration
+
+```bash
+# Copy example environment file
+cp infra/env.example .env
+
+# Edit .env with your values:
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+OPENAI_API_KEY=sk-your-key
+DB_PASSWORD=your-db-password
+JWT_SECRET=your-jwt-secret
+```
+
+### 5. Backend Development
 
 #### Running locally:
 
@@ -77,35 +214,57 @@ cd backend
 ```
 
 #### Hot reload:
-- Install Spring Boot DevTools
-- Changes to Java files will trigger automatic restart
+- Spring Boot DevTools is included
+- Changes to Java files trigger automatic restart
+- Changes to resources trigger reload
 
 #### Database migrations:
 - Place SQL files in `src/main/resources/db/migration/`
-- Follow naming: `V1__Description.sql`
+- Follow naming: `V{version}__{Description}.sql`
 - Migrations run automatically on startup
+- Use `IF NOT EXISTS` for idempotent operations
 
-#### API Documentation:
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI spec: `http://localhost:8080/v3/api-docs`
+#### Logging Configuration:
 
-### 3. Frontend Development
+In `application.properties`:
+```properties
+logging.level.root=INFO
+logging.level.com.example.smart.lighting=DEBUG
+logging.level.org.springframework.security=DEBUG
+logging.level.org.hibernate.SQL=DEBUG
+```
+
+All services use `@Slf4j` annotation:
+```java
+@Slf4j
+@Service
+public class MyService {
+    public void doSomething() {
+        log.debug("Debug message");
+        log.info("Info message");
+        log.error("Error: {}", exception.getMessage());
+    }
+}
+```
+
+### 6. Frontend Development
 
 #### Running locally:
 
 ```bash
 cd frontend
+npm install
 npm run dev
 ```
 
 #### Component Development:
 - Use Vue DevTools browser extension
 - Components hot-reload automatically
-- Tailwind CSS classes are auto-completed with IDE plugins
+- Tailwind CSS classes auto-complete with IDE plugins
 
 #### State Management:
-- Pinia stores in `src/stores/`
-- Example store:
+
+Pinia stores in `src/stores/`:
 
 ```javascript
 import { defineStore } from 'pinia'
@@ -123,7 +282,23 @@ export const useAuthStore = defineStore('auth', {
 })
 ```
 
-### 4. Mobile Development
+#### API Clients:
+
+Each API module in `src/api/`:
+
+```javascript
+// Example: src/api/nlp.js
+import apiClient from './axios'
+
+export const nlpApi = {
+  async parse(text) {
+    const response = await apiClient.post('/api/nlp/parse', { text })
+    return response.data
+  }
+}
+```
+
+### 7. Mobile Development
 
 #### Setup Android Studio:
 1. Open `mobile/` directory in Android Studio
@@ -143,22 +318,38 @@ export const useAuthStore = defineStore('auth', {
 - `GET /api/me` - Get current user
 - `POST /api/auth/logout` - Logout
 
+### Natural Language Processing
+- `POST /api/nlp/parse` - Parse command (preview)
+- `POST /api/nlp/execute` - Execute command
+- `POST /api/nlp/confirm` - Confirm parsed command
+- `POST /api/nlp/resolve-conflict` - Resolve schedule conflict
+
 ### Rooms & Devices
 - `GET /api/rooms` - List all rooms
-- `POST /api/rooms` - Create room (ADMIN)
+- `POST /api/rooms` - Create room (OWNER)
 - `GET /api/devices` - List all devices
-- `POST /api/devices` - Create device (ADMIN)
+- `POST /api/devices` - Create device (OWNER)
 
 ### Scenes & Control
 - `GET /api/scenes` - List scenes
 - `POST /api/scenes` - Create scene
-- `POST /api/act/scene/{id}` - Apply scene
-- `POST /api/act/device/{id}` - Control device
+- `POST /api/scenes/{id}/apply` - Apply scene
+- `POST /api/lighting/mode` - Set auto/manual mode
+- `POST /api/lighting/room/{name}` - Control room
 
-### Rules & Schedules
-- `GET /api/rules` - List rules
-- `POST /api/rules` - Create rule
+### Schedules
 - `GET /api/schedules` - List schedules
+- `POST /api/schedules` - Create schedule
+- `POST /api/schedules/{id}/toggle` - Enable/disable
+- `GET /api/schedules/conflicts` - Get conflicts
+
+### Configuration (OWNER)
+- `GET /api/config` - Get all config
+- `PUT /api/config` - Update all config
+- `GET /api/config/{category}` - Get category
+- `PUT /api/config/{category}` - Update category
+- `POST /api/config/reset` - Reset to defaults
+- `POST /api/config/sync` - Sync to devices
 
 ## WebSocket Events
 
@@ -169,13 +360,18 @@ const socket = new WebSocket('ws://localhost:8080/ws');
 
 socket.onmessage = (event) => {
   const data = JSON.parse(event.data);
-  // Handle different event types
   switch(data.type) {
     case 'DEVICE_STATE_CHANGE':
-      // Update UI
+      // Update device UI
       break;
     case 'SCENE_APPLIED':
       // Show notification
+      break;
+    case 'CONFIG_UPDATED':
+      // Refresh settings
+      break;
+    case 'SCHEDULE_TRIGGERED':
+      // Log event
       break;
   }
 };
@@ -188,9 +384,21 @@ socket.onmessage = (event) => {
 ```java
 @Service
 public class MqttService {
-    public void sendCommand(String room, String device, CommandDto command) {
-        String topic = String.format("home/%s/%s/cmd", room, device);
-        mqttClient.publish(topic, command.toJson(), 1, false);
+    public void sendCommand(String room, String device, Map<String, Object> command) {
+        String topic = String.format("smartlighting/room/%s/power", room);
+        mqttClient.publish(topic, toJson(command), 1, false);
+    }
+}
+```
+
+### Publishing Config:
+
+```java
+@Service
+public class ConfigService {
+    public void publishConfig(String category, Map<String, Object> config) {
+        String topic = String.format("smartlighting/config/%s", category);
+        mqttClient.publish(topic, toJson(config), 1, true);  // Retained
     }
 }
 ```
@@ -198,8 +406,8 @@ public class MqttService {
 ### Subscribing to State:
 
 ```java
-mqttClient.subscribe("home/+/+/state", (topic, message) -> {
-    // Parse topic and message
+mqttClient.subscribe("smartlighting/status/#", (topic, message) -> {
+    // Parse topic: smartlighting/status/led/0/state
     // Update database
     // Emit WebSocket event
 });
@@ -212,26 +420,41 @@ mqttClient.subscribe("home/+/+/state", (topic, message) -> {
 ```java
 @SpringBootTest
 @AutoConfigureMockMvc
-class LightingControllerTest {
+class NlpControllerTest {
     @Test
-    void testApplyScene() {
-        // Test implementation
+    void testParseCommand() {
+        mockMvc.perform(post("/api/nlp/parse")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"text\": \"turn on bedroom lights\"}")
+            .with(oauth2Login()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.understood").value(true));
     }
 }
+```
+
+```bash
+cd backend
+./gradlew test
+# View report: build/reports/tests/test/index.html
 ```
 
 ### Frontend Testing:
 
 ```javascript
 import { mount } from '@vue/test-utils'
-import RoomTile from '@/components/RoomTile.vue'
+import SettingsView from '@/views/SettingsView.vue'
 
-test('room tile renders', () => {
-  const wrapper = mount(RoomTile, {
-    props: { room: { name: 'Living Room' } }
-  })
-  expect(wrapper.text()).toContain('Living Room')
+test('settings page loads', async () => {
+  const wrapper = mount(SettingsView)
+  expect(wrapper.find('h1').text()).toContain('System Settings')
 })
+```
+
+```bash
+cd frontend
+npm run test
+npm run test:coverage
 ```
 
 ### Mobile Testing:
@@ -251,19 +474,34 @@ fun testLoginFlow() {
 ## Debugging Tips
 
 ### Backend:
-- Enable debug logging: `logging.level.com.example=DEBUG`
-- Use Spring Boot Actuator endpoints
-- Monitor SQL queries: `spring.jpa.show-sql=true`
+- Enable debug logging in `application.properties`
+- Use Spring Boot Actuator: `http://localhost:8080/actuator/health`
+- Monitor SQL: `spring.jpa.show-sql=true`
+- Check MQTT: Subscribe to `smartlighting/#` to see all messages
 
 ### Frontend:
 - Vue DevTools for component inspection
 - Network tab for API calls
 - Console logging with structured data
+- Vite's HMR shows compilation errors
 
-### Mobile:
-- Logcat for Android logs
-- Network profiler for API calls
-- Layout Inspector for UI debugging
+### Embedded:
+- Serial console at 115200 baud
+- Set `DEBUG = True` in config.py
+- Watch MQTT topics: `mosquitto_sub -h localhost -t "smartlighting/#" -v`
+- Memory check: Look for "Mem:" in heartbeat logs
+
+### MQTT Debugging:
+```bash
+# Subscribe to all topics
+mosquitto_sub -h localhost -t "smartlighting/#" -v
+
+# Send test command
+mosquitto_pub -h localhost -t "smartlighting/command/lights" -m "on"
+
+# Send config update
+mosquitto_pub -h localhost -t "smartlighting/config/lighting" -m '{"maxBrightness":80}'
+```
 
 ## Performance Optimization
 
@@ -271,24 +509,49 @@ fun testLoginFlow() {
 - Use database indexes appropriately
 - Implement caching with Redis
 - Optimize N+1 queries with JPA fetch joins
+- Use async processing for MQTT publishes
 
 ### Frontend:
 - Lazy load routes
 - Use virtual scrolling for long lists
 - Optimize bundle size with tree-shaking
+- Debounce slider inputs on Settings page
 
-### Mobile:
-- Use remember in Compose for expensive operations
-- Implement proper pagination
-- Cache API responses locally
+### Embedded:
+- Periodic `gc.collect()` calls
+- Compact JSON for UART messages
+- Cache runtime config overrides only
+- Minimize retained MQTT messages
+
+## Code Style
+
+### Backend (Java)
+- Follow Spring Boot conventions
+- Use Lombok annotations (`@Slf4j`, `@Data`, etc.)
+- Services handle business logic, controllers handle HTTP
+- DTOs for API responses, Entities for database
+
+### Frontend (Vue)
+- Use Composition API with `<script setup>`
+- ESLint + Prettier for formatting
+- API modules in `src/api/`
+- Pinia for state management
+
+### Embedded (MicroPython)
+- Use async/await for non-blocking I/O
+- RuntimeConfig for dynamic settings
+- Logger module for consistent output
+- Compact JSON to save memory
 
 ## Deployment Checklist
 
-- [ ] Update environment variables
+- [ ] Update environment variables for production
 - [ ] Run database migrations
-- [ ] Build production assets
+- [ ] Build production frontend assets
 - [ ] Configure SSL certificates
-- [ ] Set up monitoring
+- [ ] Set up monitoring and alerting
 - [ ] Configure backup strategy
-- [ ] Test OAuth redirect URLs
+- [ ] Update OAuth redirect URLs
 - [ ] Verify MQTT broker settings
+- [ ] Test NLP with production OpenAI key
+- [ ] Verify ESP32 can reach production MQTT

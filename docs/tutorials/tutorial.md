@@ -1,6 +1,6 @@
 # Smart Lighting Tutorial
 
-This tutorial guides you through setting up and using the Smart Lighting system to control your home lighting through a web interface and IoT devices.
+This tutorial guides you through setting up and using the Smart Lighting system to control your home lighting through natural language commands, voice input, and intelligent automations.
 
 ## Prerequisites
 
@@ -10,6 +10,8 @@ Before starting, ensure you have:
 - **Java 21** (for backend development)
 - **Node.js 18+** and npm (for frontend development)
 - **Git** for version control
+- **Google Cloud Console** account (for OAuth)
+- **OpenAI API key** (for natural language processing)
 
 ## 1. Quick Start
 
@@ -19,6 +21,10 @@ Before starting, ensure you have:
 # Clone the repository
 git clone https://github.com/your-org/smart-lighting-scenes.git
 cd smart-lighting-scenes
+
+# Copy environment file and configure
+cp infra/env.example .env
+# Edit .env with your Google OAuth and OpenAI credentials
 
 # Start infrastructure (PostgreSQL, Redis, MQTT broker)
 docker-compose -f infra/docker-compose.yml up -d
@@ -47,7 +53,7 @@ The system uses Google OAuth for authentication. Users are assigned roles that d
 
 | Role | Permissions |
 |------|-------------|
-| OWNER | Full access: manage users, settings, devices, rooms |
+| OWNER | Full access: manage users, settings, devices, rooms, scenes, schedules |
 | RESIDENT | Control devices, create scenes, view all data |
 | GUEST | View-only access to rooms and device states |
 
@@ -57,10 +63,78 @@ The system uses Google OAuth for authentication. Users are assigned roles that d
 2. Click "Sign in with Google"
 3. Authorize the application
 4. You'll be redirected to the dashboard
+5. First user becomes OWNER automatically
 
-## 3. Managing Rooms
+## 3. Natural Language Commands
+
+The system understands natural language through OpenAI integration.
+
+### Voice Input
+
+1. Navigate to **Scenes** or **Dashboard**
+2. Click the **🎤 microphone** icon
+3. Speak your command
+4. Review the **preview** showing what will happen
+5. Click **Confirm** to execute
+
+### Text Commands
+
+Type commands in the natural language input field:
+
+```
+"Turn on the living room lights"
+"Dim bedroom to 30%"
+"Set kitchen lights to warm orange at 50%"
+"Apply movie scene to all rooms"
+"Turn off all lights"
+```
+
+### Scene Commands
+
+```
+"Apply relax scene to bedroom"
+"Create a cozy scene with warm dim lights"
+"Apply work scene"
+```
+
+### Schedule Commands
+
+```
+"Turn on porch light at sunset"
+"Dim bedroom to 20% at 10pm every night"
+"Apply morning scene at 7am on weekdays"
+```
+
+### Preview Before Execution
+
+Every command shows a preview:
+
+```json
+{
+  "understood": true,
+  "commandType": "immediate",
+  "target": "living_room",
+  "action": {
+    "on": true,
+    "brightness": 75,
+    "colorTemp": "warm"
+  },
+  "explanation": "This will turn on the living room lights at 75% brightness with warm color"
+}
+```
+
+You can review and confirm before the command executes.
+
+## 4. Managing Rooms
 
 Rooms are logical groupings for your lighting devices.
+
+### Create a Room (Web UI)
+
+1. Go to **Dashboard**
+2. Click **+ Add Room**
+3. Enter room name and description
+4. Click **Save**
 
 ### Create a Room via API
 
@@ -74,77 +148,150 @@ curl -X POST http://localhost:8080/api/rooms \
   }'
 ```
 
-### List All Rooms
+## 5. Creating Scenes
 
-```bash
-curl http://localhost:8080/api/rooms \
-  -H "Cookie: JSESSIONID=<your-session-id>"
+Scenes are saved lighting configurations you can apply instantly.
+
+### Preset Scenes
+
+The system includes preset scenes:
+- **Relax** - Warm, dim lights
+- **Focus** - Bright, cool lights
+- **Movie** - Very dim, warm lights
+- **Party** - Colorful, dynamic lights
+- **Sleep** - Minimal, red-tinted lights
+
+### Create Custom Scene
+
+1. Go to **Scenes**
+2. Click **+ Create Scene**
+3. Configure:
+   - Name
+   - Target room (or "All rooms")
+   - Brightness
+   - Color temperature or RGB
+4. Click **Save**
+
+### Apply Scene
+
+- Click on a scene card, or
+- Use voice: "Apply movie scene to bedroom"
+
+### Scene Target Display
+
+Each scene shows its target:
+- 🏠 **All rooms**
+- 🛏️ **Bedroom**
+- 🛋️ **Living Room**
+- etc.
+
+## 6. Scheduling
+
+Create automated lighting schedules.
+
+### Create Schedule (Web UI)
+
+1. Go to **Schedules**
+2. Click **+ Create Schedule**
+3. Configure:
+   - Name
+   - Action (scene or light settings)
+   - Time/cron expression
+   - Target room
+4. Click **Save**
+
+### Create Schedule with Voice
+
+```
+"Apply morning scene at 7am on weekdays"
+"Turn on porch light at sunset"
+"Dim all lights to 20% at 11pm"
 ```
 
-Response:
-```json
-[
-  {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Living Room",
-    "description": "Main living area",
-    "devices": []
-  }
-]
-```
+### Schedule Conflict Detection
 
-## 4. Adding Devices
+When creating a schedule that conflicts with existing ones:
 
-Devices represent physical lighting fixtures controlled via MQTT.
+1. The system detects the conflict
+2. Shows affected schedules
+3. Provides resolution options:
+   - Adjust time
+   - Disable conflicting schedule
+   - Merge schedules
+4. Select a resolution and apply
 
-### Create a Light Device
+## 7. System Settings (Owner Only)
 
-```bash
-curl -X POST http://localhost:8080/api/devices \
-  -H "Content-Type: application/json" \
-  -H "Cookie: JSESSIONID=<your-session-id>" \
-  -d '{
-    "name": "Ceiling Light",
-    "roomId": "550e8400-e29b-41d4-a716-446655440000",
-    "type": "LIGHT",
-    "mqttCmdTopic": "smartlighting/command/esp32-001/led/0",
-    "mqttStateTopic": "smartlighting/status/esp32-001/led/0"
-  }'
-```
+Configure ESP32 behavior from the web dashboard.
 
-### Device Types
+### Access Settings
 
-| Type | Description |
-|------|-------------|
-| LIGHT | RGB or white light fixture |
-| SENSOR | Environmental sensor (temperature, motion) |
-| SWITCH | Physical wall switch or relay |
+1. Click your profile menu (top right)
+2. Select **Settings**
 
-## 5. Controlling Lights
+### Lighting Settings
 
-### Turn On a Light
+| Setting | Description |
+|---------|-------------|
+| Global Mode | Auto (sensor-based) or Manual |
+| Auto Dim | Enable lux-based brightness adjustment |
+| Sensor Override | Allow sensors to adjust scene values |
+| Min/Max Brightness | Brightness limits (0-100%) |
+| Lux Thresholds | Dark/bright room detection |
 
-```bash
-curl -X PUT http://localhost:8080/api/devices/{deviceId}/state \
-  -H "Content-Type: application/json" \
-  -H "Cookie: JSESSIONID=<your-session-id>" \
-  -d '{
-    "isOn": true,
-    "brightnessPct": 80,
-    "rgbColor": "#FF9500"
-  }'
-```
+### Climate Settings
 
-### Device State Properties
+| Setting | Description |
+|---------|-------------|
+| Temperature Range | Color warmth adjustment thresholds |
+| Blend Strength | How much temperature affects color |
+| Humidity Range | Saturation adjustment thresholds |
 
-| Property | Type | Description |
-|----------|------|-------------|
-| isOn | boolean | Power state |
-| brightnessPct | integer | Brightness (0-100) |
-| colorTempMired | integer | Color temperature in mireds |
-| rgbColor | string | Hex color code (#RRGGBB) |
+### Audio Settings
 
-## 6. MQTT Integration
+| Setting | Description |
+|---------|-------------|
+| Disco Mode | Enable sound-reactive effects |
+| Audio Threshold | Sensitivity for disco trigger |
+| Flash Brightness | Brightness during disco |
+
+### Display Settings
+
+| Setting | Description |
+|---------|-------------|
+| OLED Auto-Sleep | Power save for ESP32 display |
+| Show Time | Display clock on home screen |
+| Show Sensor Data | Display readings on pages |
+
+### Sync to Devices
+
+After changing settings:
+- Click **Save All Changes** to save and sync
+- Or click **Sync to Devices** to push current settings
+
+## 8. Mode Control
+
+### Auto Mode (Default)
+
+Sensors actively adjust lighting:
+- Temperature affects color warmth
+- Humidity affects saturation
+- Ambient light affects brightness
+- Scenes set base values that sensors modify
+
+### Manual Mode
+
+Sensors do not adjust lighting:
+- User/scene settings applied exactly
+- Useful for specific lighting needs
+
+### Toggle Mode
+
+From the **Rooms** page:
+- Click the **Mode** button on a room
+- Or use voice: "Set mode to manual"
+
+## 9. MQTT Integration
 
 The system communicates with ESP32 controllers via MQTT.
 
@@ -153,50 +300,90 @@ The system communicates with ESP32 controllers via MQTT.
 ```
 smartlighting/
 ├── command/
-│   └── {controllerId}/
-│       ├── led/{index}     # Individual LED control
-│       ├── scene           # Scene activation
-│       └── global          # All LEDs
+│   ├── lights              # "on", "off", "toggle"
+│   ├── mode                # "auto", "manual"
+│   └── scene               # {"sceneName":"relax","target":"bedroom"}
+├── led/{index}/
+│   ├── power               # "on", "off"
+│   ├── brightness          # 0-100
+│   └── color               # {"r":255,"g":100,"b":50}
+├── room/{name}/
+│   └── power, brightness
+├── config/
+│   └── lighting, climate, audio, display
 └── status/
-    └── {controllerId}/     # Controller status updates
+    └── online, led/state, sensor/data
 ```
 
-### LED Command Format
+### Test Commands
 
-```json
-{
-  "rgb": [255, 149, 0],
-  "brightness": 80,
-  "on": true
-}
+```bash
+# Turn on all lights
+mosquitto_pub -h localhost -t "smartlighting/command/lights" -m "on"
+
+# Set LED 0 color
+mosquitto_pub -h localhost -t "smartlighting/led/0/color" -m '{"r":255,"g":0,"b":0}'
+
+# Apply scene
+mosquitto_pub -h localhost -t "smartlighting/scene/apply" -m '{"sceneName":"relax"}'
 ```
 
-### Scene Command Format
+## 10. ESP32 Hardware Setup
 
-```json
-{
-  "sceneName": "evening"
-}
-```
+For hardware integration, see [embedded-setup.md](embedded-setup.md).
 
-## 7. Frontend Development
+### Quick Overview
+
+| Component | Role |
+|-----------|------|
+| ESP32 #1 | BLE sensor hub |
+| ESP32 #2 | Main controller (LEDs, OLED, WiFi) |
+| nRF52840 x2 | Environmental sensors |
+| WS2812B LEDs | Room lighting (5 LEDs) |
+
+### LED to Room Mapping
+
+| LED Index | Room |
+|-----------|------|
+| 0 | Living Room |
+| 1 | Bedroom |
+| 2 | Kitchen |
+| 3 | Bathroom |
+| 4 | Hallway |
+
+### WiFi Provisioning
+
+If ESP32 can't connect to WiFi:
+1. Hold Button A for 5 seconds during boot
+2. Connect to "SmartLight-Setup" WiFi
+3. Navigate to 192.168.4.1
+4. Enter WiFi credentials
+5. ESP32 reboots and connects
+
+## 11. Frontend Development
 
 ### Project Structure
 
 ```
-frontend/
-├── src/
-│   ├── api/          # API client modules
-│   ├── components/   # Vue components
-│   ├── stores/       # Pinia state management
-│   ├── utils/        # Utilities (logger, guards)
-│   └── views/        # Page components
+frontend/src/
+├── api/              # API client modules
+├── components/       # Reusable Vue components
+├── views/            # Page components
+├── stores/           # Pinia state management
+└── utils/            # Utilities
+```
+
+### Run Development Server
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ### Run Tests
 
 ```bash
-cd frontend
 npm run test           # Run all tests
 npm run test:watch     # Watch mode
 npm run test:coverage  # With coverage
@@ -210,26 +397,31 @@ npm run lint:check     # Check only
 npm run format         # Format with Prettier
 ```
 
-## 8. Backend Development
+## 12. Backend Development
 
 ### Project Structure
 
 ```
-backend/
-├── src/main/java/.../
-│   ├── controller/   # REST endpoints
-│   ├── service/      # Business logic
-│   ├── entity/       # JPA entities
-│   ├── repository/   # Data access
-│   ├── dto/          # Data transfer objects
-│   ├── config/       # Configuration
-│   └── security/     # OAuth2 setup
+backend/src/main/java/.../
+├── controller/       # REST endpoints
+├── service/          # Business logic
+├── entity/           # JPA entities
+├── repository/       # Data access
+├── dto/              # Data transfer objects
+├── config/           # Configuration
+└── security/         # OAuth2 setup
+```
+
+### Run Development Server
+
+```bash
+cd backend
+./gradlew bootRun
 ```
 
 ### Run Tests
 
 ```bash
-cd backend
 ./gradlew test
 ```
 
@@ -249,37 +441,7 @@ cd backend
 ./gradlew spotbugsMain
 ```
 
-## 9. ESP32 Controller Setup
-
-For hardware integration, flash the ESP32 with MicroPython firmware.
-
-### Configuration
-
-Edit `embedded/test-standalone/esp32_controller/config.py`:
-
-```python
-WIFI_SSID = "YourNetwork"
-WIFI_PASSWORD = "YourPassword"
-
-MQTT_BROKER = "192.168.1.100"
-MQTT_PORT = 1883
-MQTT_CLIENT_ID = "esp32-001"
-
-LED_PIN = 13
-LED_COUNT = 5
-```
-
-### LED to Room Mapping
-
-| LED Index | Room |
-|-----------|------|
-| 0 | Living Room |
-| 1 | Bedroom |
-| 2 | Kitchen |
-| 3 | Bathroom |
-| 4 | Hallway |
-
-## 10. Troubleshooting
+## 13. Troubleshooting
 
 ### Backend won't start
 
@@ -290,17 +452,27 @@ docker-compose -f infra/docker-compose.yml ps
 
 ### Authentication fails
 
-Ensure Google OAuth credentials are configured in `backend/src/main/resources/application.yml`:
-```yaml
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+Ensure Google OAuth credentials are configured in `.env`:
 ```
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+### NLP commands not working
+
+Verify OpenAI API key in `.env`:
+```
+OPENAI_API_KEY=sk-your-api-key
+```
+
+Check backend logs for API errors.
+
+### Settings not applied to ESP32
+
+1. Verify MQTT broker is running
+2. Check ESP32 serial logs for config messages
+3. Try "Sync to Devices" button
+4. Verify ESP32 subscribes to `smartlighting/config/#`
 
 ### MQTT not connecting
 
@@ -315,9 +487,16 @@ mosquitto_pub -h localhost -t "test" -m "hello"
 mosquitto_sub -h localhost -t "test"
 ```
 
+### Schedule conflicts
+
+Use the conflict resolution UI in Schedules view:
+1. Click on conflicting schedule
+2. Review suggested resolutions
+3. Select and apply a resolution
+
 ## Next Steps
 
-- Explore the [API Documentation](../../backend/build/docs/javadoc/index.html)
-- Review the [System Architecture](../SYSTEM_ARCHITECTURE.md)
-- Check the [Embedded Design](../EMBEDDED_DESIGN_SUMMARY.md) for hardware details
-
+- Explore the [API Documentation](../API.md)
+- Review the [Embedded System Documentation](../EMBEDDED_SYSTEM.md)
+- Check the [Development Guide](../DEVELOPMENT.md)
+- Set up [ESP32 Hardware](embedded-setup.md)
