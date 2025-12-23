@@ -1,7 +1,8 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useAuthStore } from './stores/auth'
+import { connectWebSocket, disconnectWebSocket } from './stores/websocket'
 import AuthButton from './components/AuthButton.vue'
 import UserMenu from './components/UserMenu.vue'
 import LoadingSpinner from './components/LoadingSpinner.vue'
@@ -18,6 +19,27 @@ onMounted(async () => {
 
   // Check authentication status
   await authStore.checkAuth()
+
+  // Connect WebSocket if authenticated
+  if (authStore.isAuthenticated) {
+    connectWebSocket()
+  }
+})
+
+// Connect/disconnect WebSocket based on auth status
+watch(
+  () => authStore.isAuthenticated,
+  isAuth => {
+    if (isAuth) {
+      connectWebSocket()
+    } else {
+      disconnectWebSocket()
+    }
+  }
+)
+
+onUnmounted(() => {
+  disconnectWebSocket()
 })
 
 const toggleDarkMode = () => {
@@ -56,6 +78,7 @@ const toggleDarkMode = () => {
             <RouterLink to="/scenes" class="nav-link"> Scenes </RouterLink>
             <RouterLink to="/routines" class="nav-link"> Routines </RouterLink>
             <RouterLink to="/schedules" class="nav-link"> Schedules </RouterLink>
+            <RouterLink v-if="isOwner" to="/settings" class="nav-link"> ⚙️ Settings </RouterLink>
           </div>
         </div>
 
