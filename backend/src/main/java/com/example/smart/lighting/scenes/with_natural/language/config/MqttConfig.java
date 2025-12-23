@@ -39,6 +39,12 @@ public class MqttConfig {
     @Value("${mqtt.topic.sensor}")
     private String sensorTopic;
 
+    @Value("${mqtt.topic.led}")
+    private String ledTopic;
+
+    @Value("${mqtt.topic.config}")
+    private String configTopic;
+
     @Value("${mqtt.qos}")
     private int qos;
 
@@ -85,10 +91,10 @@ public class MqttConfig {
         return new DirectChannel();
     }
 
-    // Inbound adapter for status messages
+    // Inbound adapter for status, sensor, and LED messages
     @Bean
     public Mqttv5PahoMessageDrivenChannelAdapter mqttStatusInbound() {
-        String[] topics = {statusTopic, sensorTopic};
+        String[] topics = {statusTopic, sensorTopic, ledTopic, configTopic};
         Mqttv5PahoMessageDrivenChannelAdapter adapter =
             new Mqttv5PahoMessageDrivenChannelAdapter(mqttClientManager(), topics);
         // Using default message converter

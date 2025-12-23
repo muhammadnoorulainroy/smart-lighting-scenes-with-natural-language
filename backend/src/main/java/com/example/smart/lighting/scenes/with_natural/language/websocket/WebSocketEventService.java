@@ -69,4 +69,55 @@ public class WebSocketEventService {
         messagingTemplate.convertAndSend("/topic/system", message);
         log.debug("Broadcasted system event: {}", eventType);
     }
+
+    /**
+     * Broadcast device update from MQTT.
+     */
+    public void broadcastDeviceUpdate(String controllerId, String payload) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("DEVICE_UPDATE")
+            .data(Map.of(
+                "controllerId", controllerId,
+                "payload", payload
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/device-updates", message);
+        log.debug("Broadcasted device update from controller: {}", controllerId);
+    }
+
+    /**
+     * Broadcast device state update from MQTT.
+     */
+    public void broadcastDeviceStateUpdate(String deviceId, Map<String, Object> state) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("DEVICE_STATE_UPDATE")
+            .data(Map.of(
+                "deviceId", deviceId,
+                "state", state
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/device-state", message);
+        log.debug("Broadcasted device state update: {}", deviceId);
+    }
+
+    /**
+     * Broadcast sensor data update from MQTT.
+     */
+    public void broadcastSensorUpdate(String sensorName, Map<String, Object> data) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SENSOR_UPDATE")
+            .data(Map.of(
+                "sensorName", sensorName,
+                "readings", data
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/sensors", message);
+        log.debug("Broadcasted sensor update: {}", sensorName);
+    }
 }
