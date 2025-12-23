@@ -14,10 +14,22 @@ import sh1107
 import time
 import config
 
+# Import RuntimeConfig for dynamic settings
+try:
+    from runtime_config import cfg as runtime_cfg
+except ImportError:
+    runtime_cfg = config  # Fallback to static config
+
 _SRC = "oled_display_async.py"
 
 # France timezone offset (UTC+1)
 FRANCE_TZ_OFFSET_SECONDS = 3600  # +1 hour
+
+
+def _cfg(key, default=None):
+    """Get config value from RuntimeConfig or fallback."""
+    return getattr(runtime_cfg, key, default)
+
 
 class AsyncOLEDDisplay:
     """Async OLED display controller with multi-page support"""
@@ -202,11 +214,12 @@ class AsyncOLEDDisplay:
         else:
             self.display.text("Waiting...", 0, y, 1)
         
-        # Date and Time (France timezone)
-        date_str = self._format_date_short()
-        time_str = self._format_time()
-        datetime_str = f"{date_str} {time_str}"
-        self._center_text(datetime_str, 54)
+        # Date and Time (France timezone) - only show if enabled in config
+        if _cfg("SHOW_TIME", True):
+            date_str = self._format_date_short()
+            time_str = self._format_time()
+            datetime_str = f"{date_str} {time_str}"
+            self._center_text(datetime_str, 54)
         
         await self.update()
     

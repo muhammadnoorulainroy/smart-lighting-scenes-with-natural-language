@@ -147,6 +147,7 @@ class SmartLightingMQTT:
             f"{self.base}/led/#",
             f"{self.base}/room/#",
             f"{self.base}/scene/#",
+            f"{self.base}/config/#",  # Config updates from backend
         ]
         
         async def do_subscribe():
@@ -164,6 +165,11 @@ class SmartLightingMQTT:
         """Publish online/offline status."""
         status = "online" if online else "offline"
         await self.client.publish(f"{self.base}/status/online", status, retain=True)
+    
+    async def request_config(self):
+        """Request configuration from backend."""
+        log(_SRC, "Requesting config from backend...")
+        await self.client.publish(f"{self.base}/config/request", "get")
     
     async def publish_sensor_data(self, sensor_name, data):
         """Publish sensor data."""

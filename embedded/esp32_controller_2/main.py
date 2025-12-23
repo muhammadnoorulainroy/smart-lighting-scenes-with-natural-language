@@ -32,19 +32,24 @@ from uart_receiver_async import UARTReceiver
 from sensor_logic_async import AsyncSensorLogic
 from mqtt_client_async import AsyncMQTTClient, SmartLightingMQTT
 
-# Config bridge for provisioned settings
+# Runtime config with backend overrides
+from runtime_config import cfg
+
+# Config bridge for provisioned WiFi settings
 try:
     from config_bridge import get_config, factory_reset
-    cfg = get_config()
+    wifi_cfg = get_config()
 except ImportError:
-    cfg = config
+    wifi_cfg = config
     def factory_reset():
         return False
 
 _SRC = "main"
 
 def _cfg(name, default):
-    return getattr(config, name, default)
+    """Get config value from RuntimeConfig (with backend overrides)."""
+    val = getattr(cfg, name, None)
+    return val if val is not None else default
 
 
 # =========================
@@ -60,7 +65,7 @@ class SystemState:
         # OLED power management
         self.oled_active = True
         self.oled_last_activity = time.ticks_ms()
-        self.oled_auto_sleep = _cfg("OLED_AUTO_SLEEP_ENABLED", True)
+        # Note: OLED_AUTO_SLEEP is checked dynamically in check_oled_sleep()
         self.oled_wake_requested = False  # Flag for button-triggered wake
 
         self.led_states = []
@@ -75,6 +80,8 @@ class SystemState:
                 "rgb": default_colors[i],
                 "base_brightness": base_brightness,
                 "brightness": base_brightness,
+                "saturation": 100,  # Saturation percentage (affected by humidity)
+                "color_temp": 4000,  # Color temperature in Kelvin (affected by temperature)
                 "on": True,
                 "has_sensor": False,
                 "room_name": room_name,
@@ -99,11 +106,13 @@ class SystemState:
     
     def check_oled_sleep(self):
         """Check if OLED should sleep due to inactivity"""
-        if not self.oled_auto_sleep:
+        # Check config dynamically (can be changed from backend)
+        if not _cfg("OLED_AUTO_SLEEP", True):
             return False
         
-        timeout = _cfg("OLED_AUTO_SLEEP_TIMEOUT", 15000)
-        if self.oled_active and time.ticks_diff(time.ticks_ms(), self.oled_last_activity) > timeout:
+        timeout_sec = _cfg("OLED_TIMEOUT", 15)
+        timeout_ms = timeout_sec * 1000
+        if self.oled_active and time.ticks_diff(time.ticks_ms(), self.oled_last_activity) > timeout_ms:
             self.oled_active = False
             log(_SRC, "OLED sleeping (power save)")
             return True
@@ -136,7 +145,7 @@ class SystemState:
     def increase_brightness(self, led_index, step=10):
         st = self.get_led_state(led_index)
         if st:
-            new_br = min(5, st["base_brightness"] + step)
+            new_br = min(100, st["base_brightness"] + step)
             self.set_led_state(led_index, base_brightness=new_br)
             log(_SRC, f"LED{led_index} brightness: {new_br}%")
         self.wake_oled()
@@ -241,7 +250,7 @@ async def on_mqtt_command(topic, msg):
                 pass
         
         # Per-LED control: smartlight/led/{index}/{action}
-        # Actions: power, brightness, color
+        # Actions: power, brightness, color, set (JSON command)
         elif "/led/" in topic and len(parts) >= 4:
             try:
                 led_idx = int(parts[2])
@@ -255,9 +264,49 @@ async def on_mqtt_command(topic, msg):
                     elif action == "color":
                         # Expect "r,g,b" format
                         r, g, b = [int(x) for x in msg.split(",")]
-                        state.set_led_state(led_idx, color=(r, g, b))
-            except (ValueError, IndexError):
-                pass
+                        state.set_led_state(led_idx, rgb=(r, g, b))
+                    elif action == "set":
+                        # JSON command: {"on": true, "rgb": [r,g,b], "brightness": 50, "color_temp": 4000, "mode": "manual"}
+                        import json
+                        cmd = json.loads(msg)
+                        log(_SRC, f"LED {led_idx} SET cmd: {cmd}")
+                        
+                        # Set mode to manual if specified
+                        if cmd.get("mode") == "manual":
+                            state.global_mode = "manual"
+                        
+                        # Apply power state
+                        if "on" in cmd:
+                            state.set_led_state(led_idx, on=cmd["on"])
+                        
+                        # Apply RGB color
+                        if "rgb" in cmd:
+                            rgb = cmd["rgb"]
+                            if isinstance(rgb, list) and len(rgb) >= 3:
+                                state.set_led_state(led_idx, rgb=(rgb[0], rgb[1], rgb[2]))
+                        
+                        # Apply brightness (as base_brightness for manual control)
+                        if "brightness" in cmd:
+                            br = max(0, min(100, int(cmd["brightness"])))
+                            state.set_led_state(led_idx, base_brightness=br, brightness=br)
+                        
+                        # Apply color temperature (store for reference, affects color calculation)
+                        if "color_temp" in cmd:
+                            ct = int(cmd["color_temp"])
+                            state.set_led_state(led_idx, color_temp=ct)
+                        
+                        # Handle mode switching
+                        if cmd.get("mode") == "manual":
+                            # Disable sensor-based auto adjustments for this LED in manual mode
+                            state.set_led_state(led_idx, has_sensor=False)
+                        elif cmd.get("mode") == "auto":
+                            # Re-enable sensor-based auto adjustments
+                            # LEDs 0 (living room) and 1 (bedroom) have sensors
+                            has_sens = led_idx in [0, 1]
+                            state.set_led_state(led_idx, has_sensor=has_sens)
+                            log(_SRC, f"LED {led_idx} switched to AUTO mode (sensor: {has_sens})")
+            except (ValueError, IndexError) as e:
+                log(_SRC, f"LED cmd error: {e}")
         
         # Per-room control: smartlight/room/{name}/{action}
         # Room names: living_room, bedroom, kitchen, bath, hallway
@@ -277,6 +326,45 @@ async def on_mqtt_command(topic, msg):
                         state.set_led_state(led_idx, color=(r, g, b))
                 except ValueError:
                     pass
+        
+        # Global mode command: smartlighting/mode/set
+        elif topic.endswith("/mode/set") or topic.endswith("/mode"):
+            try:
+                if msg in ["auto", "manual"]:
+                    state.global_mode = msg
+                    log(_SRC, f"Global mode set to: {msg}")
+                    # For auto mode, re-enable sensors on LEDs 0 and 1
+                    if msg == "auto":
+                        for i in range(5):
+                            has_sens = i in [0, 1]  # Living room and bedroom have sensors
+                            state.set_led_state(i, has_sensor=has_sens)
+                        log(_SRC, "All LEDs switched to AUTO mode with sensor detection")
+                    else:
+                        # Manual mode - disable sensor effects
+                        for i in range(5):
+                            state.set_led_state(i, has_sensor=False)
+                        log(_SRC, "All LEDs switched to MANUAL mode")
+            except Exception as e:
+                log(_SRC, f"Mode command error: {e}")
+        
+        # Config updates from backend: smartlighting/config/update or smartlighting/config/{category}
+        elif "/config/" in topic:
+            try:
+                import json
+                config_data = json.loads(msg) if isinstance(msg, str) else msg
+                
+                if topic.endswith("/config/update"):
+                    # Full config update
+                    cfg.update(config_data)
+                    log(_SRC, f"Full config received from backend")
+                elif "/config/" in topic:
+                    # Category update (e.g., /config/lighting)
+                    parts = topic.split("/")
+                    category = parts[-1] if parts else "unknown"
+                    cfg.update_category(category, config_data)
+                    log(_SRC, f"Config category '{category}' updated")
+            except Exception as e:
+                log(_SRC, f"Config update error: {e}")
         
         elif topic.endswith("/factory_reset"):
             if msg == "confirm":
@@ -306,9 +394,9 @@ async def init_wifi():
         log(_SRC, "WiFi disabled")
         return None
 
-    # Use provisioned config or fall back to hardcoded
-    wifi_ssid = cfg.WIFI_SSID
-    wifi_password = cfg.WIFI_PASSWORD
+    # Use provisioned config (NVS) or fall back to config.py defaults
+    wifi_ssid = getattr(wifi_cfg, 'WIFI_SSID', None) or config.WIFI_SSID
+    wifi_password = getattr(wifi_cfg, 'WIFI_PASSWORD', None) or config.WIFI_PASSWORD
     
     if not wifi_ssid:
         log_err(_SRC, "No WiFi SSID configured!")
@@ -491,6 +579,10 @@ async def init_mqtt():
         await sl.publish_online_status(online=True)
         
         log(_SRC, f"MQTT ready: {mqtt_broker}")
+        
+        # Request config from backend
+        await asyncio.sleep_ms(500)  # Small delay to ensure subscriptions are active
+        await sl.request_config()
         return mqtt, sl
     
     except Exception as e:
@@ -566,8 +658,8 @@ async def init_hardware():
     except Exception as e:
         log_err(_SRC, f"UART init failed: {e}")
 
-    # Sensor logic
-    logic = AsyncSensorLogic(config)
+    # Sensor logic (uses RuntimeConfig for dynamic settings from backend)
+    logic = AsyncSensorLogic(cfg)
     log(_SRC, "Sensor logic ready")
     
     return led, oled, uart, logic, wlan, mqtt, sl
@@ -588,7 +680,7 @@ async def main_loop():
     # Intervals
     led_interval = 16  # 60Hz
     oled_interval = 200  # 5Hz
-    mqtt_pub_interval = 5000  # Publish every 5s
+    mqtt_pub_interval = 2000  # Publish every 2s (backup, main publish is on-change)
     heartbeat_interval = 10000  # 10s
     
     frame_count = 0
@@ -606,17 +698,36 @@ async def main_loop():
                 last_led = now
                 for i in range(_cfg("NUM_LEDS",5)):
                     st = state.get_led_state(i)
+                    old_br = st.get("brightness", 0)
+                    old_on = st.get("on", True)
+                    
                     if not state.lights_on:
                         await led.set_led(i, (0,0,0), 0, False)
-                        state.set_led_state(i, brightness=0)
+                        state.set_led_state(i, brightness=0, saturation=100, color_temp=4000)
+                        new_br, new_on = 0, False
                     else:
                         base_br = st.get("base_brightness", st["brightness"])
+                        
+                        # Apply MAX_BRIGHTNESS limit from config to ALL LEDs
+                        max_br = _cfg("MAX_BRIGHTNESS", 100)
+                        if max_br is None:
+                            max_br = 100
+                        
                         if st["has_sensor"] and state.global_mode == "auto" and uart:
-                            rgb, br = await logic.calculate_led_state(i, st["rgb"], base_br)
+                            rgb, br, sat, ct = await logic.calculate_led_state(i, st["rgb"], base_br)
                         else:
-                            rgb, br = st["rgb"], base_br
+                            # LEDs without sensors still respect MAX_BRIGHTNESS
+                            capped_br = min(base_br, max_br)
+                            rgb, br, sat, ct = st["rgb"], capped_br, 100, 4000
                         await led.set_led(i, rgb, br, st["on"])
-                        state.set_led_state(i, brightness=br)
+                        state.set_led_state(i, brightness=br, saturation=sat, color_temp=ct, rgb=rgb)
+                        new_br, new_on = br, st["on"]
+                    
+                    # Publish immediately if state changed (brightness or on/off)
+                    if mqtt and mqtt.connected and sl and (new_br != old_br or new_on != old_on):
+                        updated_st = state.get_led_state(i)
+                        await sl.publish_led_state(i, updated_st)
+                        
                 await led.update()
                 frame_count += 1
             await asyncio.sleep_ms(0)
@@ -737,7 +848,7 @@ async def main_loop():
                     ble_ready = ble_status.get("ready", 0)
                 mqtt_status = "✓" if (mqtt and mqtt.connected) else "✗"
                 
-                log(_SRC, "❤️ Up:{}s Mem:{}B BLE:{}/{} MQTT:{}".format(
+                log(_SRC, "Up:{}s Mem:{}B BLE:{}/{} MQTT:{}".format(
                     time.ticks_diff(now, state.start_time)//1000,
                     gc.mem_free(),
                     ble_ready,

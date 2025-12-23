@@ -11,7 +11,7 @@ WIFI_TIMEOUT = 20
 MQTT_BROKER = "10.218.234.96"
 MQTT_PORT = 1883
 MQTT_CLIENT_ID = "esp32-smartlight"
-MQTT_BASE_TOPIC = "smartlight"
+MQTT_BASE_TOPIC = "smartlighting"
 MQTT_USER = None
 MQTT_PASSWORD = None
 MQTT_KEEPALIVE = 60
@@ -24,9 +24,9 @@ UART_BAUDRATE = 115200
 # LEDs (WS2812B)
 NUM_LEDS = 5
 LED_PIN = 13
-DEFAULT_BRIGHTNESS = 5
+DEFAULT_BRIGHTNESS = 100  # Starting brightness (sensor can dim from this)
 MIN_BRIGHTNESS = 0
-MAX_BRIGHTNESS = 10
+MAX_BRIGHTNESS = 100  # Can be overridden by backend config
 
 DEFAULT_COLORS = [
     (255, 50, 0),
@@ -62,8 +62,10 @@ OLED_WIDTH = 128
 OLED_HEIGHT = 64
 OLED_ADDR = 0x3C
 OLED_ENABLED = True
-OLED_AUTO_SLEEP_ENABLED = True
-OLED_AUTO_SLEEP_TIMEOUT = 15000
+OLED_AUTO_SLEEP = True  # Auto-sleep to save power
+OLED_TIMEOUT = 15  # Seconds before auto-sleep
+SHOW_TIME = True  # Display time on home page
+SHOW_SENSOR_DATA = True  # Display sensor values on detail pages
 OLED_PAGE_HOME = 0
 OLED_PAGE_BRIGHTNESS = 1
 OLED_PAGE_SENSOR_START = 2
