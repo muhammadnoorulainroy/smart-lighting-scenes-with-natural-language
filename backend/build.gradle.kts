@@ -3,10 +3,17 @@
 
 import java.time.Instant
 
+buildscript {
+	dependencies {
+		classpath("org.flywaydb:flyway-database-postgresql:11.1.0")
+	}
+}
+
 plugins {
 	java
 	id("org.springframework.boot") version "3.5.6"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("org.flywaydb.flyway") version "11.1.0"
 	checkstyle
 	pmd
 	id("com.github.spotbugs") version "6.0.26"
@@ -210,4 +217,40 @@ tasks.register("docs") {
 	doLast {
 		println("Javadoc generated at: ${layout.buildDirectory.get()}/docs/javadoc/index.html")
 	}
+}
+
+// Load .env file for Flyway tasks
+fun loadEnvFile(): Map<String, String> {
+	val envFile = file("${rootDir.parentFile}/.env")
+	val env = mutableMapOf<String, String>()
+	println("Looking for .env at: ${envFile.absolutePath}, exists: ${envFile.exists()}")
+	if (envFile.exists()) {
+		envFile.readLines().forEach { line ->
+			val trimmed = line.trim()
+			if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
+				val parts = trimmed.split("=", limit = 2)
+				if (parts.size == 2) {
+					env[parts[0].trim()] = parts[1].trim()
+				}
+			}
+		}
+		println("Loaded env vars: ${env.keys}")
+	}
+	return env
+}
+
+val envVars = loadEnvFile()
+
+// Flyway Configuration for standalone tasks (repair, info, etc.)
+flyway {
+	val dbHost = envVars["POSTGRES_HOST"] ?: "localhost"
+	val dbPort = envVars["POSTGRES_PORT"] ?: "5432"
+	val dbName = envVars["POSTGRES_DB"] ?: "smartlighting"
+	url = "jdbc:postgresql://${dbHost}:${dbPort}/${dbName}?currentSchema=smartlighting"
+	user = envVars["POSTGRES_USER"] ?: "smartlighting"
+	password = envVars["POSTGRES_PASSWORD"] ?: "smartlighting"
+	schemas = arrayOf("smartlighting")
+	defaultSchema = "smartlighting"
+	locations = arrayOf("classpath:db/migration")
+	cleanDisabled = false
 }
