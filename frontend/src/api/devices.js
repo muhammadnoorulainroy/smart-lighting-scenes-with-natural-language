@@ -55,5 +55,15 @@ export const devicesApi = {
   async delete(deviceId) {
     const response = await apiClient.delete(`/api/devices/${deviceId}`)
     return response.data
+  },
+
+  /**
+   * Gets the latest sensor readings for a device.
+   * @param {string} deviceId - Device UUID
+   * @returns {Promise<Array>} Array of sensor readings
+   */
+  async getSensorReadings(deviceId) {
+    const response = await apiClient.get(`/api/devices/${deviceId}/readings`)
+    return response.data
   }
 }
