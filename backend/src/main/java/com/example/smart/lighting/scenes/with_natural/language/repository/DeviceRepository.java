@@ -68,4 +68,35 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
      * @return true if exists
      */
     boolean existsByRoomIdAndName(UUID roomId, String name);
+
+    /**
+     * Finds a device by LED index stored in meta_json.
+     * @param ledIndex the LED index
+     * @return optional containing the device
+     */
+    @Query(value = """
+        SELECT * FROM smartlighting.devices 
+        WHERE meta_json->>'led_index' = CAST(:ledIndex AS TEXT)
+        LIMIT 1
+        """, nativeQuery = true)
+    Optional<Device> findByLedIndex(@Param("ledIndex") int ledIndex);
+
+    /**
+     * Finds a device by sensor_id stored in meta_json.
+     * @param sensorId the sensor ID (e.g., "SmartLight-Sensor-1")
+     * @return optional containing the device
+     */
+    @Query(value = """
+        SELECT * FROM smartlighting.devices 
+        WHERE meta_json->>'sensor_id' = :sensorId
+        LIMIT 1
+        """, nativeQuery = true)
+    Optional<Device> findBySensorId(@Param("sensorId") String sensorId);
+
+    /**
+     * Finds all devices with their state eagerly loaded.
+     * @return list of all devices with states
+     */
+    @Query("SELECT d FROM Device d LEFT JOIN FETCH d.deviceState")
+    List<Device> findAllWithState();
 }

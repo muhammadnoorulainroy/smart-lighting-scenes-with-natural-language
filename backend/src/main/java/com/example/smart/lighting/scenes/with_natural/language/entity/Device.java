@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
@@ -56,17 +57,18 @@ public class Device {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = false)
+    @JoinColumn(name = "room_id", nullable = true)
     private Room room;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "device_type")
+    @ColumnTransformer(write = "?::device_type")
     private DeviceType type;
 
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "mqtt_cmd_topic", nullable = false)
+    @Column(name = "mqtt_cmd_topic")  // Nullable for sensors that only publish
     private String mqttCmdTopic;
 
     @Column(name = "mqtt_state_topic", nullable = false)
@@ -96,11 +98,17 @@ public class Device {
      * Enumeration of supported device types.
      */
     public enum DeviceType {
-        /** RGB or white light fixture. */
+        /** RGB or white light fixture (legacy, use LED). */
         LIGHT,
-        /** Environmental sensor (temperature, humidity, motion). */
+        /** Single environmental sensor (temperature, humidity, motion, etc.). */
         SENSOR,
-        /** Physical wall switch or relay. */
-        SWITCH
+        /** Physical wall switch or relay (legacy). */
+        SWITCH,
+        /** Device with multiple sensors (e.g., Adafruit Feather Sense). */
+        MULTI_SENSOR,
+        /** RGB LED strip or single LED. */
+        LED,
+        /** ESP32 or other microcontroller - not mapped to a room. */
+        MICROCONTROLLER
     }
 }
