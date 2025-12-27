@@ -53,6 +53,13 @@ const router = createRouter({
       beforeEnter: requireAuth
     },
     {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/SettingsView.vue'),
+      meta: { requiresAuth: true, requiresOwner: true, title: 'Settings' },
+      beforeEnter: requireAuth
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../views/NotFoundView.vue'),
