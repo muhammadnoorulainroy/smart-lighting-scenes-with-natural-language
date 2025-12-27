@@ -66,6 +66,9 @@ dependencies {
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
 	
+	// Google API client for token verification
+	implementation("com.google.api-client:google-api-client:2.2.0")
+	
 	// MQTT for IoT devices
 	implementation("org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5")
 	implementation("org.springframework.integration:spring-integration-mqtt:6.2.0")
