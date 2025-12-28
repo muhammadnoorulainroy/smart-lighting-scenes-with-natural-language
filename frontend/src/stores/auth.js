@@ -73,7 +73,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = () => {
     logger.info(MODULE, 'Initiating OAuth login redirect')
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/oauth2/authorization/google`
+    // relative URL in production (Docker), or explicit URL in dev
+    const baseUrl = import.meta.env.VITE_API_URL ?? ''
+    window.location.href = `${baseUrl}/oauth2/authorization/google`
   }
 
   const logout = async () => {

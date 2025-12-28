@@ -12,9 +12,10 @@ const MODULE = 'ApiClient'
 
 /**
  * Base URL for API requests.
+ * Uses empty string in production (Docker/Nginx) for relative URLs.
  * @type {string}
  */
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? ''
 
 /**
  * Pre-configured Axios instance for API communication.
