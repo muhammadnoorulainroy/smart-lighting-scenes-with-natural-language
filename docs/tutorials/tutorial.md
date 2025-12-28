@@ -6,27 +6,59 @@ This tutorial guides you through setting up and using the Smart Lighting system 
 
 Before starting, ensure you have:
 
-- **Docker** and **Docker Compose** installed
-- **Java 21** (for backend development)
-- **Node.js 18+** and npm (for frontend development)
+- **Docker Desktop** installed and running
 - **Git** for version control
 - **Google Cloud Console** account (for OAuth)
-- **OpenAI API key** (for natural language processing)
+- **OpenAI API key** (optional, for natural language processing)
+
+For local development (optional):
+- **Java 21** (JDK)
+- **Node.js 18+** and npm
 
 ## 1. Quick Start
 
-### Clone and Start
+### Option A: Docker Deployment (Recommended)
 
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/smart-lighting-scenes.git
 cd smart-lighting-scenes
 
-# Copy environment file and configure
-cp infra/env.example .env
-# Edit .env with your Google OAuth and OpenAI credentials
+# Create .env file with your credentials
+cat > .env << EOF
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+JWT_SECRET=your-jwt-secret
+OPENAI_API_KEY=sk-your-openai-api-key
+EOF
 
-# Start infrastructure (PostgreSQL, Redis, MQTT broker)
+# Build and start the full stack
+docker-compose build
+docker-compose up -d
+```
+
+**Access the Application:**
+- **Web Application:** http://localhost
+- **Backend API:** http://localhost:8080
+
+**Google OAuth Setup:**
+Add this redirect URI in Google Cloud Console:
+```
+http://localhost/login/oauth2/code/google
+```
+
+### Option B: Local Development
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/smart-lighting-scenes.git
+cd smart-lighting-scenes
+
+# Create .env file (same as above)
+
+# Start infrastructure only (PostgreSQL, Redis, MQTT broker)
 docker-compose -f infra/docker-compose.yml up -d
 
 # Start backend (Terminal 1)
@@ -39,11 +71,16 @@ npm install
 npm run dev
 ```
 
-### Access the Application
-
+**Access the Application:**
 - **Frontend:** http://localhost:5173
 - **Backend API:** http://localhost:8080
 - **Database Admin:** http://localhost:8090
+
+**Google OAuth Setup:**
+Add this redirect URI in Google Cloud Console:
+```
+http://localhost:8080/login/oauth2/code/google
+```
 
 ## 2. Authentication
 

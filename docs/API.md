@@ -1,8 +1,8 @@
 # API Specification
 
 ## Base URL
-- Development: `http://localhost:8080/api`
-- Production: `https://api.smartlighting.com/api`
+- Docker Deployment: `http://localhost/api` (through Nginx)
+- Local Development: `http://localhost:8080/api`
 
 ## Authentication
 
@@ -661,6 +661,10 @@ Response:
 
 ### Connection
 ```javascript
+// Docker deployment
+ws://localhost/ws
+
+// Local development
 ws://localhost:8080/ws
 ```
 
