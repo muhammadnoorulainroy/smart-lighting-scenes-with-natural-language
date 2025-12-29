@@ -1,28 +1,27 @@
 package com.example.smart.lighting.scenes.with_natural.language.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.example.smart.lighting.scenes.with_natural.language.dto.LoginRequest;
+import com.example.smart.lighting.scenes.with_natural.language.dto.SignupRequest;
 import com.example.smart.lighting.scenes.with_natural.language.dto.UserDto;
+import com.example.smart.lighting.scenes.with_natural.language.entity.User;
 import com.example.smart.lighting.scenes.with_natural.language.security.CustomOAuth2User;
-
+import com.example.smart.lighting.scenes.with_natural.language.service.LocalAuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
- * REST controller for authentication-related endpoints.
- *
- * <p>Handles user authentication state, profile retrieval, and session
- * management. Works in conjunction with Spring Security OAuth2.</p>
- *
- * @author Smart Lighting Team
- * @version 1.0
- * @see CustomOAuth2User
- * @see UserDto
+ * REST controller for authentication endpoints.
+ * Supports both OAuth2 (Google) and local email/password authentication.
  */
 @RestController
 @RequestMapping("/api")
@@ -31,60 +30,138 @@ import lombok.extern.slf4j.Slf4j;
 @CrossOrigin(origins = "${cors.allowed-origins}", allowCredentials = "true")
 public class AuthController {
 
+    private static final String LOCAL_USER_SESSION_KEY = "LOCAL_AUTH_USER";
+
+    private final LocalAuthService localAuthService;
+
     /**
-     * Retrieves the current authenticated user's profile.
-     *
-     * @param principal the authenticated OAuth2 user, or null if not authenticated
-     * @return the user profile DTO, or 404 if not authenticated
+     * Register a new user with email and password.
+     */
+    @PostMapping("/auth/signup")
+    public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest request, HttpServletRequest httpRequest) {
+        try {
+            User user = localAuthService.signup(request);
+            
+            // Create session for the new user
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute(LOCAL_USER_SESSION_KEY, user);
+            
+            log.info("User signed up and session created: {}", user.getEmail());
+            return ResponseEntity.status(HttpStatus.CREATED).body(localAuthService.toUserDto(user));
+        } catch (IllegalArgumentException e) {
+            log.warn("Signup failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Login with email and password.
+     */
+    @PostMapping("/auth/login")
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        try {
+            User user = localAuthService.login(request);
+            
+            // Create session for the user
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute(LOCAL_USER_SESSION_KEY, user);
+            
+            log.info("User logged in and session created: {}", user.getEmail());
+            return ResponseEntity.ok(localAuthService.toUserDto(user));
+        } catch (BadCredentialsException e) {
+            log.warn("Login failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Get current authenticated user profile.
+     * Works for both OAuth2 and local auth users.
      */
     @GetMapping("/me")
-    public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal CustomOAuth2User principal) {
-        if (principal == null) {
-            log.debug("GET /api/me called without authentication");
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<UserDto> getCurrentUser(
+            @AuthenticationPrincipal CustomOAuth2User oauthPrincipal,
+            HttpServletRequest request) {
+        
+        // Check OAuth2 user first
+        if (oauthPrincipal != null) {
+            User user = oauthPrincipal.getUser();
+            log.debug("OAuth user profile accessed: {}", user.getEmail());
+            return ResponseEntity.ok(buildUserDto(user));
         }
-
-        log.info("User profile accessed: email={}, role={}",
-            principal.getUser().getEmail(), principal.getUser().getRole());
-
-        UserDto userDto = UserDto.builder()
-            .id(principal.getUser().getId())
-            .email(principal.getUser().getEmail())
-            .name(principal.getUser().getName())
-            .pictureUrl(principal.getUser().getPictureUrl())
-            .role(principal.getUser().getRole().name())
-            .createdAt(principal.getUser().getCreatedAt())
-            .build();
-
-        return ResponseEntity.ok(userDto);
+        
+        // Check local auth user in session
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            User localUser = (User) session.getAttribute(LOCAL_USER_SESSION_KEY);
+            if (localUser != null) {
+                log.debug("Local user profile accessed: {}", localUser.getEmail());
+                return ResponseEntity.ok(buildUserDto(localUser));
+            }
+        }
+        
+        log.debug("GET /api/me called without authentication");
+        return ResponseEntity.notFound().build();
     }
 
     /**
-     * Checks if the current request is authenticated.
-     *
-     * @param principal the authenticated OAuth2 user, or null
-     * @return true if authenticated, false otherwise
+     * Check if the current request is authenticated.
      */
     @GetMapping("/auth/check")
-    public ResponseEntity<Boolean> checkAuthentication(@AuthenticationPrincipal CustomOAuth2User principal) {
-        boolean isAuth = principal != null;
-        log.debug("Auth check: {}, Principal: {}", isAuth, principal != null ? principal.getEmail() : "null");
-        return ResponseEntity.ok(isAuth);
+    public ResponseEntity<Boolean> checkAuthentication(
+            @AuthenticationPrincipal CustomOAuth2User oauthPrincipal,
+            HttpServletRequest request) {
+        
+        // Check OAuth2 user
+        if (oauthPrincipal != null) {
+            log.debug("Auth check: OAuth user authenticated: {}", oauthPrincipal.getEmail());
+            return ResponseEntity.ok(true);
+        }
+        
+        // Check local auth user
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            User localUser = (User) session.getAttribute(LOCAL_USER_SESSION_KEY);
+            if (localUser != null) {
+                log.debug("Auth check: Local user authenticated: {}", localUser.getEmail());
+                return ResponseEntity.ok(true);
+            }
+        }
+        
+        log.debug("Auth check: not authenticated");
+        return ResponseEntity.ok(false);
     }
 
+    /**
+     * Debug endpoint for authentication troubleshooting.
+     */
     @GetMapping("/auth/debug")
-    public ResponseEntity<?> debugAuth(@AuthenticationPrincipal CustomOAuth2User principal,
-                                       jakarta.servlet.http.HttpServletRequest request) {
-        java.util.Map<String, Object> debug = new java.util.HashMap<>();
-        debug.put("authenticated", principal != null);
-        debug.put("user", principal != null ? principal.getEmail() : null);
-        debug.put("sessionId", request.getSession(false) != null ? request.getSession(false).getId() : null);
-        debug.put("cookies", request.getCookies() != null
-            ? java.util.Arrays.stream(request.getCookies())
-                .collect(java.util.stream.Collectors.toMap(
-                    jakarta.servlet.http.Cookie::getName,
-                    jakarta.servlet.http.Cookie::getValue
-                )) : null);
+    public ResponseEntity<?> debugAuth(
+            @AuthenticationPrincipal CustomOAuth2User oauthPrincipal,
+            HttpServletRequest request) {
+        
+        HttpSession session = request.getSession(false);
+        User localUser = session != null ? (User) session.getAttribute(LOCAL_USER_SESSION_KEY) : null;
+        
+        Map<String, Object> debug = Map.of(
+            "oauthAuthenticated", oauthPrincipal != null,
+            "oauthUser", oauthPrincipal != null ? oauthPrincipal.getEmail() : null,
+            "localAuthenticated", localUser != null,
+            "localUser", localUser != null ? localUser.getEmail() : null,
+            "sessionId", session != null ? session.getId() : null
+        );
+        
         return ResponseEntity.ok(debug);
+    }
+
+    private UserDto buildUserDto(User user) {
+        return UserDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .pictureUrl(user.getPictureUrl())
+                .role(user.getRole().name())
+                .createdAt(user.getCreatedAt())
+                .build();
     }
 }
