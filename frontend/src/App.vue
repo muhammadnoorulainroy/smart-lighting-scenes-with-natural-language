@@ -4,10 +4,12 @@ import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { connectWebSocket, disconnectWebSocket } from './stores/websocket'
 import AuthButton from './components/AuthButton.vue'
+import AuthModal from './components/AuthModal.vue'
 import UserMenu from './components/UserMenu.vue'
 import LoadingSpinner from './components/LoadingSpinner.vue'
 
 const authStore = useAuthStore()
+const showAuthModal = ref(false)
 const isDarkMode = ref(false)
 
 onMounted(async () => {
@@ -119,10 +121,13 @@ const toggleDarkMode = () => {
             <LoadingSpinner size="sm" :container-class="''" />
           </div>
           <UserMenu v-else-if="authStore.isAuthenticated" />
-          <AuthButton v-else />
+          <AuthButton v-else @click="showAuthModal = true" />
         </div>
       </nav>
     </header>
+
+    <!-- Auth Modal -->
+    <AuthModal :show="showAuthModal" @close="showAuthModal = false" />
 
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">

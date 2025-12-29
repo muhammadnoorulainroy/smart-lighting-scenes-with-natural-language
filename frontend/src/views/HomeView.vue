@@ -181,7 +181,7 @@
           control.
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <AuthButton v-if="!authStore.isAuthenticated" />
+          <AuthButton v-if="!authStore.isAuthenticated" @click="showAuthModal = true" />
           <router-link
             v-else
             to="/dashboard"
