@@ -2,16 +2,19 @@ package com.smartlighting.mobile
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.smartlighting.mobile.ui.navigation.NavGraph
+import com.smartlighting.mobile.ui.navigation.Routes
 import com.smartlighting.mobile.ui.theme.SmartLightingTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -20,47 +23,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Enable edge-to-edge display
         enableEdgeToEdge()
         
         setContent {
             SmartLightingTheme {
-                SmartLightingApp()
+                SmartLightingApp(this)
             }
         }
     }
 }
 
 @Composable
-fun SmartLightingApp() {
+fun SmartLightingApp(activity: ComponentActivity) {
+    val navController = rememberNavController()
+    
     Surface(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        // Main app content will go here
-        MainScreen()
-    }
-}
-
-@Composable
-fun MainScreen() {
-    Scaffold(
-        modifier = Modifier.fillMaxSize()
-    ) { paddingValues ->
-        // Navigation and main content
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // App navigation will be implemented here
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SmartLightingAppPreview() {
-    SmartLightingTheme {
-        SmartLightingApp()
+        NavGraph(navController = navController)
     }
 }
