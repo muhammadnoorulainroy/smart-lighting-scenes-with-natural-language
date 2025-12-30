@@ -2,10 +2,13 @@ package com.example.smart.lighting.scenes.with_natural.language.controller;
 
 import com.example.smart.lighting.scenes.with_natural.language.dto.DeviceDto;
 import com.example.smart.lighting.scenes.with_natural.language.dto.DeviceStateDto;
+import com.example.smart.lighting.scenes.with_natural.language.dto.SensorReadingDto;
 import com.example.smart.lighting.scenes.with_natural.language.entity.Device;
 import com.example.smart.lighting.scenes.with_natural.language.entity.Room;
+import com.example.smart.lighting.scenes.with_natural.language.entity.SensorReading;
 import com.example.smart.lighting.scenes.with_natural.language.repository.DeviceRepository;
 import com.example.smart.lighting.scenes.with_natural.language.repository.RoomRepository;
+import com.example.smart.lighting.scenes.with_natural.language.repository.SensorReadingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +53,7 @@ public class DevicesController {
 
     private final DeviceRepository deviceRepository;
     private final RoomRepository roomRepository;
+    private final SensorReadingRepository sensorReadingRepository;
 
     @GetMapping
     public ResponseEntity<List<DeviceDto>> getAllDevices(@RequestParam(required = false) UUID roomId) {
@@ -161,11 +165,34 @@ public class DevicesController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Get the latest sensor readings for a device.
+     */
+    @GetMapping("/{deviceId}/readings")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<SensorReadingDto>> getDeviceSensorReadings(@PathVariable UUID deviceId) {
+        if (!deviceRepository.existsById(deviceId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<SensorReading> readings = sensorReadingRepository.findLatestReadingsByDeviceId(deviceId);
+        List<SensorReadingDto> dtos = readings.stream()
+            .map(r -> SensorReadingDto.builder()
+                .id(r.getId())
+                .deviceId(deviceId)
+                .metric(r.getMetric())
+                .value(r.getValue())
+                .unit(r.getUnit())
+                .timestamp(r.getTimestamp())
+                .build())
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
+
     private DeviceDto toDto(Device device) {
         DeviceDto.DeviceDtoBuilder builder = DeviceDto.builder()
             .id(device.getId())
-            .roomId(device.getRoom().getId())
-            .roomName(device.getRoom().getName())
             .type(device.getType().name())
             .name(device.getName())
             .mqttCmdTopic(device.getMqttCmdTopic())
@@ -174,6 +201,12 @@ public class DevicesController {
             .isActive(device.getIsActive())
             .createdAt(device.getCreatedAt())
             .updatedAt(device.getUpdatedAt());
+
+        // Room can be null for MICROCONTROLLER type
+        if (device.getRoom() != null) {
+            builder.roomId(device.getRoom().getId())
+                .roomName(device.getRoom().getName());
+        }
 
         if (device.getDeviceState() != null) {
             builder.deviceState(DeviceStateDto.builder()

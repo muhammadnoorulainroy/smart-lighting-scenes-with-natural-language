@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,13 +19,19 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Entity representing a lighting scene (preset configuration).
+ * Scenes define a snapshot of light settings that can be applied instantly.
+ *
+ * @author Smart Lighting Team
+ * @version 1.0
+ */
 @Entity
-@Table(name = "scenes", schema = "smartlighting",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"name", "owner_id"}))
+@Table(name = "scenes", schema = "smartlighting")
 @Data
 @Builder
 @NoArgsConstructor
@@ -37,24 +42,41 @@ public class Scene {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
+    @Column(length = 50)
+    @Builder.Default
+    private String icon = "💡";
 
+    /**
+     * Scene settings in JSON format.
+     * Can be:
+     * - All lights: {"target": "all", "brightness": 80, "rgb": [255,200,150], "color_temp": 3000}
+     * - Specific lights: {"lights": [{"led_index": 0, "brightness": 80, ...}, ...]}
+     */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "actions_json", columnDefinition = "jsonb", nullable = false)
+    @Column(name = "settings_json", columnDefinition = "jsonb")
     @Builder.Default
-    private List<SceneAction> actionsJson = new ArrayList<>();
+    private Map<String, Object> settingsJson = new HashMap<>();
 
-    @Column(name = "is_global")
+    /**
+     * Preset scenes are system-defined and cannot be deleted by users.
+     */
+    @Column(name = "is_preset")
     @Builder.Default
-    private Boolean isGlobal = false;
+    private Boolean isPreset = false;
+
+    @Column(name = "is_active")
+    @Builder.Default
+    private Boolean isActive = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -63,16 +85,4 @@ public class Scene {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SceneAction {
-        private UUID deviceId;
-        private Boolean on;
-        private Integer brightness;
-        private Integer colorTemp;
-        private String rgbColor;
-    }
 }
