@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme variant for Activity -->
+    <style name="Theme.SmartLighting" parent="Theme.AppCompat.NoActionBar">
+        <!-- Dark background - Compose handles the UI -->
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>
+

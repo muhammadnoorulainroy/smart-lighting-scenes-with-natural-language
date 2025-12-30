@@ -10,18 +10,18 @@ val Primary40 = Color(0xFF7F5D00)
 val Primary50 = Color(0xFF9E7400)
 val Primary60 = Color(0xFFBE8C00)
 val Primary70 = Color(0xFFDFA500)
-val Primary80 = Color(0xFFFFC107)  // Main primary
-val Primary90 = Color(0xFFFFD54F)
-val Primary95 = Color(0xFFFFE082)
+val Primary80 = Color(0xFFEAB308)  // Main primary - matches web #eab308
+val Primary90 = Color(0xFFFEF08A)
+val Primary95 = Color(0xFFFEF9C3)
 
-// Secondary colors - Green accents
-val Secondary10 = Color(0xFF0D2818)
-val Secondary20 = Color(0xFF1B3F2A)
-val Secondary30 = Color(0xFF29573D)
-val Secondary40 = Color(0xFF387050)
-val Secondary50 = Color(0xFF478A64)
-val Secondary60 = Color(0xFF57A478)
-val Secondary70 = Color(0xFF66BB6A)  // Main secondary
+// Secondary colors - Green accents - matches web #22c55e
+val Secondary10 = Color(0xFF14532D)
+val Secondary20 = Color(0xFF166534)
+val Secondary30 = Color(0xFF15803D)
+val Secondary40 = Color(0xFF16A34A)
+val Secondary50 = Color(0xFF22C55E)  // Main accent - matches web
+val Secondary60 = Color(0xFF4ADE80)
+val Secondary70 = Color(0xFF86EFAC)
 val Secondary80 = Color(0xFF81C784)
 val Secondary90 = Color(0xFFA5D6A7)
 val Secondary95 = Color(0xFFC8E6C9)
