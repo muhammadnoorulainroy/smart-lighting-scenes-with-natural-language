@@ -13,13 +13,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.smartlighting.mobile.data.local.TokenManager
 import com.smartlighting.mobile.ui.navigation.NavGraph
 import com.smartlighting.mobile.ui.navigation.Routes
 import com.smartlighting.mobile.ui.theme.SmartLightingTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    
+    @Inject
+    lateinit var tokenManager: TokenManager
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -27,20 +33,23 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             SmartLightingTheme {
-                SmartLightingApp(this)
+                SmartLightingApp(tokenManager)
             }
         }
     }
 }
 
 @Composable
-fun SmartLightingApp(activity: ComponentActivity) {
+fun SmartLightingApp(tokenManager: TokenManager) {
     val navController = rememberNavController()
     
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        NavGraph(navController = navController)
+        NavGraph(
+            navController = navController,
+            tokenManager = tokenManager
+        )
     }
 }

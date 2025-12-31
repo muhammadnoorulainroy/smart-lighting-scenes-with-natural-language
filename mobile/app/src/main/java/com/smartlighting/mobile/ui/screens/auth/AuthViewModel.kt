@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.smartlighting.mobile.data.local.TokenManager
 import com.smartlighting.mobile.data.repository.LightingRepository
 import com.smartlighting.mobile.util.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,11 +19,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel for handling Google Sign-In authentication
+ * ViewModel for handling authentication
  */
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: LightingRepository
+    private val repository: LightingRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
     
     private val _authState = MutableStateFlow<UiState<String>>(UiState.Idle)
@@ -81,9 +83,17 @@ class AuthViewModel @Inject constructor(
                 authenticateWithBackend(idToken)
                 
             } catch (e: GetCredentialException) {
-                _authState.value = UiState.Error("Authentication failed: ${e.message}")
+                val errorMessage = when {
+                    e.message?.contains("28444") == true -> 
+                        "Google Sign-In not configured. Please use email/password to sign in."
+                    e.message?.contains("16") == true -> 
+                        "Google Sign-In cancelled"
+                    else -> 
+                        "Google Sign-In failed: ${e.message}. Please use email/password instead."
+                }
+                _authState.value = UiState.Error(errorMessage)
             } catch (e: Exception) {
-                _authState.value = UiState.Error("An error occurred: ${e.message}")
+                _authState.value = UiState.Error("Google Sign-In error. Please use email/password to sign in.")
             }
         }
     }
@@ -102,9 +112,44 @@ class AuthViewModel @Inject constructor(
     }
     
     /**
+     * Sign up with email and password
+     */
+    fun signUp(email: String, password: String, name: String) {
+        viewModelScope.launch {
+            _authState.value = UiState.Loading
+            
+            val result = repository.signup(email, password, name)
+            if (result.isSuccess) {
+                _isAuthenticated.value = true
+                _authState.value = UiState.Success("Account created successfully")
+            } else {
+                _authState.value = UiState.Error("Sign up failed: ${result.exceptionOrNull()?.message}")
+            }
+        }
+    }
+    
+    /**
+     * Login with email and password
+     */
+    fun login(email: String, password: String) {
+        viewModelScope.launch {
+            _authState.value = UiState.Loading
+            
+            val result = repository.login(email, password)
+            if (result.isSuccess) {
+                _isAuthenticated.value = true
+                _authState.value = UiState.Success("Logged in successfully")
+            } else {
+                _authState.value = UiState.Error("Login failed: ${result.exceptionOrNull()?.message}")
+            }
+        }
+    }
+    
+    /**
      * Sign out
      */
     fun signOut() {
+        tokenManager.clearAuth()
         _isAuthenticated.value = false
         _authState.value = UiState.Idle
     }

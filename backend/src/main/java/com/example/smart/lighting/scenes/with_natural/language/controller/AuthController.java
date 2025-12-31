@@ -37,6 +37,9 @@ public class AuthController {
     private static final String LOCAL_USER_SESSION_KEY = "LOCAL_AUTH_USER";
 
     private final LocalAuthService localAuthService;
+    
+    @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.google.client-id:}")
+    private String googleClientId;
 
     /**
      * Register a new user with email and password.
@@ -163,6 +166,43 @@ public class AuthController {
         return ResponseEntity.ok(false);
     }
 
+    /**
+     * Logout endpoint - clears session for both OAuth and local auth
+     */
+    @PostMapping("/auth/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            String userEmail = null;
+            
+            // Get user email before invalidating
+            User localUser = (User) session.getAttribute(LOCAL_USER_SESSION_KEY);
+            if (localUser != null) {
+                userEmail = localUser.getEmail();
+            }
+            
+            session.invalidate();
+            log.info("User logged out: {}", userEmail != null ? userEmail : "unknown");
+        }
+        
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    }
+    
+    /**
+     * Get authentication configuration for mobile app.
+     * Returns Google Client ID if configured.
+     */
+    @GetMapping("/auth/config")
+    public ResponseEntity<Map<String, String>> getAuthConfig() {
+        log.debug("Fetching auth config, Google Client ID present: {}", googleClientId != null && !googleClientId.isEmpty());
+        
+        Map<String, String> config = Map.of(
+            "googleClientId", googleClientId != null ? googleClientId : ""
+        );
+        
+        return ResponseEntity.ok(config);
+    }
+    
     /**
      * Debug endpoint for authentication troubleshooting.
      */
