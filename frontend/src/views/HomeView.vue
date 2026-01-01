@@ -52,17 +52,6 @@
               <PlayIcon class="w-5 h-5 ml-2" />
             </button>
           </div>
-          <!-- Stats -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-            <div v-for="stat in stats" :key="stat.label" class="stat-item">
-              <div class="text-4xl font-bold gradient-text">
-                {{ stat.value }}
-              </div>
-              <div class="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                {{ stat.label }}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -176,10 +165,6 @@
           Ready to Transform<br />
           <span class="gradient-text">Your Home?</span>
         </h2>
-        <p class="text-lg text-neutral-600 dark:text-neutral-400 mb-10 max-w-2xl mx-auto">
-          Join thousands of users who have already upgraded to smart lighting with natural language
-          control.
-        </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
           <AuthButton v-if="!authStore.isAuthenticated" @click="showAuthModal = true" />
           <router-link
@@ -221,13 +206,6 @@ const demoCommand = ref('')
 const demoResult = ref('')
 const demoSection = ref(null)
 const showAuthModal = ref(false)
-
-const stats = [
-  { value: '99.9%', label: 'Uptime' },
-  { value: '< 50ms', label: 'Response Time' },
-  { value: '24/7', label: 'Support' },
-  { value: '100+', label: 'Integrations' }
-]
 
 const examples = [
   'Turn on living room lights',

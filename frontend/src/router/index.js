@@ -39,13 +39,6 @@ const router = createRouter({
       beforeEnter: requireAuth
     },
     {
-      path: '/routines',
-      name: 'routines',
-      component: () => import('../views/RoutinesView.vue'),
-      meta: { requiresAuth: true },
-      beforeEnter: requireAuth
-    },
-    {
       path: '/schedules',
       name: 'schedules',
       component: () => import('../views/SchedulesView.vue'),

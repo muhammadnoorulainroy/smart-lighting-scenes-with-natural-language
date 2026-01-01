@@ -1,24 +1,32 @@
 package com.example.smart.lighting.scenes.with_natural.language.controller;
 
+import com.example.smart.lighting.scenes.with_natural.language.dto.CreateUserRequest;
 import com.example.smart.lighting.scenes.with_natural.language.dto.UpdateUserRoleRequest;
 import com.example.smart.lighting.scenes.with_natural.language.dto.UserDto;
 import com.example.smart.lighting.scenes.with_natural.language.entity.User;
+import com.example.smart.lighting.scenes.with_natural.language.entity.User.OAuthProvider;
+import com.example.smart.lighting.scenes.with_natural.language.entity.User.UserRole;
 import com.example.smart.lighting.scenes.with_natural.language.repository.UserRepository;
 import com.example.smart.lighting.scenes.with_natural.language.security.CustomOAuth2User;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -31,6 +39,7 @@ import java.util.stream.Collectors;
 public class UsersController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {
@@ -39,6 +48,29 @@ public class UsersController {
             .map(this::toDto)
             .collect(Collectors.toList());
         return ResponseEntity.ok(userDtos);
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequest request) {
+        log.info("Admin creating user: {}", request.getEmail());
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            log.warn("Create user failed: email already exists: {}", request.getEmail());
+            return ResponseEntity.badRequest().body(Map.of("error", "Email already registered"));
+        }
+
+        User user = User.builder()
+                .email(request.getEmail())
+                .name(request.getName())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .provider(OAuthProvider.LOCAL)
+                .role(UserRole.valueOf(request.getRole()))
+                .isActive(true)
+                .build();
+
+        User savedUser = userRepository.save(user);
+        log.info("User created by admin: {}", savedUser.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(savedUser));
     }
 
     @PutMapping("/{userId}/role")
@@ -97,6 +129,7 @@ public class UsersController {
             .name(user.getName())
             .pictureUrl(user.getPictureUrl())
             .role(user.getRole().name())
+            .isActive(user.getIsActive())
             .createdAt(user.getCreatedAt())
             .build();
     }

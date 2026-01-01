@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SignupRequest {
+public class CreateUserRequest {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
@@ -25,5 +25,9 @@ public class SignupRequest {
     @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
     @Pattern(regexp = "^[a-zA-Z\\s'-]+$", message = "Name can only contain letters, spaces, hyphens, and apostrophes")
     private String name;
+
+    @NotBlank(message = "Role is required")
+    @Pattern(regexp = "^(OWNER|RESIDENT|GUEST)$", message = "Role must be OWNER, RESIDENT, or GUEST")
+    private String role;
 }
 

@@ -43,7 +43,11 @@
       <!-- Lighting Settings -->
       <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
-          <span class="text-2xl">🌿</span>
+          <div class="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
           <div>
             <h2 class="text-xl font-semibold">Lighting Mode</h2>
             <p class="text-sm text-neutral-500">Control how lights respond to sensors</p>
@@ -61,7 +65,7 @@
                   value="auto"
                   class="text-primary-600"
                 />
-                <span>🌿 Auto (sensor-based)</span>
+                <span>Auto (sensor-based)</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
                 <input
@@ -70,7 +74,7 @@
                   value="manual"
                   class="text-primary-600"
                 />
-                <span>✋ Manual</span>
+                <span>Manual</span>
               </label>
             </div>
           </div>
@@ -99,7 +103,11 @@
       <!-- Brightness Settings -->
       <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
-          <span class="text-2xl">💡</span>
+          <div class="w-10 h-10 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
           <div>
             <h2 class="text-xl font-semibold">Brightness Limits</h2>
             <p class="text-sm text-neutral-500">Set min/max brightness and lux thresholds</p>
@@ -157,7 +165,11 @@
       <!-- Climate Settings -->
       <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
-          <span class="text-2xl">🌡️</span>
+          <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
           <div>
             <h2 class="text-xl font-semibold">Climate Color Adjustment</h2>
             <p class="text-sm text-neutral-500">How temperature and humidity affect light color</p>
@@ -240,7 +252,11 @@
       <!-- Audio Settings -->
       <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
-          <span class="text-2xl">🎉</span>
+          <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+          </div>
           <div>
             <h2 class="text-xl font-semibold">Audio / Disco Mode</h2>
             <p class="text-sm text-neutral-500">Sound-reactive lighting effects</p>
@@ -300,7 +316,11 @@
       <!-- Display Settings -->
       <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
-          <span class="text-2xl">📺</span>
+          <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
           <div>
             <h2 class="text-xl font-semibold">OLED Display</h2>
             <p class="text-sm text-neutral-500">ESP32 display behavior</p>

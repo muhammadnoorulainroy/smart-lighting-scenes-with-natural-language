@@ -5,6 +5,7 @@ import com.example.smart.lighting.scenes.with_natural.language.dto.SignupRequest
 import com.example.smart.lighting.scenes.with_natural.language.dto.UserDto;
 import com.example.smart.lighting.scenes.with_natural.language.entity.User;
 import com.example.smart.lighting.scenes.with_natural.language.security.CustomOAuth2User;
+import com.example.smart.lighting.scenes.with_natural.language.security.LocalAuthUserPrincipal;
 import com.example.smart.lighting.scenes.with_natural.language.service.LocalAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -14,9 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,12 +45,8 @@ public class AuthController {
     public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest request, HttpServletRequest httpRequest) {
         try {
             User user = localAuthService.signup(request);
-            
-            // Create session for the new user
-            HttpSession session = httpRequest.getSession(true);
-            session.setAttribute(LOCAL_USER_SESSION_KEY, user);
-            
-            log.info("User signed up and session created: {}", user.getEmail());
+            authenticateUser(user, httpRequest);
+            log.info("User signed up and authenticated: {}", user.getEmail());
             return ResponseEntity.status(HttpStatus.CREATED).body(localAuthService.toUserDto(user));
         } catch (IllegalArgumentException e) {
             log.warn("Signup failed: {}", e.getMessage());
@@ -61,12 +61,8 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         try {
             User user = localAuthService.login(request);
-            
-            // Create session for the user
-            HttpSession session = httpRequest.getSession(true);
-            session.setAttribute(LOCAL_USER_SESSION_KEY, user);
-            
-            log.info("User logged in and session created: {}", user.getEmail());
+            authenticateUser(user, httpRequest);
+            log.info("User logged in and authenticated: {}", user.getEmail());
             return ResponseEntity.ok(localAuthService.toUserDto(user));
         } catch (BadCredentialsException e) {
             log.warn("Login failed: {}", e.getMessage());
@@ -75,27 +71,55 @@ public class AuthController {
     }
 
     /**
+     * Authenticate user by setting Spring Security context.
+     */
+    private void authenticateUser(User user, HttpServletRequest request) {
+        LocalAuthUserPrincipal principal = new LocalAuthUserPrincipal(user);
+        List<SimpleGrantedAuthority> authorities = List.of(
+            new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
+        );
+        
+        UsernamePasswordAuthenticationToken authentication = 
+            new UsernamePasswordAuthenticationToken(principal, null, authorities);
+        
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        
+        // Store in session for persistence across requests
+        HttpSession session = request.getSession(true);
+        session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+        session.setAttribute(LOCAL_USER_SESSION_KEY, user);
+    }
+
+    /**
      * Get current authenticated user profile.
      * Works for both OAuth2 and local auth users.
      */
     @GetMapping("/me")
-    public ResponseEntity<UserDto> getCurrentUser(
-            @AuthenticationPrincipal CustomOAuth2User oauthPrincipal,
-            HttpServletRequest request) {
+    public ResponseEntity<UserDto> getCurrentUser(HttpServletRequest request) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
         
-        // Check OAuth2 user first
-        if (oauthPrincipal != null) {
-            User user = oauthPrincipal.getUser();
-            log.debug("OAuth user profile accessed: {}", user.getEmail());
-            return ResponseEntity.ok(buildUserDto(user));
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            
+            // Check OAuth2 user
+            if (principal instanceof CustomOAuth2User oauthUser) {
+                log.debug("OAuth user profile accessed: {}", oauthUser.getEmail());
+                return ResponseEntity.ok(buildUserDto(oauthUser.getUser()));
+            }
+            
+            // Check local auth user
+            if (principal instanceof LocalAuthUserPrincipal localUser) {
+                log.debug("Local user profile accessed: {}", localUser.getEmail());
+                return ResponseEntity.ok(buildUserDto(localUser.getUser()));
+            }
         }
         
-        // Check local auth user in session
+        // Fallback: check session directly
         HttpSession session = request.getSession(false);
         if (session != null) {
             User localUser = (User) session.getAttribute(LOCAL_USER_SESSION_KEY);
             if (localUser != null) {
-                log.debug("Local user profile accessed: {}", localUser.getEmail());
+                log.debug("Local user from session: {}", localUser.getEmail());
                 return ResponseEntity.ok(buildUserDto(localUser));
             }
         }
@@ -108,22 +132,29 @@ public class AuthController {
      * Check if the current request is authenticated.
      */
     @GetMapping("/auth/check")
-    public ResponseEntity<Boolean> checkAuthentication(
-            @AuthenticationPrincipal CustomOAuth2User oauthPrincipal,
-            HttpServletRequest request) {
+    public ResponseEntity<Boolean> checkAuthentication(HttpServletRequest request) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
         
-        // Check OAuth2 user
-        if (oauthPrincipal != null) {
-            log.debug("Auth check: OAuth user authenticated: {}", oauthPrincipal.getEmail());
-            return ResponseEntity.ok(true);
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            
+            if (principal instanceof CustomOAuth2User oauthUser) {
+                log.debug("Auth check: OAuth user authenticated: {}", oauthUser.getEmail());
+                return ResponseEntity.ok(true);
+            }
+            
+            if (principal instanceof LocalAuthUserPrincipal localUser) {
+                log.debug("Auth check: Local user authenticated: {}", localUser.getEmail());
+                return ResponseEntity.ok(true);
+            }
         }
         
-        // Check local auth user
+        // Fallback: check session directly
         HttpSession session = request.getSession(false);
         if (session != null) {
             User localUser = (User) session.getAttribute(LOCAL_USER_SESSION_KEY);
             if (localUser != null) {
-                log.debug("Auth check: Local user authenticated: {}", localUser.getEmail());
+                log.debug("Auth check: Local user from session: {}", localUser.getEmail());
                 return ResponseEntity.ok(true);
             }
         }
@@ -136,19 +167,27 @@ public class AuthController {
      * Debug endpoint for authentication troubleshooting.
      */
     @GetMapping("/auth/debug")
-    public ResponseEntity<?> debugAuth(
-            @AuthenticationPrincipal CustomOAuth2User oauthPrincipal,
-            HttpServletRequest request) {
-        
+    public ResponseEntity<?> debugAuth(HttpServletRequest request) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
         HttpSession session = request.getSession(false);
-        User localUser = session != null ? (User) session.getAttribute(LOCAL_USER_SESSION_KEY) : null;
+        
+        String principalType = authentication != null ? authentication.getPrincipal().getClass().getSimpleName() : "none";
+        String principalEmail = null;
+        
+        if (authentication != null && authentication.getPrincipal() instanceof CustomOAuth2User oauthUser) {
+            principalEmail = oauthUser.getEmail();
+        } else if (authentication != null && authentication.getPrincipal() instanceof LocalAuthUserPrincipal localUser) {
+            principalEmail = localUser.getEmail();
+        }
+        
+        User sessionUser = session != null ? (User) session.getAttribute(LOCAL_USER_SESSION_KEY) : null;
         
         Map<String, Object> debug = Map.of(
-            "oauthAuthenticated", oauthPrincipal != null,
-            "oauthUser", oauthPrincipal != null ? oauthPrincipal.getEmail() : null,
-            "localAuthenticated", localUser != null,
-            "localUser", localUser != null ? localUser.getEmail() : null,
-            "sessionId", session != null ? session.getId() : null
+            "authenticated", authentication != null && authentication.isAuthenticated(),
+            "principalType", principalType,
+            "principalEmail", principalEmail != null ? principalEmail : "none",
+            "sessionUser", sessionUser != null ? sessionUser.getEmail() : "none",
+            "sessionId", session != null ? session.getId() : "none"
         );
         
         return ResponseEntity.ok(debug);
