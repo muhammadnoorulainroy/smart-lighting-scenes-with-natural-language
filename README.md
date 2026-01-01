@@ -7,6 +7,99 @@
 
 A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes. Control your home lighting through voice commands, scheduled automations, and real-time IoT integration with environmental sensor adaptation.
 
+---
+
+## Quick Start with Docker
+
+Recommended for trying out the application. Run the complete stack with Docker - no local Java or Node.js installation required.
+
+### Prerequisites
+
+- Docker Desktop installed and running
+- Google OAuth credentials (for authentication)
+
+### Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd smart-lighting-scenes-with-natural-language
+   ```
+
+2. **Configure environment variables**
+   
+   Create a `.env` file in the project root:
+   ```bash
+   # Google OAuth (required)
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+   # Database
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=postgres
+
+   # JWT Secret
+   JWT_SECRET=your-secure-jwt-secret
+
+   # OpenAI API Key (optional, for NLP features)
+   OPENAI_API_KEY=sk-your-openai-api-key
+   ```
+
+3. **Configure Google OAuth redirect URI**
+   
+   In Google Cloud Console, add this redirect URI:
+   ```
+   http://localhost/login/oauth2/code/google
+   ```
+
+4. **Build and start the application**
+   ```bash
+   docker-compose build
+   docker-compose up -d
+   ```
+
+5. **Access the application**
+   
+   | Service | URL |
+   |---------|-----|
+   | Web Application | http://localhost |
+   | Backend API | http://localhost:8080 |
+   | Database | localhost:5433 |
+
+### Docker Commands
+
+```bash
+# Start application
+docker-compose up -d
+
+# Stop application
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild after code changes
+docker-compose build
+docker-compose up -d
+
+# Reset database (removes all data)
+docker-compose down -v
+docker-compose up -d
+```
+
+### Using Make (optional)
+
+If GNU Make is installed:
+
+```bash
+make docker-build      # Build all images
+make docker-up-app     # Start full stack
+make docker-down-app   # Stop full stack
+make docker-logs-app   # View logs
+```
+
+---
+
 ## Features
 
 ### Natural Language Processing
@@ -115,176 +208,89 @@ smart-lighting-scenes/
     └── tutorials/              # Setup tutorials
 ```
 
-## Prerequisites
+## Local Development
 
-Before building, testing, or running the project, ensure you have:
+For development with hot-reload and debugging capabilities.
+
+### Prerequisites
 
 - **Node.js 18+** and **npm 9+**
 - **Java 21+** (JDK)
-- **Docker** and **Docker Compose**
-- **GNU Make** (optional, for simplified commands)
-- Google Cloud Console account (for OAuth configuration)
-- OpenAI API key (for NLP features)
+- **Docker** (for infrastructure services)
+- **GNU Make** (optional)
 
-**Verify prerequisites:**
 ```bash
-# Check all required tools
-make check-deps
-
-# Or manually:
-java --version    # Should be 21+
-node --version    # Should be 18+
-npm --version     # Should be 9+
-docker --version  # Should be 20+
+# Verify tools
+java --version    # 21+
+node --version    # 18+
+docker --version  # 20+
 ```
 
----
+### Setup
 
-## How to Build
+**1. Configure environment**
 
-### Option 1: Build Everything (Recommended)
-
-```bash
-# Using Make (recommended)
-make install    # Install all dependencies
-make build      # Build backend + frontend
-
-# Or manually:
-npm install                          # Install root dependencies
-cd backend && ./gradlew build        # Build backend (creates JAR)
-cd ../frontend && npm install && npm run build  # Build frontend (creates dist/)
-```
-
-**Build outputs:**
-- **Backend:** `backend/build/libs/Smart-Lighting-Scenes-0.0.1-SNAPSHOT.jar`
-- **Frontend:** `frontend/dist/` (optimized production bundle)
-
-### Option 2: Build Individual Components
-
-**Backend only:**
-```bash
-cd backend
-./gradlew build
-# Output: backend/build/libs/*.jar
-```
-
-**Frontend only:**
-```bash
-cd frontend
-npm install    # If not done already
-npm run build
-# Output: frontend/dist/
-```
-
-**Build time:** First build ~90 seconds, subsequent builds ~20 seconds (incremental)
-
----
-
-## How to Test
-
-### Run All Tests
+Create a `.env` file in the project root:
 
 ```bash
-# Using Make
-make test
-
-# Or manually:
-cd backend && ./gradlew test          # Backend tests
-cd ../frontend && npm run test        # Frontend tests
-```
-
-### Test Individual Components
-
-**Backend tests (JUnit 5):**
-```bash
-cd backend
-./gradlew test
-
-# View test report:
-# Open: backend/build/reports/tests/test/index.html
-```
-
-**Frontend tests:**
-```bash
-cd frontend
-npm run test
-
-# View coverage:
-# Open: frontend/coverage/index.html
-```
-
----
-
-## Configuration
-
-### Environment Variables
-
-Copy the example environment file and configure:
-
-```bash
-cp infra/env.example .env
-```
-
-Required variables:
-
-```bash
-# Google OAuth
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
-
-# OpenAI (for NLP features)
-OPENAI_API_KEY=sk-your-api-key
-
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=smartlighting
-DB_USER=postgres
-DB_PASSWORD=your-password
-
-# MQTT Broker
-MQTT_BROKER=localhost
-MQTT_PORT=1883
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+JWT_SECRET=your-jwt-secret
+OPENAI_API_KEY=sk-your-api-key  # optional
 ```
 
----
+**2. Add Google OAuth redirect URI**
 
-## How to Run
+In Google Cloud Console:
+```
+http://localhost:8080/login/oauth2/code/google
+```
 
-### Quick Start (Complete Setup)
+**3. Start infrastructure**
 
 ```bash
-# Step 1: Start infrastructure services (PostgreSQL, Redis, MQTT)
 make docker-up
 # Or: docker-compose -f infra/docker-compose.yml up -d
+```
 
-# Step 2: Start backend (in terminal 1)
+**4. Start backend** (Terminal 1)
+
+```bash
 make dev-backend
 # Or: cd backend && ./gradlew bootRun
+```
 
-# Step 3: Start frontend (in terminal 2)
+**5. Start frontend** (Terminal 2)
+
+```bash
 make dev-frontend
 # Or: cd frontend && npm run dev
 ```
 
-**Access the application:**
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:8080
-- **Database Admin:** http://localhost:8090 (Adminer)
+### Access
 
-### Run Production Build
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8080 |
+| Database Admin | http://localhost:8090 |
 
-**Backend (from JAR):**
+### Build
+
 ```bash
-# After building (make build)
-java -jar backend/build/libs/Smart-Lighting-Scenes-0.0.1-SNAPSHOT.jar
+make build              # Build all
+make build-backend      # Backend only
+make build-frontend     # Frontend only
 ```
 
-**Frontend (serve dist):**
+### Test
+
 ```bash
-cd frontend
-npm run preview
-# Or deploy dist/ folder to any static host (Nginx, Apache, Netlify, etc.)
+make test               # Run all tests
+cd backend && ./gradlew test      # Backend tests
+cd frontend && npm run test       # Frontend tests
 ```
 
 ---
@@ -469,28 +475,6 @@ The PostgreSQL database includes tables for:
 - **Events** and **Sensor Readings**
 
 See `backend/src/main/resources/db/migration/` for Flyway migrations.
-
----
-
-## UI Design
-
-The system features a modern, sophisticated design with:
-- **Color Scheme**: Warm yellows and greens
-- **Typography**: Clean, readable Inter font family
-- **Responsive Design**: Works seamlessly on desktop and mobile
-- **Dark Mode**: Full dark mode support across all platforms
-- **Material Design 3**: Android app follows Material You guidelines
-
-## Authentication
-
-The system uses Google OAuth 2.0 for authentication:
-
-1. Set up a Google Cloud Project
-2. Enable Google+ API
-3. Create OAuth 2.0 credentials
-4. Add authorized redirect URIs:
-   - `http://localhost:8080/login/oauth2/code/google` (development)
-   - Your production URLs
 
 ---
 

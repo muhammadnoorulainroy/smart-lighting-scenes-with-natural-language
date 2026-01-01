@@ -19,7 +19,7 @@ export function connectWebSocket() {
     return
   }
 
-  const wsUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/ws`
+  const wsUrl = `${import.meta.env.VITE_API_URL ?? ''}/ws`
   console.log('[WS] Connecting to:', wsUrl)
 
   stompClient = new Client({

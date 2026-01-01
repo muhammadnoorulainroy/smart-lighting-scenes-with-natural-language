@@ -180,8 +180,10 @@ docker --version  # 20+
 3. Enable Google+ API
 4. Create OAuth 2.0 credentials:
    - Application type: Web application
-   - Authorized JavaScript origins: `http://localhost:5173`
-   - Authorized redirect URIs: `http://localhost:8080/login/oauth2/code/google`
+   - Authorized JavaScript origins: `http://localhost:5173`, `http://localhost`
+   - Authorized redirect URIs:
+     - `http://localhost/login/oauth2/code/google` (Docker deployment)
+     - `http://localhost:8080/login/oauth2/code/google` (local development)
 5. Copy Client ID and Client Secret to `.env`
 
 ### 3. OpenAI API Setup (for NLP)
@@ -192,16 +194,22 @@ docker --version  # 20+
 
 ### 4. Environment Configuration
 
-```bash
-# Copy example environment file
-cp infra/env.example .env
+Create a `.env` file in the project root:
 
-# Edit .env with your values:
+```bash
+# Google OAuth (required)
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
-OPENAI_API_KEY=sk-your-key
-DB_PASSWORD=your-db-password
+
+# Database
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+
+# JWT Secret
 JWT_SECRET=your-jwt-secret
+
+# OpenAI API Key (optional, for NLP features)
+OPENAI_API_KEY=sk-your-key
 ```
 
 ### 5. Backend Development
@@ -356,6 +364,8 @@ export const nlpApi = {
 Connect to `/ws` endpoint for real-time updates:
 
 ```javascript
+// Docker deployment: ws://localhost/ws
+// Local development: ws://localhost:8080/ws
 const socket = new WebSocket('ws://localhost:8080/ws');
 
 socket.onmessage = (event) => {

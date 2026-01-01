@@ -67,10 +67,16 @@ help:
 	@echo "  make format           Format code"
 	@echo "  make verify           Full verification (build + test + lint)"
 	@echo ""
-	@echo "Infrastructure:"
-	@echo "  make docker-up        Start infrastructure services"
+	@echo "Docker - Full Stack:"
+	@echo "  make docker-build     Build all Docker images"
+	@echo "  make docker-up-app    Start full stack (frontend + backend + infra)"
+	@echo "  make docker-down-app  Stop full stack"
+	@echo "  make docker-logs-app  View application logs"
+	@echo ""
+	@echo "Docker - Infrastructure Only:"
+	@echo "  make docker-up        Start infrastructure only (for local dev)"
 	@echo "  make docker-down      Stop infrastructure"
-	@echo "  make docker-logs      View logs"
+	@echo "  make docker-logs      View infrastructure logs"
 	@echo "  make docker-ps        Show running containers"
 	@echo ""
 	@echo "Cleanup:"
@@ -180,13 +186,49 @@ dev-frontend:
 	@echo "Starting frontend (http://localhost:5173)..."
 	cd $(FRONTEND_DIR) && npm run dev
 
-# Docker infrastructure
-docker-up:
-	@echo "$(BLUE)Starting infrastructure...$(NC)"
-	@docker-compose -f $(INFRA_DIR)/docker-compose.yml up -d
-	@echo "$(GREEN)Infrastructure started$(NC)"
+# Docker - Full Stack Deployment
+docker-build:
+	@echo "Building Docker images..."
+	docker-compose build
+
+docker-up-app:
+	@echo "Starting full application stack..."
+	docker-compose up -d
 	@echo ""
-	@echo "Services:"
+	@echo "Application started:"
+	@echo "  Frontend:    http://localhost"
+	@echo "  Backend API: http://localhost:8080"
+	@echo "  Database:    localhost:5432"
+	@echo "  Redis:       localhost:6379"
+	@echo "  MQTT:        localhost:1883"
+	@echo ""
+
+docker-up-app-dev:
+	@echo "Starting full stack with dev tools..."
+	docker-compose --profile dev up -d
+	@echo ""
+	@echo "Application started:"
+	@echo "  Frontend:    http://localhost"
+	@echo "  Backend API: http://localhost:8080"
+	@echo "  Adminer:     http://localhost:8090"
+	@echo ""
+
+docker-down-app:
+	@echo "Stopping application stack..."
+	docker-compose down
+
+docker-logs-app:
+	docker-compose logs -f
+
+docker-ps-app:
+	docker-compose ps
+
+# Docker - Infrastructure Only (for local development)
+docker-up:
+	@echo "Starting infrastructure only..."
+	docker-compose -f $(INFRA_DIR)/docker-compose.yml up -d
+	@echo ""
+	@echo "Infrastructure started:"
 	@echo "  PostgreSQL:  localhost:5432"
 	@echo "  Redis:       localhost:6379"
 	@echo "  MQTT:        localhost:1883"
@@ -194,15 +236,14 @@ docker-up:
 	@echo ""
 
 docker-down:
-	@echo "$(BLUE)Stopping infrastructure...$(NC)"
-	@docker-compose -f $(INFRA_DIR)/docker-compose.yml down
-	@echo "$(GREEN)Infrastructure stopped$(NC)"
+	@echo "Stopping infrastructure..."
+	docker-compose -f $(INFRA_DIR)/docker-compose.yml down
 
 docker-logs:
-	@docker-compose -f $(INFRA_DIR)/docker-compose.yml logs -f
+	docker-compose -f $(INFRA_DIR)/docker-compose.yml logs -f
 
 docker-ps:
-	@docker-compose -f $(INFRA_DIR)/docker-compose.yml ps
+	docker-compose -f $(INFRA_DIR)/docker-compose.yml ps
 
 # Packaging
 package: build
