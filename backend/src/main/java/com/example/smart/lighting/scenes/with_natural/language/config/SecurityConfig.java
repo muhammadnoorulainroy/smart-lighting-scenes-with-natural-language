@@ -96,7 +96,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .requestMatchers(OWNER_ONLY_ENDPOINTS).hasRole("OWNER")
-                .requestMatchers(RESIDENT_ENDPOINTS).hasAnyRole("OWNER", "RESIDENT")
+                .requestMatchers(RESIDENT_ENDPOINTS).hasAnyRole("OWNER", "RESIDENT", "GUEST")  // Allow GUEST for mobile app
                 .requestMatchers(AUTHENTICATED_ENDPOINTS).hasAnyRole("OWNER", "RESIDENT", "GUEST")
                 .anyRequest().authenticated()
             )
