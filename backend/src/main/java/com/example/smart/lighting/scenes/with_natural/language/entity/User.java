@@ -69,6 +69,9 @@ public class User implements Serializable {
     @Column(name = "provider_sub")
     private String providerSub;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;
@@ -99,7 +102,7 @@ public class User implements Serializable {
     public enum OAuthProvider {
         /** Google OAuth 2.0. */
         GOOGLE,
-        /** Local authentication (reserved for future use). */
+        /** Local authentication */
         LOCAL
     }
 }

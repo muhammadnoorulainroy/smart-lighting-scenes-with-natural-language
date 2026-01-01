@@ -71,11 +71,56 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const login = () => {
+  const loginWithGoogle = () => {
     logger.info(MODULE, 'Initiating OAuth login redirect')
     // relative URL in production (Docker), or explicit URL in dev
     const baseUrl = import.meta.env.VITE_API_URL ?? ''
     window.location.href = `${baseUrl}/oauth2/authorization/google`
+  }
+
+  // Keep old name for backward compatibility
+  const login = loginWithGoogle
+
+  const loginWithEmail = async (email, password) => {
+    try {
+      isLoading.value = true
+      error.value = null
+      logger.info(MODULE, `Attempting email login for: ${email}`)
+      
+      const userData = await authApi.login(email, password)
+      user.value = userData
+      isAuthenticated.value = true
+      logger.info(MODULE, `Email login successful: ${userData.email}`)
+      return userData
+    } catch (err) {
+      const message = err.response?.data?.error || 'Login failed'
+      logger.error(MODULE, `Email login failed: ${message}`, err)
+      error.value = message
+      throw new Error(message)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const signup = async (email, password, name) => {
+    try {
+      isLoading.value = true
+      error.value = null
+      logger.info(MODULE, `Attempting signup for: ${email}`)
+      
+      const userData = await authApi.signup(email, password, name)
+      user.value = userData
+      isAuthenticated.value = true
+      logger.info(MODULE, `Signup successful: ${userData.email}`)
+      return userData
+    } catch (err) {
+      const message = err.response?.data?.error || 'Signup failed'
+      logger.error(MODULE, `Signup failed: ${message}`, err)
+      error.value = message
+      throw new Error(message)
+    } finally {
+      isLoading.value = false
+    }
   }
 
   const logout = async () => {
@@ -118,6 +163,9 @@ export const useAuthStore = defineStore('auth', () => {
     checkAuth,
     fetchCurrentUser,
     login,
+    loginWithGoogle,
+    loginWithEmail,
+    signup,
     logout,
     clearAuth
   }
