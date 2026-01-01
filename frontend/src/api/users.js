@@ -6,6 +6,11 @@ export const usersApi = {
     return response.data
   },
 
+  async create(userData) {
+    const response = await apiClient.post('/api/users', userData)
+    return response.data
+  },
+
   async updateRole(userId, role) {
     const response = await apiClient.put(`/api/users/${userId}/role`, { role })
     return response.data

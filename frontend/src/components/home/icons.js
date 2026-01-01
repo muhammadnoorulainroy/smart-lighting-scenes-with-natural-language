@@ -59,7 +59,7 @@ export const features = [
     icon: MobileIcon,
     title: 'Mobile Control',
     description:
-      'Control your lights from anywhere with our beautiful and intuitive mobile app for iOS and Android.',
+      'Control your lights from anywhere with our beautiful and intuitive mobile app for Android.',
     iconBgClass: 'bg-gradient-to-br from-orange-400 to-orange-600',
     hoverClass: 'group-hover:text-orange-500'
   },

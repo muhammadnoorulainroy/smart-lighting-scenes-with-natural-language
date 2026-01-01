@@ -5,7 +5,7 @@
       <p class="text-neutral-600 dark:text-neutral-400">System management and monitoring</p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="card p-6">
         <div class="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Total Users</div>
         <div class="text-3xl font-semibold">{{ stats.totalUsers }}</div>
@@ -25,6 +25,7 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- User Management -->
       <div class="card p-6">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold">User Management</h2>
@@ -59,7 +60,7 @@
                 <option value="GUEST">Guest</option>
               </select>
               <button
-                :class="user.isActive ? 'text-red-600' : 'text-green-600'"
+                :class="user.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
                 class="text-sm font-medium"
                 :disabled="user.id === currentUserId"
                 @click="toggleUserStatus(user)"
@@ -68,47 +69,19 @@
               </button>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div class="card p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold">Recent Events</h2>
-          <router-link to="/logs" class="text-sm text-primary-500 hover:text-primary-600">
-            View All
-          </router-link>
-        </div>
-        <div class="space-y-3 max-h-96 overflow-y-auto">
-          <div
-            v-for="event in recentEvents"
-            :key="event.id"
-            class="p-3 border-l-4 border-primary-500 bg-neutral-50 dark:bg-neutral-900 rounded"
-          >
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-sm font-medium">{{ formatEventType(event.type) }}</span>
-              <span class="text-xs text-neutral-500">{{ formatTime(event.timestamp) }}</span>
-            </div>
-            <div class="text-sm text-neutral-600 dark:text-neutral-400">
-              {{ formatEventDetails(event) }}
-            </div>
-          </div>
-          <div v-if="recentEvents.length === 0" class="text-center text-neutral-500 py-8">
-            No events found
+          <div v-if="users.length === 0" class="text-center text-neutral-500 py-8">
+            No users found
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <!-- Rooms & Devices -->
       <div class="card p-6">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold">Rooms & Devices</h2>
           <div class="space-x-2">
             <button class="btn btn-secondary text-sm" @click="showRoomModal = true">
               Add Room
-            </button>
-            <button class="btn btn-secondary text-sm" @click="showDeviceModal = true">
-              Add Device
             </button>
           </div>
         </div>
@@ -139,67 +112,90 @@
             <div class="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
               {{ room.description }}
             </div>
-            <div class="text-sm flex items-center gap-4">
-              <span>
-                <span class="font-medium">{{ room.devices?.length || 0 }}</span> devices
-              </span>
-              <span v-if="hasSensor(room)" class="text-green-600 dark:text-green-400">
-                + Sensor
-              </span>
+            <div class="text-sm">
+              <span class="font-medium">{{ room.devices?.length || 0 }}</span> devices
             </div>
           </div>
-        </div>
-      </div>
-
-      <div class="card p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold">System Settings</h2>
-          <button class="btn btn-secondary text-sm" @click="showSettingsModal = true">
-            Configure
-          </button>
-        </div>
-        <div class="space-y-4">
-          <div
-            class="flex items-center justify-between p-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg"
-          >
-            <div>
-              <div class="font-medium">MQTT Broker</div>
-              <div class="text-sm text-neutral-600 dark:text-neutral-400">
-                {{ settings.mqttHost || 'Not configured' }}
-              </div>
-            </div>
-            <span
-              class="text-xs px-2 py-1 rounded"
-              :class="
-                settings.mqttConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              "
-            >
-              {{ settings.mqttConnected ? 'Connected' : 'Disconnected' }}
-            </span>
-          </div>
-          <div
-            class="flex items-center justify-between p-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg"
-          >
-            <div>
-              <div class="font-medium">Location</div>
-              <div class="text-sm text-neutral-600 dark:text-neutral-400">
-                {{ settings.latitude }}, {{ settings.longitude }}
-              </div>
-            </div>
-          </div>
-          <div
-            class="flex items-center justify-between p-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg"
-          >
-            <div>
-              <div class="font-medium">LLM Model</div>
-              <div class="text-sm text-neutral-600 dark:text-neutral-400">
-                {{ settings.llmModel || 'Not configured' }}
-              </div>
-            </div>
+          <div v-if="rooms.length === 0" class="text-center text-neutral-500 py-8">
+            No rooms found
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Add User Modal -->
+    <Transition
+      enter-active-class="transition ease-out duration-200"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition ease-in duration-150"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="showUserModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        @click.self="closeUserModal"
+      >
+        <div class="card p-6 w-full max-w-md">
+          <h3 class="text-xl font-semibold mb-4">Add New User</h3>
+          
+          <div v-if="userError" class="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+            <p class="text-sm text-red-700 dark:text-red-300">{{ userError }}</p>
+          </div>
+
+          <form @submit.prevent="addUser" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Name</label>
+              <input
+                v-model="newUser.name"
+                type="text"
+                required
+                class="input w-full"
+                placeholder="Full name"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Email</label>
+              <input
+                v-model="newUser.email"
+                type="email"
+                required
+                class="input w-full"
+                placeholder="email@example.com"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Password</label>
+              <input
+                v-model="newUser.password"
+                type="password"
+                required
+                minlength="6"
+                class="input w-full"
+                placeholder="At least 6 characters"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Role</label>
+              <select v-model="newUser.role" class="input w-full">
+                <option value="GUEST">Guest</option>
+                <option value="RESIDENT">Resident</option>
+                <option value="OWNER">Owner</option>
+              </select>
+            </div>
+            <div class="flex gap-3 pt-2">
+              <button type="button" class="btn btn-secondary flex-1" @click="closeUserModal">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary flex-1" :disabled="addingUser">
+                {{ addingUser ? 'Adding...' : 'Add User' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -207,7 +203,6 @@
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { usersApi } from '../api/users'
-import { eventsApi } from '../api/events'
 import { roomsApi } from '../api/rooms'
 
 const authStore = useAuthStore()
@@ -221,33 +216,30 @@ const stats = ref({
 
 const users = ref([])
 const rooms = ref([])
-const recentEvents = ref([])
-const settings = ref({
-  mqttHost: 'localhost:1883',
-  mqttConnected: false,
-  latitude: '37.7749',
-  longitude: '-122.4194',
-  llmModel: 'llama2'
-})
 
 const showUserModal = ref(false)
 const showRoomModal = ref(false)
-const showDeviceModal = ref(false)
-const showSettingsModal = ref(false)
+const addingUser = ref(false)
+const userError = ref('')
+
+const newUser = ref({
+  name: '',
+  email: '',
+  password: '',
+  role: 'GUEST'
+})
 
 const currentUserId = computed(() => authStore.user?.id)
 
 const loadData = async () => {
   try {
-    const [usersData, roomsData, eventsData] = await Promise.all([
+    const [usersData, roomsData] = await Promise.all([
       usersApi.getAll(),
-      roomsApi.getAll ? roomsApi.getAll() : roomsApi.getRooms(),
-      eventsApi.getAll({ limit: 10 })
+      roomsApi.getAll ? roomsApi.getAll() : roomsApi.getRooms()
     ])
 
     users.value = usersData
     rooms.value = roomsData
-    recentEvents.value = eventsData.content || eventsData || []
 
     stats.value = {
       totalUsers: users.value.length,
@@ -294,26 +286,43 @@ const deleteRoom = async roomId => {
   }
 }
 
-const formatTime = timestamp => {
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+const validateName = (name) => {
+  const nameRegex = /^[a-zA-Z\s'-]+$/
+  return nameRegex.test(name)
 }
 
-const formatEventType = type => {
-  return type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown'
-}
-
-const formatEventDetails = event => {
-  if (event.details_json && typeof event.details_json === 'object') {
-    return JSON.stringify(event.details_json)
+const addUser = async () => {
+  userError.value = ''
+  
+  // Frontend validation
+  if (!validateName(newUser.value.name)) {
+    userError.value = 'Name can only contain letters, spaces, hyphens, and apostrophes'
+    return
   }
-  return event.details || 'No details available'
+  
+  addingUser.value = true
+  
+  try {
+    await usersApi.create({
+      email: newUser.value.email,
+      password: newUser.value.password,
+      name: newUser.value.name,
+      role: newUser.value.role
+    })
+    
+    await loadData()
+    closeUserModal()
+  } catch (error) {
+    userError.value = error.response?.data?.error || error.message || 'Failed to add user'
+  } finally {
+    addingUser.value = false
+  }
 }
 
-const hasSensor = room => {
-  // Bedroom and living room have sensors
-  const roomsWithSensors = ['bedroom', 'living-room']
-  return roomsWithSensors.includes(room.name?.toLowerCase())
+const closeUserModal = () => {
+  showUserModal.value = false
+  userError.value = ''
+  newUser.value = { name: '', email: '', password: '', role: 'GUEST' }
 }
 
 onMounted(() => {

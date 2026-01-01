@@ -78,7 +78,6 @@ const toggleDarkMode = () => {
             <RouterLink to="/dashboard" class="nav-link"> Dashboard </RouterLink>
             <RouterLink to="/rooms" class="nav-link"> Rooms </RouterLink>
             <RouterLink to="/scenes" class="nav-link"> Scenes </RouterLink>
-            <RouterLink to="/routines" class="nav-link"> Routines </RouterLink>
             <RouterLink to="/schedules" class="nav-link"> Schedules </RouterLink>
             <RouterLink v-if="isOwner" to="/settings" class="nav-link"> ⚙️ Settings </RouterLink>
           </div>
