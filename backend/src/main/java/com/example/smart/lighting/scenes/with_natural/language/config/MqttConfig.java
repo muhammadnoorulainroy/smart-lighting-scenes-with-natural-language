@@ -45,6 +45,9 @@ public class MqttConfig {
     @Value("${mqtt.topic.config}")
     private String configTopic;
 
+    @Value("${mqtt.topic.ack}")
+    private String ackTopic;
+
     @Value("${mqtt.qos}")
     private int qos;
 
@@ -91,10 +94,10 @@ public class MqttConfig {
         return new DirectChannel();
     }
 
-    // Inbound adapter for status, sensor, and LED messages
+    // Inbound adapter for status, sensor, LED, and ack messages
     @Bean
     public Mqttv5PahoMessageDrivenChannelAdapter mqttStatusInbound() {
-        String[] topics = {statusTopic, sensorTopic, ledTopic, configTopic};
+        String[] topics = {statusTopic, sensorTopic, ledTopic, configTopic, ackTopic};
         Mqttv5PahoMessageDrivenChannelAdapter adapter =
             new Mqttv5PahoMessageDrivenChannelAdapter(mqttClientManager(), topics);
         // Using default message converter

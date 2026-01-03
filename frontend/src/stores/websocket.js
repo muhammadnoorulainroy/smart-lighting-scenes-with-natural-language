@@ -5,6 +5,9 @@ import SockJS from 'sockjs-client/dist/sockjs'
 // Reactive state for sensor data
 const sensorData = reactive({})
 const deviceStates = reactive({})
+const sceneEvents = ref([])
+const lastSceneApplied = ref(null)
+const pendingScenes = reactive({})
 const connected = ref(false)
 const connectionError = ref(null)
 
@@ -114,6 +117,57 @@ function subscribeToTopics() {
     }
   })
 
+  // Subscribe to scene events
+  stompClient.subscribe('/topic/scenes', message => {
+    try {
+      const data = JSON.parse(message.body)
+      
+      const sceneEvent = {
+        type: data.type,
+        sceneId: data.data?.sceneId,
+        sceneName: data.data?.sceneName,
+        correlationId: data.data?.correlationId,
+        devicesAffected: data.data?.devicesAffected || data.data?.lightsAffected,
+        devicesConfirmed: data.data?.devicesConfirmed,
+        latencyMs: data.data?.latencyMs,
+        acksReceived: data.data?.acksReceived,
+        lightsExpected: data.data?.lightsExpected,
+        timestamp: data.timestamp
+      }
+      
+      // Handle different scene event types
+      switch (data.type) {
+        case 'SCENE_PENDING':
+          // Track pending command
+          pendingScenes[sceneEvent.correlationId] = sceneEvent
+          break
+          
+        case 'SCENE_CONFIRMED':
+          // Remove from pending and mark as confirmed
+          delete pendingScenes[sceneEvent.correlationId]
+          lastSceneApplied.value = { ...sceneEvent, confirmed: true }
+          break
+          
+        case 'SCENE_TIMEOUT':
+          // Remove from pending and mark as timeout
+          delete pendingScenes[sceneEvent.correlationId]
+          lastSceneApplied.value = { ...sceneEvent, timedOut: true }
+          break
+          
+        case 'SCENE_APPLIED':
+          // Legacy event (without ack tracking)
+          lastSceneApplied.value = sceneEvent
+          break
+      }
+      
+      // Keep last 10 scene events
+      sceneEvents.value = [sceneEvent, ...sceneEvents.value.slice(0, 9)]
+      
+    } catch (e) {
+      console.error('[WS] Error parsing scene message:', e)
+    }
+  })
+
   console.log('[WS] Subscribed to all topics')
 }
 
@@ -143,6 +197,20 @@ export function getDeviceState(deviceId) {
 }
 
 /**
+ * Clear last scene applied (for UI feedback dismissal)
+ */
+export function clearLastSceneApplied() {
+  lastSceneApplied.value = null
+}
+
+/**
+ * Check if a scene command is pending confirmation
+ */
+export function isScenePending(correlationId) {
+  return !!pendingScenes[correlationId]
+}
+
+/**
  * Export reactive state for components
  */
 export function useWebSocket() {
@@ -151,9 +219,14 @@ export function useWebSocket() {
     connectionError,
     sensorData,
     deviceStates,
+    sceneEvents,
+    lastSceneApplied,
+    pendingScenes,
     connect: connectWebSocket,
     disconnect: disconnectWebSocket,
     getSensorData,
-    getDeviceState
+    getDeviceState,
+    clearLastSceneApplied,
+    isScenePending
   }
 }

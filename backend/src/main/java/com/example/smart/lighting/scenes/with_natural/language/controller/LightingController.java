@@ -2,6 +2,7 @@ package com.example.smart.lighting.scenes.with_natural.language.controller;
 import com.example.smart.lighting.scenes.with_natural.language.entity.Device;
 import com.example.smart.lighting.scenes.with_natural.language.repository.DeviceRepository;
 import com.example.smart.lighting.scenes.with_natural.language.service.MqttService;
+import com.example.smart.lighting.scenes.with_natural.language.service.SceneCommandTracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 /**
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class LightingController {
     private final DeviceRepository deviceRepository;
     private final MqttService mqttService;
+    private final SceneCommandTracker sceneCommandTracker;
     /**
      * Send a command to control an LED device.
      *
@@ -49,13 +52,23 @@ public class LightingController {
         if (ledIndex == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Device does not have LED index configured");
         }
+        
+        // Register command for ACK tracking and get correlationId
+        String commandName = "Manual: " + device.getName();
+        String correlationId = sceneCommandTracker.registerCommand(null, commandName, 1);
+        
+        // Add correlationId to command
+        Map<String, Object> commandWithCorrelation = new HashMap<>(command);
+        commandWithCorrelation.put("correlationId", correlationId);
+        
         // Publish command to MQTT
-        mqttService.publishLedCommand(ledIndex, command);
-        log.info("LED command published for LED index {}", ledIndex);
+        mqttService.publishLedCommand(ledIndex, commandWithCorrelation);
+        log.info("LED command published for LED index {} with correlationId {}", ledIndex, correlationId);
         return ResponseEntity.ok(Map.of(
             "success", true,
             "message", "Command sent to LED " + ledIndex,
-            "ledIndex", ledIndex
+            "ledIndex", ledIndex,
+            "correlationId", correlationId
         ));
     }
     /**
