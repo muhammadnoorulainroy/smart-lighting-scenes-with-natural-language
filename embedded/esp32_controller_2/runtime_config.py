@@ -40,7 +40,7 @@ class RuntimeConfig:
         "climate": {"tempMin": 20, ...},
         "audio": {"discoEnabled": true, ...},
         "display": {"oledAutoSleep": true, ...},
-        "mqtt": {"publishInterval": 2000, ...}
+        "mqtt": {"publishInterval": 60000, ...}
     }
     """
     

@@ -154,6 +154,9 @@ class SystemState:
 # Global state
 state = SystemState()
 
+# Global MQTT reference for ack publishing (set in init_mqtt)
+_mqtt_sl = None
+
 # =========================
 # BUTTON HANDLERS
 # =========================
@@ -266,10 +269,13 @@ async def on_mqtt_command(topic, msg):
                         r, g, b = [int(x) for x in msg.split(",")]
                         state.set_led_state(led_idx, rgb=(r, g, b))
                     elif action == "set":
-                        # JSON command: {"on": true, "rgb": [r,g,b], "brightness": 50, "color_temp": 4000, "mode": "manual"}
+                        # JSON command: {"on": true, "rgb": [r,g,b], "brightness": 50, "color_temp": 4000, "mode": "manual", "correlationId": "uuid"}
                         import json
                         cmd = json.loads(msg)
                         log(_SRC, f"LED {led_idx} SET cmd: {cmd}")
+                        
+                        # Extract correlation ID for acknowledgment
+                        correlation_id = cmd.get("correlationId")
                         
                         # Set mode to manual if specified
                         if cmd.get("mode") == "manual":
@@ -305,6 +311,13 @@ async def on_mqtt_command(topic, msg):
                             has_sens = led_idx in [0, 1]
                             state.set_led_state(led_idx, has_sensor=has_sens)
                             log(_SRC, f"LED {led_idx} switched to AUTO mode (sensor: {has_sens})")
+                        
+                        # Send acknowledgment if correlation ID present
+                        if correlation_id and _mqtt_sl:
+                            try:
+                                await _mqtt_sl.publish_scene_ack(correlation_id, led_idx, success=True)
+                            except Exception as ack_err:
+                                log(_SRC, f"ACK send failed: {ack_err}")
             except (ValueError, IndexError) as e:
                 log(_SRC, f"LED cmd error: {e}")
         
@@ -349,22 +362,29 @@ async def on_mqtt_command(topic, msg):
         
         # Config updates from backend: smartlighting/config/update or smartlighting/config/{category}
         elif "/config/" in topic:
+            # Skip our own config request message
+            if topic.endswith("/config/request"):
+                return
+            
             try:
                 import json
+                # Skip non-JSON payloads
+                if not msg or msg in ("get", "full", "refresh"):
+                    return
                 config_data = json.loads(msg) if isinstance(msg, str) else msg
                 
                 if topic.endswith("/config/update"):
                     # Full config update
                     cfg.update(config_data)
                     log(_SRC, f"Full config received from backend")
-                elif "/config/" in topic:
+                else:
                     # Category update (e.g., /config/lighting)
                     parts = topic.split("/")
                     category = parts[-1] if parts else "unknown"
                     cfg.update_category(category, config_data)
                     log(_SRC, f"Config category '{category}' updated")
             except Exception as e:
-                log(_SRC, f"Config update error: {e}")
+                log(_SRC, f"Config update error: {e} (msg={msg[:50] if msg else 'empty'})")
         
         elif topic.endswith("/factory_reset"):
             if msg == "confirm":
@@ -491,6 +511,7 @@ async def init_wifi():
 
 async def init_mqtt():
     """Initialize MQTT client"""
+    global _mqtt_sl
     from umqtt.simple import MQTTClient as SyncMQTTClient
     
     if not _cfg("MQTT_ENABLED", True):
@@ -571,6 +592,9 @@ async def init_mqtt():
         
         # Create smart lighting interface
         sl = SmartLightingMQTT(mqtt, base_topic=mqtt_base_topic)
+        
+        # Store global reference for ack publishing in command handler
+        _mqtt_sl = sl
         
         # Subscribe to commands
         sl.subscribe_commands(on_mqtt_command)
@@ -680,7 +704,7 @@ async def main_loop():
     # Intervals
     led_interval = 16  # 60Hz
     oled_interval = 200  # 5Hz
-    mqtt_pub_interval = 2000  # Publish every 2s (backup, main publish is on-change)
+    mqtt_pub_interval = 60000  # Publish every 1 minute (backup, main publish is on-change)
     heartbeat_interval = 10000  # 10s
     
     frame_count = 0

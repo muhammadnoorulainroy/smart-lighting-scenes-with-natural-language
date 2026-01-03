@@ -2,13 +2,13 @@
 
 DEBUG = True
 
-# Network
-WIFI_SSID = "Galaxy S24 Ultra B66B"
-WIFI_PASSWORD = "12345678"
+# Network - UPDATE THESE FOR YOUR HOME WIFI
+WIFI_SSID = "YOUR_HOME_WIFI_NAME" 
+WIFI_PASSWORD = "YOUR_HOME_WIFI_PASSWORD"
 WIFI_TIMEOUT = 20
 
-# MQTT
-MQTT_BROKER = "10.218.234.96"
+# MQTT - Set to your Windows machine's IP (running Docker with Mosquitto)
+MQTT_BROKER = "192.168.1.30"
 MQTT_PORT = 1883
 MQTT_CLIENT_ID = "esp32-smartlight"
 MQTT_BASE_TOPIC = "smartlighting"
