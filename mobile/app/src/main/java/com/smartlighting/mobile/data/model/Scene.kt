@@ -9,8 +9,14 @@ data class Scene(
     val name: String,
     @SerializedName("description")
     val description: String? = null,
+    @SerializedName("icon")
+    val icon: String? = null,
+    @SerializedName("settings")
+    val settings: SceneSettings? = null,
     @SerializedName("actions")
     val actions: List<SceneAction>? = null,
+    @SerializedName("isPreset")
+    val isPreset: Boolean? = false,
     @SerializedName("isGlobal")
     val isGlobal: Boolean? = false,
     @SerializedName("ownerId")
@@ -21,6 +27,17 @@ data class Scene(
     val createdAt: String? = null,
     @SerializedName("updatedAt")
     val updatedAt: String? = null
+)
+
+data class SceneSettings(
+    @SerializedName("brightness")
+    val brightness: Int? = null,
+    @SerializedName("rgb")
+    val rgb: List<Int>? = null,
+    @SerializedName("color_temp")
+    val colorTemp: Int? = null,
+    @SerializedName("target")
+    val target: String? = null
 )
 
 data class SceneAction(

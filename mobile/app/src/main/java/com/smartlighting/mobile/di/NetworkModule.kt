@@ -2,6 +2,9 @@ package com.smartlighting.mobile.di
 
 import android.content.Context
 import com.smartlighting.mobile.data.api.ApiService
+import com.smartlighting.mobile.data.api.AuthInterceptor
+import com.smartlighting.mobile.data.local.PersistentCookieJar
+import com.smartlighting.mobile.data.local.TokenManager
 import com.smartlighting.mobile.data.repository.LightingRepository
 import com.smartlighting.mobile.util.Constants
 import dagger.Module
@@ -9,9 +12,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import okhttp3.Cookie
-import okhttp3.CookieJar
-import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -27,29 +27,22 @@ import javax.inject.Singleton
 object NetworkModule {
     
     /**
-     * Provides OkHttpClient with logging interceptor
+     * Provides OkHttpClient with auth and logging interceptors
      */
     @Provides
     @Singleton
-    fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+    fun provideOkHttpClient(
+        @ApplicationContext context: Context,
+        authInterceptor: AuthInterceptor,
+        persistentCookieJar: PersistentCookieJar
+    ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
         
-        val cookieJar = object : CookieJar {
-            private val cookieStore = mutableMapOf<String, List<Cookie>>()
-            
-            override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-                cookieStore[url.host] = cookies
-            }
-            
-            override fun loadForRequest(url: HttpUrl): List<Cookie> {
-                return cookieStore[url.host] ?: emptyList()
-            }
-        }
-        
         return OkHttpClient.Builder()
-            .cookieJar(cookieJar)
+            .cookieJar(persistentCookieJar) // Use persistent cookie jar
+            .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(Constants.CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(Constants.READ_TIMEOUT, TimeUnit.SECONDS)
@@ -75,7 +68,11 @@ object NetworkModule {
     
     @Provides
     @Singleton
-    fun provideLightingRepository(apiService: ApiService): LightingRepository {
-        return LightingRepository(apiService)
+    fun provideLightingRepository(
+        apiService: ApiService,
+        tokenManager: TokenManager,
+        persistentCookieJar: PersistentCookieJar
+    ): LightingRepository {
+        return LightingRepository(apiService, tokenManager, persistentCookieJar)
     }
 }
