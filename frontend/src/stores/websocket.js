@@ -2,6 +2,11 @@ import { ref, reactive } from 'vue'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client/dist/sockjs'
 
+// Dev-only logger
+const isDev = import.meta.env.DEV
+const log = isDev ? (...args) => console.log('[WS]', ...args) : () => {}
+const logError = (...args) => console.error('[WS]', ...args)
+
 // Reactive state for sensor data
 const sensorData = reactive({})
 const deviceStates = reactive({})
@@ -18,39 +23,35 @@ let stompClient = null
  */
 export function connectWebSocket() {
   if (stompClient && connected.value) {
-    console.log('[WS] Already connected')
+    log('Already connected')
     return
   }
 
   const wsUrl = `${import.meta.env.VITE_API_URL ?? ''}/ws`
-  console.log('[WS] Connecting to:', wsUrl)
+  log('Connecting to:', wsUrl)
 
   stompClient = new Client({
     webSocketFactory: () => new SockJS(wsUrl),
     reconnectDelay: 5000,
     heartbeatIncoming: 10000,
     heartbeatOutgoing: 10000,
-    debug: str => {
-      if (import.meta.env.DEV) {
-        console.log('[STOMP]', str)
-      }
-    },
+    debug: isDev ? str => console.log('[STOMP]', str) : () => {},
     onConnect: () => {
-      console.log('[WS] Connected!')
+      log('Connected!')
       connected.value = true
       connectionError.value = null
       subscribeToTopics()
     },
     onDisconnect: () => {
-      console.log('[WS] Disconnected')
+      log('Disconnected')
       connected.value = false
     },
     onStompError: frame => {
-      console.error('[WS] STOMP error:', frame)
+      logError('STOMP error:', frame)
       connectionError.value = frame.headers?.message || 'Connection error'
     },
     onWebSocketError: event => {
-      console.error('[WS] WebSocket error:', event)
+      logError('WebSocket error:', event)
       connectionError.value = 'WebSocket connection failed'
     }
   })
@@ -70,7 +71,7 @@ function subscribeToTopics() {
   stompClient.subscribe('/topic/sensors', message => {
     try {
       const data = JSON.parse(message.body)
-      console.log('[WS] Sensor update:', data)
+      log('Sensor update:', data)
       // Handle sensor data: {type: "SENSOR_UPDATE", data: {sensorName, readings}}
       const sensorName = data.data?.sensorName
       const readings = data.data?.readings || {}
@@ -79,10 +80,10 @@ function subscribeToTopics() {
           ...readings,
           timestamp: data.timestamp
         }
-        console.log('[WS] Updated sensorData for', sensorName, sensorData[sensorName])
+        log('Updated sensorData for', sensorName, sensorData[sensorName])
       }
     } catch (e) {
-      console.error('[WS] Error parsing sensor message:', e)
+      logError('Error parsing sensor message:', e)
     }
   })
 
@@ -90,7 +91,7 @@ function subscribeToTopics() {
   stompClient.subscribe('/topic/device-state', message => {
     try {
       const data = JSON.parse(message.body)
-      console.log('[WS] Device state update:', data)
+      log('Device state update:', data)
       // Handle both DEVICE_STATE_CHANGE and DEVICE_STATE_UPDATE formats
       const deviceId = data.deviceId || data.data?.deviceId
       const state = data.data?.state || data.data || {}
@@ -100,10 +101,10 @@ function subscribeToTopics() {
           timestamp: data.timestamp,
           lastSeen: new Date().toISOString()
         }
-        console.log('[WS] Updated deviceStates for', deviceId, deviceStates[deviceId])
+        log('Updated deviceStates for', deviceId, deviceStates[deviceId])
       }
     } catch (e) {
-      console.error('[WS] Error parsing device state message:', e)
+      logError('Error parsing device state message:', e)
     }
   })
 
@@ -111,9 +112,9 @@ function subscribeToTopics() {
   stompClient.subscribe('/topic/device-updates', message => {
     try {
       const data = JSON.parse(message.body)
-      console.log('[WS] Device update:', data)
+      log('Device update:', data)
     } catch (e) {
-      console.error('[WS] Error parsing device update:', e)
+      logError('Error parsing device update:', e)
     }
   })
 
@@ -164,11 +165,11 @@ function subscribeToTopics() {
       sceneEvents.value = [sceneEvent, ...sceneEvents.value.slice(0, 9)]
       
     } catch (e) {
-      console.error('[WS] Error parsing scene message:', e)
+      logError('Error parsing scene message:', e)
     }
   })
 
-  console.log('[WS] Subscribed to all topics')
+  log('Subscribed to all topics')
 }
 
 /**
