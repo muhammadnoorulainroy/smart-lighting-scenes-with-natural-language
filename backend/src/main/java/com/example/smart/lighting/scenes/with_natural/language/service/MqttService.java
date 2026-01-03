@@ -1,7 +1,6 @@
 package com.example.smart.lighting.scenes.with_natural.language.service;
 
 import com.example.smart.lighting.scenes.with_natural.language.entity.Device;
-import com.example.smart.lighting.scenes.with_natural.language.entity.DeviceState;
 import com.example.smart.lighting.scenes.with_natural.language.entity.SensorReading;
 import com.example.smart.lighting.scenes.with_natural.language.repository.DeviceRepository;
 import com.example.smart.lighting.scenes.with_natural.language.repository.DeviceStateRepository;
@@ -63,6 +62,11 @@ public class MqttService {
     @org.springframework.context.annotation.Lazy
     @org.springframework.beans.factory.annotation.Autowired
     private ConfigService configService;
+
+    // Lazy to avoid circular dependency
+    @org.springframework.context.annotation.Lazy
+    @org.springframework.beans.factory.annotation.Autowired
+    private SceneCommandTracker sceneCommandTracker;
 
     /**
      * Constructs the MQTT service with required dependencies.
@@ -147,10 +151,57 @@ public class MqttService {
             handleStatusMessage(topic, payload);
         } else if (topic.contains("/sensor/")) {
             handleSensorMessage(topic, payload);
+        } else if (topic.contains("/ack/")) {
+            // Acknowledgment from ESP32
+            handleAckMessage(topic, payload);
         } else if (topic.endsWith("/config/request")) {
             // Config request from ESP32 - publish current config
             handleConfigRequest(payload);
         }
+    }
+
+    /**
+     * Handle acknowledgment messages from ESP32.
+     * Topic: smartlighting/ack/scene/{correlationId} or smartlighting/ack/led/{index}
+     */
+    private void handleAckMessage(String topic, String payload) {
+        try {
+            log.info("Received ack from topic {}: {}", topic, payload);
+            
+            Map<String, Object> ackData = objectMapper.readValue(payload, new TypeReference<>() {});
+            
+            // Check if this is a scene ack
+            if (topic.contains("/ack/scene/")) {
+                String correlationId = ackData.get("correlationId") != null 
+                    ? ackData.get("correlationId").toString() 
+                    : extractCorrelationIdFromTopic(topic);
+                
+                boolean success = ackData.containsKey("success") 
+                    ? (Boolean) ackData.get("success") 
+                    : true;
+                
+                int ledIndex = ackData.containsKey("ledIndex") 
+                    ? ((Number) ackData.get("ledIndex")).intValue() 
+                    : -1;
+                
+                if (correlationId != null && sceneCommandTracker != null) {
+                    sceneCommandTracker.processAck(correlationId, success, ledIndex);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error processing ack message: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Extract correlation ID from topic like: smartlighting/ack/scene/{correlationId}
+     */
+    private String extractCorrelationIdFromTopic(String topic) {
+        String[] parts = topic.split("/");
+        if (parts.length >= 4 && "scene".equals(parts[2])) {
+            return parts[3];
+        }
+        return null;
     }
     
     /**

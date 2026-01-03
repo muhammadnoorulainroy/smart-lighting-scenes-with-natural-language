@@ -454,7 +454,6 @@ const applyLedChanges = async () => {
     }
 
     await lightingApi.sendLedCommand(props.device.id, command)
-    console.log('LED command sent:', command)
   } catch (err) {
     console.error('Failed to apply LED changes:', err)
     alert('Failed to apply changes. Please try again.')

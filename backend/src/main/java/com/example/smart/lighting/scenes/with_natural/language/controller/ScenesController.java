@@ -6,6 +6,7 @@ import com.example.smart.lighting.scenes.with_natural.language.entity.User;
 import com.example.smart.lighting.scenes.with_natural.language.repository.SceneRepository;
 import com.example.smart.lighting.scenes.with_natural.language.repository.UserRepository;
 import com.example.smart.lighting.scenes.with_natural.language.service.MqttService;
+import com.example.smart.lighting.scenes.with_natural.language.service.SceneCommandTracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,7 @@ public class ScenesController {
     private final SceneRepository sceneRepository;
     private final UserRepository userRepository;
     private final MqttService mqttService;
+    private final SceneCommandTracker sceneCommandTracker;
 
     /**
      * Get all active scenes.
@@ -163,7 +165,17 @@ public class ScenesController {
         Object target = settings.getOrDefault("target", "all");
         List<Integer> ledIndices = getLedIndicesForTarget(target);
 
-        // Send commands
+        // Register command for tracking acks
+        String correlationId = sceneCommandTracker.registerCommand(
+            scene.getId(), 
+            scene.getName(), 
+            ledIndices.size()
+        );
+
+        // Add correlation ID to command for ESP32 to echo back
+        command.put("correlationId", correlationId);
+
+        // Send commands to each LED
         for (int ledIndex : ledIndices) {
             mqttService.publishLedCommand(ledIndex, command);
         }
@@ -171,7 +183,9 @@ public class ScenesController {
         return ResponseEntity.ok(Map.of(
             "success", true,
             "message", "Applied scene '" + scene.getName() + "'",
-            "lightsAffected", ledIndices.size()
+            "lightsAffected", ledIndices.size(),
+            "correlationId", correlationId,
+            "status", "pending"
         ));
     }
 

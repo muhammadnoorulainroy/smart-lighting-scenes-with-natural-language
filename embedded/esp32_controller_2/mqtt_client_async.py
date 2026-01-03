@@ -64,13 +64,18 @@ class AsyncMQTTClient:
     
     def _on_message(self, topic, msg):
         """Internal message callback."""
-        if self._callback:
-            try:
-                topic_str = topic.decode() if isinstance(topic, bytes) else topic
-                msg_str = msg.decode() if isinstance(msg, bytes) else msg
+        try:
+            topic_str = topic.decode() if isinstance(topic, bytes) else topic
+            msg_str = msg.decode() if isinstance(msg, bytes) else msg
+            # Skip logging for self-published /state messages
+            if not topic_str.endswith("/state"):
+                log(_SRC, f"MSG IN: {topic_str}")
+            if self._callback:
                 self._callback(topic_str, msg_str)
-            except Exception as e:
-                log_err(_SRC, f"Callback error: {e}")
+            else:
+                log(_SRC, "WARNING: No callback set!")
+        except Exception as e:
+            log_err(_SRC, f"Callback error: {e}")
     
     def set_callback(self, callback):
         """Set message callback."""
@@ -190,3 +195,15 @@ class SmartLightingMQTT:
         """Publish system state (alias for compatibility)."""
         topic = f"{self.base}/system/state"
         await self.client.publish(topic, state, retain=True)
+
+    async def publish_scene_ack(self, correlation_id, led_index, success=True):
+        """Publish scene command acknowledgment to backend."""
+        topic = f"{self.base}/ack/scene/{correlation_id}"
+        ack_data = {
+            "correlationId": correlation_id,
+            "ledIndex": led_index,
+            "success": success,
+            "timestamp": time.ticks_ms()
+        }
+        await self.client.publish(topic, ack_data)
+        log(_SRC, f"ACK sent: {correlation_id[:8]}... LED{led_index} success={success}")

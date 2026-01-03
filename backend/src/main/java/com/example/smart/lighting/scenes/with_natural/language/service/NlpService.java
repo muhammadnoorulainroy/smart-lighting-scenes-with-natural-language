@@ -44,6 +44,7 @@ public class NlpService {
     private final ScheduleRepository scheduleRepository;
     private final MqttService mqttService;
     private final ScheduleConflictService conflictService;
+    private final SceneCommandTracker sceneCommandTracker;
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${openai.api-key:}")
@@ -548,9 +549,14 @@ public class NlpService {
         // Determine LED indices
         List<Integer> ledIndices = getLedIndicesForTarget(target);
         
-        // Send commands
+        // Register command for ACK tracking and get correlationId
+        String commandName = "NLP: " + intent;
+        String correlationId = sceneCommandTracker.registerCommand(null, commandName, ledIndices.size());
+        
+        // Send commands with correlationId
         for (int ledIndex : ledIndices) {
-            mqttService.publishLedCommand(ledIndex, command);
+            command.put("correlationId", correlationId);
+            mqttService.publishLedCommand(ledIndex, new HashMap<>(command));
         }
         
         return "Command sent to " + ledIndices.size() + " light(s)";
@@ -594,9 +600,13 @@ public class NlpService {
         
         List<Integer> ledIndices = getLedIndicesForTarget(effectiveTarget);
         
-        // Send commands
+        // Register command for ACK tracking and get correlationId
+        String correlationId = sceneCommandTracker.registerCommand(scene.getId(), scene.getName(), ledIndices.size());
+        
+        // Send commands with correlationId
         for (int ledIndex : ledIndices) {
-            mqttService.publishLedCommand(ledIndex, command);
+            command.put("correlationId", correlationId);
+            mqttService.publishLedCommand(ledIndex, new HashMap<>(command));
         }
         
         String targetDesc = "all".equalsIgnoreCase(effectiveTarget.toString()) 

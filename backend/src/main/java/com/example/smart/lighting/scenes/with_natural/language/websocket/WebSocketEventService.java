@@ -42,6 +42,86 @@ public class WebSocketEventService {
         log.info("Broadcasted scene applied: {}", sceneName);
     }
 
+    /**
+     * Broadcast scene command pending (sent to MQTT, awaiting ESP32 ack).
+     */
+    public void broadcastScenePending(UUID sceneId, String sceneName, String correlationId, int lightsAffected) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCENE_PENDING")
+            .data(Map.of(
+                "sceneId", sceneId != null ? sceneId : "nlp-command",
+                "sceneName", sceneName,
+                "correlationId", correlationId,
+                "lightsAffected", lightsAffected
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/scenes", message);
+        log.info("Broadcasted scene pending: {} (correlationId={})", sceneName, correlationId);
+    }
+
+    /**
+     * Broadcast NLP command pending (sent to MQTT, awaiting ESP32 ack).
+     */
+    public void broadcastNlpPending(String commandName, UUID correlationId, int lightsAffected) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCENE_PENDING")  // Reuse same type so frontend handles it consistently
+            .data(Map.of(
+                "sceneId", "nlp-command",
+                "sceneName", commandName,
+                "correlationId", correlationId.toString(),
+                "lightsAffected", lightsAffected
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/scenes", message);
+        log.info("Broadcasted NLP command pending: {} (correlationId={})", commandName, correlationId);
+    }
+
+    /**
+     * Broadcast scene command confirmed (ESP32 acknowledged).
+     */
+    public void broadcastSceneConfirmed(UUID sceneId, String sceneName, String correlationId, 
+                                        int devicesConfirmed, long latencyMs) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCENE_CONFIRMED")
+            .data(Map.of(
+                "sceneId", sceneId,
+                "sceneName", sceneName,
+                "correlationId", correlationId,
+                "devicesConfirmed", devicesConfirmed,
+                "latencyMs", latencyMs
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/scenes", message);
+        log.info("Broadcasted scene confirmed: {} ({}ms)", sceneName, latencyMs);
+    }
+
+    /**
+     * Broadcast scene command timeout (no ack received in time).
+     */
+    public void broadcastSceneTimeout(UUID sceneId, String sceneName, String correlationId,
+                                     int acksReceived, int lightsExpected) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCENE_TIMEOUT")
+            .data(Map.of(
+                "sceneId", sceneId,
+                "sceneName", sceneName,
+                "correlationId", correlationId,
+                "acksReceived", acksReceived,
+                "lightsExpected", lightsExpected
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/scenes", message);
+        log.warn("Broadcasted scene timeout: {} ({}/{} acks)", sceneName, acksReceived, lightsExpected);
+    }
+
     public void broadcastRuleTriggered(UUID ruleId, String ruleName) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("RULE_TRIGGERED")

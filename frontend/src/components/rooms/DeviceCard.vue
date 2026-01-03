@@ -45,20 +45,20 @@
         <div class="flex items-center gap-2">
           <!-- Color Preview -->
           <div
-            v-if="device.deviceState?.rgbColor"
+            v-if="currentDeviceState?.rgbColor"
             class="w-6 h-6 rounded-full border-2 border-white dark:border-neutral-600 shadow-sm"
-            :style="{ backgroundColor: device.deviceState.rgbColor }"
+            :style="{ backgroundColor: currentDeviceState.rgbColor }"
           />
           <span
             :class="
-              device.deviceState?.isOn ? 'text-green-600 dark:text-green-400' : 'text-neutral-500'
+              currentDeviceState?.isOn ? 'text-green-600 dark:text-green-400' : 'text-neutral-500'
             "
           >
-            {{ device.deviceState?.isOn ? 'ON' : 'OFF' }}
+            {{ currentDeviceState?.isOn ? 'ON' : 'OFF' }}
           </span>
         </div>
         <div
-          v-if="device.deviceState?.brightnessPct"
+          v-if="currentDeviceState?.brightnessPct"
           class="flex items-center gap-1 text-neutral-500"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +69,7 @@
               d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
             />
           </svg>
-          {{ device.deviceState.brightnessPct }}%
+          {{ currentDeviceState.brightnessPct }}%
         </div>
       </div>
     </div>
@@ -123,12 +123,15 @@
 
 <script setup>
 import { computed, defineComponent } from 'vue'
+import { useWebSocket } from '@/stores/websocket'
 
 const props = defineProps({
   device: { type: Object, required: true }
 })
 
 defineEmits(['click'])
+
+const wsStore = useWebSocket()
 
 // Icons
 const LightIcon = defineComponent({
@@ -142,8 +145,21 @@ const SensorIcon = defineComponent({
 const isLedDevice = computed(() => ['LIGHT', 'LED'].includes(props.device?.type))
 const isSensorDevice = computed(() => ['SENSOR', 'MULTI_SENSOR'].includes(props.device?.type))
 
+// Get live state from WebSocket for LED devices
+const liveDeviceState = computed(() => {
+  if (!props.device?.id || !isLedDevice.value) return null
+  return wsStore.deviceStates[props.device.id]
+})
+
+// Merged device state
+const currentDeviceState = computed(() => {
+  return liveDeviceState.value || props.device?.deviceState
+})
+
 const isOnline = computed(() => {
-  const lastSeen = props.device?.deviceState?.lastSeen
+  const lastSeen = isLedDevice.value
+    ? (liveDeviceState.value?.lastSeen || props.device?.deviceState?.lastSeen)
+    : props.device?.deviceState?.lastSeen
   if (!lastSeen) {
     return false
   }

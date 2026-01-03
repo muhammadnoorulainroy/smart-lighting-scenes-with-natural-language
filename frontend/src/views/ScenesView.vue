@@ -173,14 +173,52 @@
       @close="closeModal"
       @save="saveScene"
     />
+
+    <!-- Toast Notification -->
+    <Transition
+      enter-active-class="transition ease-out duration-200"
+      enter-from-class="opacity-0 translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-150"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-4"
+    >
+      <div
+        v-if="showToastNotification"
+        class="fixed bottom-8 right-8 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50"
+        :class="{
+          'bg-green-500 text-white': toastType === 'success',
+          'bg-yellow-500 text-white': toastType === 'pending',
+          'bg-red-500 text-white': toastType === 'error'
+        }"
+      >
+        <!-- Success icon -->
+        <svg v-if="toastType === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <!-- Pending spinner -->
+        <svg v-else-if="toastType === 'pending'" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <!-- Error icon -->
+        <svg v-else-if="toastType === 'error'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {{ toastMessage }}
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { scenesApi } from '../api/scenes'
 import { nlpApi } from '../api/nlp'
+import { useWebSocket } from '../stores/websocket'
 import SceneModal from '../components/scenes/SceneModal.vue'
+
+const { connected: wsConnected, lastSceneApplied, pendingScenes, clearLastSceneApplied, connect: connectWs } = useWebSocket()
 
 // State
 const scenes = ref([])
@@ -189,6 +227,11 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingScene = ref(null)
 const applyingScene = ref(null)
+const showToastNotification = ref(false)
+const toastMessage = ref('')
+const toastType = ref('success')
+let toastTimeout = null
+const sceneStates = ref({})
 
 // NLP State
 const nlpCommand = ref('')
@@ -196,6 +239,38 @@ const nlpProcessing = ref(false)
 const nlpResult = ref(null)
 const isListening = ref(false)
 let recognition = null
+
+// Watch for WebSocket scene events
+watch(lastSceneApplied, (newEvent) => {
+  if (newEvent) {
+    if (newEvent.confirmed) {
+      showToast(`Scene "${newEvent.sceneName}" confirmed by ${newEvent.devicesConfirmed} device(s) (${newEvent.latencyMs}ms)`, 'success')
+    } else if (newEvent.timedOut) {
+      showToast(`Scene "${newEvent.sceneName}" timed out (${newEvent.acksReceived}/${newEvent.lightsExpected} devices responded)`, 'error')
+    } else {
+      // Legacy event without ack
+      showToast(`Scene "${newEvent.sceneName}" applied to ${newEvent.devicesAffected} light(s)`, 'success')
+    }
+    clearLastSceneApplied()
+  }
+})
+
+const showToast = (message, type = 'success') => {
+  toastMessage.value = message
+  toastType.value = type
+  showToastNotification.value = true
+  if (toastTimeout) {
+    clearTimeout(toastTimeout)
+  }
+  toastTimeout = setTimeout(() => {
+    showToastNotification.value = false
+  }, type === 'error' ? 5000 : 3000)
+}
+
+// Check if any scene is pending for a given sceneId
+const isSceneApplyPending = (sceneId) => {
+  return Object.values(pendingScenes).some(p => p.sceneId === sceneId)
+}
 
 // Computed
 const presetScenes = computed(() => scenes.value.filter(s => s.isPreset))
@@ -216,10 +291,16 @@ const loadScenes = async () => {
 const applyScene = async scene => {
   applyingScene.value = scene.id
   try {
-    await scenesApi.apply(scene.id)
+    const result = await scenesApi.apply(scene.id)
+    
+    if (result.correlationId && result.status === 'pending') {
+      showToast(`Sending "${scene.name}" to ${result.lightsAffected} device(s)...`, 'pending')
+    } else if (!wsConnected.value) {
+      showToast(result.message || `Scene "${scene.name}" applied`, 'success')
+    }
   } catch (err) {
     console.error('Failed to apply scene:', err)
-    alert('Failed to apply scene')
+    showToast('Failed to apply scene', 'error')
   } finally {
     applyingScene.value = null
   }
@@ -377,6 +458,15 @@ const toggleVoiceInput = () => {
 
 onMounted(() => {
   loadScenes()
+  if (!wsConnected.value) {
+    connectWs()
+  }
+})
+
+onUnmounted(() => {
+  if (toastTimeout) {
+    clearTimeout(toastTimeout)
+  }
 })
 </script>
 
