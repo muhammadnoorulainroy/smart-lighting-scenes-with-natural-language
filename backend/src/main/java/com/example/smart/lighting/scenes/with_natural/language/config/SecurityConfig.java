@@ -36,8 +36,7 @@ import java.util.List;
  *   <li>GUEST - Basic read-only access</li>
  * </ul>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see CustomOAuth2UserService
  * @see OAuth2AuthenticationSuccessHandler
  */
@@ -96,7 +95,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .requestMatchers(OWNER_ONLY_ENDPOINTS).hasRole("OWNER")
-                .requestMatchers(RESIDENT_ENDPOINTS).hasAnyRole("OWNER", "RESIDENT", "GUEST")  // Allow GUEST for mobile app
+                // Allow GUEST for mobile app
+                .requestMatchers(RESIDENT_ENDPOINTS).hasAnyRole("OWNER", "RESIDENT", "GUEST")
                 .requestMatchers(AUTHENTICATED_ENDPOINTS).hasAnyRole("OWNER", "RESIDENT", "GUEST")
                 .anyRequest().authenticated()
             )

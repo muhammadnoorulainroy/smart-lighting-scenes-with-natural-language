@@ -11,7 +11,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Repository for device state data access.
+ * Repository for {@link DeviceState} entity persistence operations.
+ *
+ * <p>Provides CRUD and upsert operations for device state tracking.
+ * Uses native queries for PostgreSQL ON CONFLICT support.</p>
+ *
+
+ * @see DeviceState
  */
 @Repository
 public interface DeviceStateRepository extends JpaRepository<DeviceState, UUID> {

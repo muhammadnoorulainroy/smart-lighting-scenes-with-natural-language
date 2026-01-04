@@ -5,6 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Request DTO for updating a user's role.
+ *
+
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -12,4 +17,3 @@ import lombok.NoArgsConstructor;
 public class UpdateUserRoleRequest {
     private String role;
 }
-

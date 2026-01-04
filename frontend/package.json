@@ -5,8 +5,7 @@
   "type": "module",
   "description": "Vue 3 frontend application for Smart Lighting Scenes with Google OAuth authentication",
   "author": {
-    "name": "Smart Lighting Team",
-    "email": "smart-lighting@example.com"
+    "name": "Smart Lighting Team"
   },
   "license": "MIT",
   "engines": {

@@ -12,6 +12,15 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
+/**
+ * Handles failed OAuth2 authentication by redirecting to the frontend with error details.
+ *
+ * <p>When Google OAuth login fails, redirects the user to the frontend's
+ * auth callback page with error parameters describing the failure.</p>
+ *
+
+ * @see SimpleUrlAuthenticationFailureHandler
+ */
 @Component
 @Slf4j
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {

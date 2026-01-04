@@ -16,8 +16,7 @@ import java.util.UUID;
  * <p>Provides CRUD operations and custom queries for device management,
  * including eager fetching of device state when needed.</p>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see Device
  */
 @Repository
@@ -75,7 +74,7 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
      * @return optional containing the device
      */
     @Query(value = """
-        SELECT * FROM smartlighting.devices 
+        SELECT * FROM smartlighting.devices
         WHERE meta_json->>'led_index' = CAST(:ledIndex AS TEXT)
         LIMIT 1
         """, nativeQuery = true)
@@ -87,7 +86,7 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
      * @return optional containing the device
      */
     @Query(value = """
-        SELECT * FROM smartlighting.devices 
+        SELECT * FROM smartlighting.devices
         WHERE meta_json->>'sensor_id' = :sensorId
         LIMIT 1
         """, nativeQuery = true)

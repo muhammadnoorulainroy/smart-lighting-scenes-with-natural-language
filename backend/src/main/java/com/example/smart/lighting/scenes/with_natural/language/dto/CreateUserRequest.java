@@ -8,6 +8,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Request DTO for creating a user via admin panel.
+ *
+ * <p>Used by administrators to create new user accounts with a specific role.
+ * Does not automatically log in the created user.</p>
+ *
+
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,4 +38,3 @@ public class CreateUserRequest {
     @Pattern(regexp = "^(OWNER|RESIDENT|GUEST)$", message = "Role must be OWNER, RESIDENT, or GUEST")
     private String role;
 }
-

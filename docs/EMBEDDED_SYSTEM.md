@@ -76,7 +76,7 @@ Connection parameters:
 - Notification-based updates (no polling)
 - Reconnection on disconnect
 
-### UART (ESP32 #1 → ESP32 #2)
+### UART (ESP32 #1 -> ESP32 #2)
 
 Unidirectional serial communication at 115200 baud.
 
@@ -266,7 +266,7 @@ The backend responds with all categories via the config topics.
 
 ## Sensor Effects
 
-### Temperature → Color Temperature
+### Temperature -> Color Temperature
 Maps ambient temperature to LED color warmth.
 
 | Temperature | Color Effect     |
@@ -280,7 +280,7 @@ Configuration:
 - TEMP_MAX: 28.0°C (configurable via backend)
 - TEMP_BLEND_STRENGTH: 0.95 (configurable via backend)
 
-### Humidity → Saturation
+### Humidity -> Saturation
 Maps humidity to color saturation.
 
 | Humidity | Saturation Effect |
@@ -289,7 +289,7 @@ Maps humidity to color saturation.
 | 30-70%   | Linear scaling    |
 | > 70%    | Full saturation   |
 
-### Luminosity → Brightness
+### Luminosity -> Brightness
 Inverse relationship for ambient light compensation.
 
 | Room Light | LED Brightness |
@@ -311,7 +311,7 @@ When disabled:
 - No sensor-based adjustments
 - MAX_BRIGHTNESS cap still applies
 
-### Audio → Disco Mode
+### Audio -> Disco Mode
 Triggers multicolor flash sequence on loud sounds.
 
 | Parameter            | Value           | Configurable |
@@ -336,7 +336,7 @@ Disco mode can be disabled via backend configuration.
 - Sensors do not adjust lighting
 - User/scene settings are applied exactly
 - Useful for specific lighting needs
-- Switch via MQTT: `smartlighting/command/mode` → "manual"
+- Switch via MQTT: `smartlighting/command/mode` -> "manual"
 
 ### Mode Toggle
 ```bash
@@ -521,7 +521,7 @@ Heartbeat log every 10 seconds:
 4. Check serial logs for brightness calculations
 
 ### Mode Stuck on Manual
-1. Send mode command: `smartlighting/command/mode` → "auto"
+1. Send mode command: `smartlighting/command/mode` -> "auto"
 2. Scenes no longer set mode automatically
 3. Mode persists across reboots (stored in memory)
 

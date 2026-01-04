@@ -173,40 +173,40 @@ jobs:
                 <div class="card">
                   <h2>Project Docs</h2>
                   <p>Setup guides, architecture, and development documentation.</p>
-                  <a href="DEVELOPMENT.html">Development Guide →</a><br>
-                  <a href="API.html">API Reference →</a><br>
-                  <a href="BUILD.html">Build Instructions →</a>
+                  <a href="DEVELOPMENT.html">Development Guide</a><br>
+                  <a href="API.html">API Reference</a><br>
+                  <a href="BUILD.html">Build Instructions </a>
                 </div>
                 
                 <div class="card">
                   <h2>Java API (Javadoc)</h2>
                   <p>Backend API documentation generated from source code.</p>
-                  <a href="api/java/index.html">View Javadoc →</a>
+                  <a href="api/java/index.html">View Javadoc </a>
                 </div>
                 
                 <div class="card">
                   <h2>JavaScript API (JSDoc)</h2>
                   <p>Frontend API documentation for Vue.js components.</p>
-                  <a href="api/js/index.html">View JSDoc →</a>
+                  <a href="api/js/index.html">View JSDoc </a>
                 </div>
                 
                 <div class="card">
                   <h2>Embedded System</h2>
                   <p>ESP32 and nRF52840 firmware documentation.</p>
-                  <a href="EMBEDDED_SYSTEM.html">Embedded Docs →</a><br>
-                  <a href="tutorials/embedded-setup.html">Setup Tutorial →</a>
+                  <a href="EMBEDDED_SYSTEM.html">Embedded Docs </a><br>
+                  <a href="tutorials/embedded-setup.html">Setup Tutorial </a>
                 </div>
                 
                 <div class="card">
                   <h2>Getting Started</h2>
                   <p>Quick start tutorial for new developers.</p>
-                  <a href="tutorials/tutorial.html">Tutorial →</a>
+                  <a href="tutorials/tutorial.html">Tutorial </a>
                 </div>
                 
                 <div class="card">
                   <h2>Code Quality</h2>
                   <p>Static analysis configuration and reports.</p>
-                  <a href="STATIC_ANALYSIS.html">Analysis Config →</a>
+                  <a href="STATIC_ANALYSIS.html">Analysis Config </a>
                 </div>
               </div>
               

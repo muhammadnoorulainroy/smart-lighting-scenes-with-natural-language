@@ -38,8 +38,7 @@ import java.util.stream.Collectors;
  *   <li>RESIDENT - Read-only access</li>
  * </ul>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see Device
  * @see DeviceDto
  */

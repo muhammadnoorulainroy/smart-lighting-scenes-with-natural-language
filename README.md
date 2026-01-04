@@ -16,7 +16,6 @@ Recommended for trying out the application. Run the complete stack with Docker -
 ### Prerequisites
 
 - Docker Desktop installed and running
-- Google OAuth credentials (for authentication)
 
 ### Setup
 
@@ -30,7 +29,7 @@ Recommended for trying out the application. Run the complete stack with Docker -
    
    Create a `.env` file in the project root:
    ```bash
-   # Google OAuth (required)
+   # Google OAuth (optional - for "Sign in with Google")
    GOOGLE_CLIENT_ID=your-google-client-id
    GOOGLE_CLIENT_SECRET=your-google-client-secret
 
@@ -45,7 +44,7 @@ Recommended for trying out the application. Run the complete stack with Docker -
    OPENAI_API_KEY=sk-your-openai-api-key
    ```
 
-3. **Configure Google OAuth redirect URI**
+3. **Configure Google OAuth redirect URI** (optional, skip if using local auth only)
    
    In Google Cloud Console, add this redirect URI:
    ```
@@ -133,10 +132,13 @@ make docker-logs-app   # View logs
 - **Categories**: Lighting, Climate, Audio, Display settings
 - **Per-Setting Control**: Fine-tune min/max brightness, temperature ranges, thresholds
 
-### Role-Based Access
-- **Owner**: Full access to settings, users, devices, and rooms
-- **Resident**: Control devices, create scenes, view all data
-- **Guest**: View-only access
+### Authentication
+- **Local Auth**: Email/password signup and login
+- **Google OAuth**: Optional "Sign in with Google" integration
+- **Role-Based Access**:
+  - **Owner**: Full access to settings, users, devices, and rooms
+  - **Resident**: Control devices, create scenes, view all data
+  - **Guest**: View-only access
 
 ### Multi-Platform Support
 - **Web Dashboard**: Vue 3 + Vite responsive web application
@@ -153,59 +155,64 @@ smart-lighting-scenes/
 │   └── src/main/java/.../
 │       ├── config/             # MqttConfig, SecurityConfig, WebSocketConfig
 │       ├── controller/         # REST controllers
-│       │   ├── AuthController.java
-│       │   ├── ConfigController.java      # NEW: System settings
-│       │   ├── NlpController.java         # NEW: NLP commands
-│       │   ├── ScenesController.java
-│       │   ├── SchedulesController.java
+│       │   ├── AuthController.java         # Local + OAuth auth
+│       │   ├── LightingController.java     # Direct LED control
+│       │   ├── NlpController.java          # NLP commands
+│       │   ├── ConfigController.java       # System settings
 │       │   └── ...
-│       ├── service/            # Business logic
-│       │   ├── NlpService.java            # NEW: OpenAI NLP parsing
-│       │   ├── ScheduleConflictService.java # NEW: AI conflict detection
-│       │   ├── ConfigService.java         # NEW: Runtime config management
-│       │   ├── MqttService.java
-│       │   ├── SchedulerService.java
+│       ├── service/
+│       │   ├── NlpService.java             # NLP facade
+│       │   ├── nlp/                        # NLP submodules
+│       │   │   ├── NlpOpenAiClient.java
+│       │   │   ├── NlpCommandParser.java
+│       │   │   ├── NlpCommandExecutor.java
+│       │   │   └── NlpScheduleBuilder.java
+│       │   ├── ScheduleConflictService.java
+│       │   ├── conflict/                   # Conflict detection submodules
+│       │   │   ├── ConflictDetector.java
+│       │   │   ├── ConflictAiEnhancer.java
+│       │   │   └── ConflictResolutionGenerator.java
+│       │   ├── MqttService.java            # MQTT facade
+│       │   ├── mqtt/                       # MQTT submodules
+│       │   │   ├── MqttMessageHandler.java
+│       │   │   └── MqttCommandPublisher.java
 │       │   └── ...
 │       ├── entity/             # JPA entities
-│       │   ├── Scene.java, Schedule.java  # NEW
-│       │   ├── NlpCommand.java            # NEW
-│       │   ├── SystemConfig.java          # NEW
-│       │   └── ...
-│       └── dto/                # Data transfer objects
-│           ├── NlpCommandDto.java         # NEW
-│           ├── ConflictAnalysisDto.java   # NEW
-│           └── ...
+│       ├── dto/                # Data transfer objects
+│       ├── repository/         # Spring Data JPA repositories
+│       ├── security/           # OAuth2, local auth, user details
+│       └── websocket/          # WebSocket event broadcasting
 ├── frontend/                   # Vue 3 + Vite web application
 │   └── src/
-│       ├── api/                # API clients
-│       │   ├── nlp.js          # NEW: NLP API
-│       │   ├── config.js       # NEW: Settings API
-│       │   ├── scenes.js
-│       │   ├── schedules.js
+│       ├── api/                # API clients (axios-based)
+│       │   ├── auth.js, axios.js
+│       │   ├── nlp.js, scenes.js, schedules.js
+│       │   ├── lighting.js, config.js
 │       │   └── ...
+│       ├── stores/             # Pinia state management
+│       │   ├── auth.js         # Authentication state
+│       │   └── websocket.js    # Real-time device state
 │       ├── views/              # Page components
-│       │   ├── SettingsView.vue    # NEW: System settings page
-│       │   ├── ScenesView.vue      # With voice input
-│       │   ├── SchedulesView.vue   # With conflict resolution
-│       │   └── ...
-│       └── components/         # Reusable components
+│       ├── components/         # Reusable components
+│       ├── router/             # Vue Router with guards
+│       └── utils/              # Helpers (logger, routeGuards)
 ├── embedded/                   # ESP32 MicroPython + nRF52840 CircuitPython
 │   ├── esp32_controller_2/     # Main controller with sensors
-│   │   ├── main.py             # Application entry point
-│   │   ├── runtime_config.py   # NEW: Dynamic config from backend
+│   │   ├── main.py, config.py
+│   │   ├── runtime_config.py   # Dynamic config from backend
 │   │   ├── sensor_logic_async.py
 │   │   ├── mqtt_client_async.py
-│   │   ├── oled_display_async.py
-│   │   └── ...
+│   │   └── oled_display_async.py
 │   ├── esp32_controller_1/     # BLE sensor hub
 │   └── nrf52840_sensor_*/      # Environmental sensors
 ├── mobile/                     # Android app (Kotlin + Jetpack Compose)
 ├── infra/                      # Docker Compose and infrastructure
+├── .github/workflows/          # CI/CD (tests, releases, docs)
 └── docs/                       # Documentation
-    ├── API.md                  # Complete API reference
-    ├── EMBEDDED_SYSTEM.md      # Hardware documentation
-    ├── DEVELOPMENT.md          # Development guide
-    └── tutorials/              # Setup tutorials
+    ├── API.md, BUILD.md
+    ├── EMBEDDED_SYSTEM.md
+    ├── DEVELOPMENT.md
+    └── tutorials/
 ```
 
 ## Local Development
@@ -241,7 +248,7 @@ JWT_SECRET=your-jwt-secret
 OPENAI_API_KEY=sk-your-api-key  # optional
 ```
 
-**2. Add Google OAuth redirect URI**
+**2. Add Google OAuth redirect URI** (optional, skip if using local auth only)
 
 In Google Cloud Console:
 ```
@@ -422,9 +429,9 @@ smartlighting/
 
 | Component | Role | Connection |
 |-----------|------|------------|
-| **ESP32 #1** | BLE sensor hub | UART TX → ESP32 #2 |
+| **ESP32 #1** | BLE sensor hub | UART TX -> ESP32 #2 |
 | **ESP32 #2** | Main controller | WiFi/MQTT, LEDs, OLED |
-| **nRF52840 x2** | Environmental sensors | BLE → ESP32 #1 |
+| **nRF52840 x2** | Environmental sensors | BLE -> ESP32 #1 |
 | **WS2812B LEDs** | Room lighting (5 LEDs) | GPIO 13 |
 | **SH1107 OLED** | Status display | I2C (GPIO 22/23) |
 
@@ -532,7 +539,7 @@ For comprehensive documentation, see:
 - **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development guide
 
 For comprehensive build automation documentation, see:
-- **[BUILD.md](BUILD.md)** - Complete build system documentation
+- **[BUILD.md](docs/BUILD.md)** - Complete build system documentation
 - **[docs/tutorials/tutorial.md](docs/tutorials/tutorial.md)** - Getting started tutorial
 
 ---

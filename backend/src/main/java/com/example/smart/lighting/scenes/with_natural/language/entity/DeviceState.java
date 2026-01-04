@@ -30,8 +30,7 @@ import java.util.UUID;
  *
  * <p>State is updated via MQTT messages from ESP32 controllers.</p>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see Device
  */
 @Entity

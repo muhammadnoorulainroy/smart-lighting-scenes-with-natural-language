@@ -49,7 +49,8 @@
                 <span class="text-sm font-medium">
                   Conflicts with: <strong>{{ conflict.scheduleName2 }}</strong>
                 </span>
-                <span class="text-xs px-2 py-1 rounded" :class="{
+                <span
+class="text-xs px-2 py-1 rounded" :class="{
                   'bg-red-100 text-red-700': conflict.severity === 'high',
                   'bg-amber-100 text-amber-700': conflict.severity === 'medium',
                   'bg-blue-100 text-blue-700': conflict.severity === 'low'

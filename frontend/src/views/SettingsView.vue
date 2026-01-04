@@ -241,7 +241,7 @@
             <label class="block text-sm font-medium mb-2">Saturation Range</label>
             <div class="flex gap-4 items-center">
               <span class="text-sm">{{ config.climate.saturationAtMinHumidity }}%</span>
-              <span class="text-neutral-400">→</span>
+              <span class="text-neutral-400">-></span>
               <span class="text-sm">{{ config.climate.saturationAtMaxHumidity }}%</span>
             </div>
             <p class="text-xs text-neutral-500 mt-1">Low humidity = less saturation</p>

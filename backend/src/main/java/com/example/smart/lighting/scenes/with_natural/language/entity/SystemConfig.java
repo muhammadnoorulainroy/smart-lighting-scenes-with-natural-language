@@ -1,7 +1,15 @@
 package com.example.smart.lighting.scenes.with_natural.language.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -11,8 +19,20 @@ import java.util.Map;
 
 /**
  * Entity for storing system configuration settings.
- * Settings are stored as JSON and can be updated at runtime.
- * ESP32 devices fetch these settings on boot and receive updates via MQTT.
+ *
+ * <p>Settings are stored as JSON and can be updated at runtime.
+ * ESP32 devices fetch these settings on boot and receive updates via MQTT.</p>
+ *
+ * <h3>Configuration Categories:</h3>
+ * <ul>
+ *   <li><b>lighting</b> - Global mode, brightness limits, lux thresholds</li>
+ *   <li><b>climate</b> - Temperature/humidity ranges for color blending</li>
+ *   <li><b>audio</b> - Disco mode settings and audio thresholds</li>
+ *   <li><b>display</b> - OLED timeout and display options</li>
+ *   <li><b>mqtt</b> - Publish intervals and heartbeat settings</li>
+ * </ul>
+ *
+
  */
 @Entity
 @Table(name = "system_config")
@@ -50,7 +70,7 @@ public class SystemConfig {
      * Default configuration categories and their settings.
      */
     public static class Defaults {
-        
+
         public static Map<String, Object> lighting() {
             Map<String, Object> settings = new HashMap<>();
             settings.put("globalMode", "auto");
@@ -102,4 +122,3 @@ public class SystemConfig {
         }
     }
 }
-

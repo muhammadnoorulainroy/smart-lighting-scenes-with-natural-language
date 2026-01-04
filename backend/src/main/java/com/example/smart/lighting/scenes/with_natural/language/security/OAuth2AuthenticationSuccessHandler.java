@@ -13,6 +13,15 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
+/**
+ * Handles successful OAuth2 authentication by redirecting to the frontend.
+ *
+ * <p>After successful Google OAuth login, redirects the user to the
+ * frontend's auth callback page with a success parameter.</p>
+ *
+
+ * @see SimpleUrlAuthenticationSuccessHandler
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j

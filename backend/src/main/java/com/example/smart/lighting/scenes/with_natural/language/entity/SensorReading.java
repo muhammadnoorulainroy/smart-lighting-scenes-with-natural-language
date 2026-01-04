@@ -32,8 +32,11 @@ import java.util.Map;
  *   <li>Pressure readings (hPa)</li>
  * </ul>
  *
- * @author Smart Lighting Team
- * @version 1.0
+ * <p>Readings are stored with their metric name, value, and unit
+ * for time-series analysis and automation triggers.</p>
+ *
+
+ * @see Device
  */
 @Entity
 @Table(name = "sensor_readings", schema = "smartlighting")

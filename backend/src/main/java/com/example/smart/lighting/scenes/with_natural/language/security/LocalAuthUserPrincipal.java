@@ -12,8 +12,15 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Principal for local email/password authenticated users.
- * Implements UserDetails for Spring Security integration.
+ * Spring Security principal for locally authenticated users.
+ *
+ * <p>Implements {@link UserDetails} to integrate local email/password
+ * authentication with Spring Security's authentication framework.
+ * Wraps the application's {@link User} entity.</p>
+ *
+
+ * @see UserDetails
+ * @see User
  */
 @Getter
 @RequiredArgsConstructor
@@ -62,4 +69,3 @@ public class LocalAuthUserPrincipal implements UserDetails, Serializable {
         return user.getEmail();
     }
 }
-

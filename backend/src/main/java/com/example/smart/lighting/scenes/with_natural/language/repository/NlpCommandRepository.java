@@ -11,8 +11,10 @@ import java.util.UUID;
 /**
  * Repository for {@link NlpCommand} entity persistence operations.
  *
- * @author Smart Lighting Team
- * @version 1.0
+ * <p>Stores NLP command history for audit and ML training purposes.</p>
+ *
+
+ * @see NlpCommand
  */
 @Repository
 public interface NlpCommandRepository extends JpaRepository<NlpCommand, UUID> {
@@ -27,4 +29,3 @@ public interface NlpCommandRepository extends JpaRepository<NlpCommand, UUID> {
      */
     Page<NlpCommand> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }
-

@@ -14,6 +14,23 @@ import java.time.Duration;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * Service for interacting with OpenAI API for natural language processing.
+ *
+ * <p>Uses GPT models to parse natural language lighting commands into
+ * structured JSON format that can be executed by the system.</p>
+ *
+ * <h3>Supported Commands:</h3>
+ * <ul>
+ *   <li>Turn on/off lights by room</li>
+ *   <li>Set brightness levels</li>
+ *   <li>Set colors (by name or RGB)</li>
+ *   <li>Create and apply scenes</li>
+ * </ul>
+ *
+
+ * @see ParsedCommand
+ */
 @Slf4j
 @Service
 public class OpenAIService {

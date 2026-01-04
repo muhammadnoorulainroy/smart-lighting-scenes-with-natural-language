@@ -14,6 +14,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
+/**
+ * Custom OIDC user service that loads or creates users during OAuth2 login.
+ *
+ * <p>Handles the post-authentication flow for Google OAuth2:</p>
+ * <ol>
+ *   <li>Receives authenticated OIDC user from Google</li>
+ *   <li>Looks up existing user by provider+sub or email</li>
+ *   <li>Creates new user if not found</li>
+ *   <li>Updates user profile from OAuth claims</li>
+ *   <li>Returns CustomOAuth2User for Spring Security</li>
+ * </ol>
+ *
+
+ * @see OidcUserService
+ * @see CustomOAuth2User
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

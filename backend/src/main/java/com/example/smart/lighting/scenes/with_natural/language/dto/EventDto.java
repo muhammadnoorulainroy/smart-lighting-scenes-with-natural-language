@@ -10,6 +10,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Data Transfer Object for system events.
+ *
+ * <p>Contains event information for the audit log including
+ * actor, device, and event details.</p>
+ *
+
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -30,4 +38,3 @@ public class EventDto {
     @Builder.Default
     private Map<String, Object> details = new HashMap<>();
 }
-

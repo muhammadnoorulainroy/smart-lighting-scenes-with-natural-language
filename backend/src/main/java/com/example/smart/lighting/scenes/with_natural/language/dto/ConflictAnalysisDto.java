@@ -9,7 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * DTO for schedule conflict analysis results.
+ * Data Transfer Object for schedule conflict analysis results.
+ *
+ * <p>Contains information about scheduling conflicts detected between
+ * automation rules, including severity and resolution options.</p>
+ *
+
  */
 @Data
 @Builder
@@ -21,6 +26,9 @@ public class ConflictAnalysisDto {
     private String summary;
     private List<ConflictDto> conflicts;
 
+    /**
+     * Details of a single scheduling conflict.
+     */
     @Data
     @Builder
     @NoArgsConstructor
@@ -36,6 +44,9 @@ public class ConflictAnalysisDto {
         private List<ResolutionDto> resolutions;
     }
 
+    /**
+     * A suggested resolution for a scheduling conflict.
+     */
     @Data
     @Builder
     @NoArgsConstructor

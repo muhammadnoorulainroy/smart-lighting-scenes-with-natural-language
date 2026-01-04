@@ -14,6 +14,25 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service for local email/password authentication.
+ *
+ * <p>Provides user registration and login functionality using BCrypt
+ * password hashing. Works alongside OAuth2 authentication for users
+ * who prefer not to use Google login.</p>
+ *
+ * <h3>Features:</h3>
+ * <ul>
+ *   <li>User registration with email validation</li>
+ *   <li>Secure password hashing with BCrypt</li>
+ *   <li>Login with credential verification</li>
+ *   <li>Account status checking (active/disabled)</li>
+ * </ul>
+ *
+
+ * @see User
+ * @see PasswordEncoder
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -22,6 +41,13 @@ public class LocalAuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Registers a new user with email/password credentials.
+     *
+     * @param request the signup request containing email, password, and name
+     * @return the newly created user
+     * @throws IllegalArgumentException if email is already registered
+     */
     @Transactional
     public User signup(SignupRequest request) {
         log.info("Signup attempt for email: {}", request.getEmail());
@@ -45,6 +71,13 @@ public class LocalAuthService {
         return savedUser;
     }
 
+    /**
+     * Authenticates a user with email and password.
+     *
+     * @param request the login request containing email and password
+     * @return the authenticated user
+     * @throws BadCredentialsException if credentials are invalid or account is disabled
+     */
     @Transactional(readOnly = true)
     public User login(LoginRequest request) {
         log.info("Login attempt for email: {}", request.getEmail());
@@ -79,6 +112,12 @@ public class LocalAuthService {
         return user;
     }
 
+    /**
+     * Converts a User entity to a UserDto.
+     *
+     * @param user the user entity
+     * @return the user DTO
+     */
     public UserDto toUserDto(User user) {
         return UserDto.builder()
                 .id(user.getId())
@@ -90,4 +129,3 @@ public class LocalAuthService {
                 .build();
     }
 }
-

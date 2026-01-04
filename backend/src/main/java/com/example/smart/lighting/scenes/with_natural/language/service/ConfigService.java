@@ -3,7 +3,6 @@ package com.example.smart.lighting.scenes.with_natural.language.service;
 import com.example.smart.lighting.scenes.with_natural.language.entity.SystemConfig;
 import com.example.smart.lighting.scenes.with_natural.language.repository.SystemConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -20,8 +19,23 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Service for managing system configuration.
- * Handles CRUD operations and MQTT publishing of config updates.
+ * Service for managing runtime system configuration.
+ *
+ * <p>Handles CRUD operations for configuration settings and publishes
+ * updates to ESP32 devices via MQTT. Configuration is persisted in
+ * PostgreSQL and includes default values for all categories.</p>
+ *
+ * <h3>Configuration Categories:</h3>
+ * <ul>
+ *   <li><b>lighting</b> - Brightness limits, auto-dim, sensor override</li>
+ *   <li><b>climate</b> - Temperature/humidity color blending</li>
+ *   <li><b>audio</b> - Disco mode and audio detection</li>
+ *   <li><b>display</b> - OLED timeout and content settings</li>
+ *   <li><b>mqtt</b> - Publish intervals and heartbeat</li>
+ * </ul>
+ *
+
+ * @see SystemConfig
  */
 @Service
 @Slf4j
@@ -49,13 +63,13 @@ public class ConfigService {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeDefaults() {
         log.info("Initializing system configuration defaults...");
-        
+
         createIfNotExists("lighting", "Lighting mode and brightness settings", SystemConfig.Defaults.lighting());
         createIfNotExists("climate", "Temperature and humidity color adjustments", SystemConfig.Defaults.climate());
         createIfNotExists("audio", "Audio detection and disco mode settings", SystemConfig.Defaults.audio());
         createIfNotExists("display", "OLED display settings", SystemConfig.Defaults.display());
         createIfNotExists("mqtt", "MQTT communication settings", SystemConfig.Defaults.mqtt());
-        
+
         log.info("System configuration initialized");
     }
 
@@ -77,11 +91,11 @@ public class ConfigService {
     public Map<String, Object> getAllConfig() {
         Map<String, Object> allConfig = new HashMap<>();
         List<SystemConfig> configs = configRepository.findAllByOrderByKeyAsc();
-        
+
         for (SystemConfig config : configs) {
             allConfig.put(config.getKey(), config.getSettings());
         }
-        
+
         return allConfig;
     }
 
@@ -103,19 +117,19 @@ public class ConfigService {
                 .key(key)
                 .settings(new HashMap<>())
                 .build());
-        
+
         // Merge updates with existing settings
         Map<String, Object> settings = new HashMap<>(config.getSettings());
         settings.putAll(updates);
         config.setSettings(settings);
         config.setUpdatedBy(updatedBy);
-        
+
         configRepository.save(config);
         log.info("Updated config '{}' by {}: {}", key, updatedBy, updates.keySet());
-        
+
         // Publish to MQTT
         publishConfigUpdate(key, settings);
-        
+
         return settings;
     }
 
@@ -124,15 +138,15 @@ public class ConfigService {
      */
     public Map<String, Object> updateAllConfig(Map<String, Map<String, Object>> allUpdates, String updatedBy) {
         Map<String, Object> result = new HashMap<>();
-        
+
         for (Map.Entry<String, Map<String, Object>> entry : allUpdates.entrySet()) {
             Map<String, Object> updated = updateConfig(entry.getKey(), entry.getValue(), updatedBy);
             result.put(entry.getKey(), updated);
         }
-        
+
         // Publish full config update
         publishFullConfigUpdate();
-        
+
         return result;
     }
 
@@ -157,9 +171,9 @@ public class ConfigService {
         result.put("audio", updateConfig("audio", SystemConfig.Defaults.audio(), "system"));
         result.put("display", updateConfig("display", SystemConfig.Defaults.display(), "system"));
         result.put("mqtt", updateConfig("mqtt", SystemConfig.Defaults.mqtt(), "system"));
-        
+
         publishFullConfigUpdate();
-        
+
         return result;
     }
 
@@ -181,13 +195,13 @@ public class ConfigService {
         try {
             String topic = topicPrefix + "/config/" + category;
             String payload = objectMapper.writeValueAsString(settings);
-            
+
             mqttOutboundChannel.send(
                 MessageBuilder.withPayload(payload)
                     .setHeader(MqttHeaders.TOPIC, topic)
                     .build()
             );
-            
+
             log.debug("Published config update to {}", topic);
         } catch (Exception e) {
             log.error("Failed to publish config update: {}", e.getMessage());
@@ -202,13 +216,13 @@ public class ConfigService {
             Map<String, Object> allConfig = getAllConfig();
             String topic = topicPrefix + "/config/update";
             String payload = objectMapper.writeValueAsString(allConfig);
-            
+
             mqttOutboundChannel.send(
                 MessageBuilder.withPayload(payload)
                     .setHeader(MqttHeaders.TOPIC, topic)
                     .build()
             );
-            
+
             log.info("Published full config update to {}", topic);
         } catch (Exception e) {
             log.error("Failed to publish full config update: {}", e.getMessage());
@@ -224,4 +238,3 @@ public class ConfigService {
         publishFullConfigUpdate();
     }
 }
-

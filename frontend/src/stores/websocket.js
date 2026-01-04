@@ -1,25 +1,91 @@
+/**
+ * @fileoverview WebSocket store for real-time device state updates.
+ *
+ * Manages STOMP over WebSocket connection to the backend for:
+ * - Live sensor data (temperature, humidity, light level)
+ * - Device state changes (on/off, brightness, color)
+ * - Scene application events and acknowledgments
+ *
+ * Uses SockJS for WebSocket transport with automatic reconnection.
+ *
+ * @module stores/websocket
+ */
+
 import { ref, reactive } from 'vue'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client/dist/sockjs'
 
-// Dev-only logger
+// Development Logger
+
+/** Whether we're in development mode */
 const isDev = import.meta.env.DEV
-const log = isDev ? (...args) => console.log('[WS]', ...args) : () => {}
-const logError = (...args) => console.error('[WS]', ...args)
-
-// Reactive state for sensor data
-const sensorData = reactive({})
-const deviceStates = reactive({})
-const sceneEvents = ref([])
-const lastSceneApplied = ref(null)
-const pendingScenes = reactive({})
-const connected = ref(false)
-const connectionError = ref(null)
-
-let stompClient = null
 
 /**
- * Initialize WebSocket connection to backend
+ * Development-only logger. No-op in production.
+ * @param {...*} args - Log arguments
+ */
+const log = isDev ? (...args) => console.log('[WS]', ...args) : () => {}
+
+/**
+ * Error logger. Always active (errors are important).
+ * @param {...*} args - Error arguments
+ */
+const logError = (...args) => console.error('[WS]', ...args)
+
+// Reactive State
+
+/**
+ * Sensor readings by sensor name.
+ * Updated in real-time via WebSocket.
+ * @type {Object}
+ */
+const sensorData = reactive({})
+
+/**
+ * Device states by device ID.
+ * Contains isOn, brightness, color, lastSeen, etc.
+ * @type {Object}
+ */
+const deviceStates = reactive({})
+
+/**
+ * Recent scene events (last 10).
+ * Used for activity feed and notifications.
+ */
+const sceneEvents = ref([])
+
+/**
+ * Last scene that was applied (for toast notifications).
+ * Includes confirmation status from ESP32 ACK.
+ */
+const lastSceneApplied = ref(null)
+
+/**
+ * Scenes currently pending acknowledgment.
+ * Keyed by correlationId.
+ * @type {Object}
+ */
+const pendingScenes = reactive({})
+
+/** WebSocket connection status */
+const connected = ref(false)
+
+/** Last connection error message */
+const connectionError = ref(null)
+
+/** STOMP client instance */
+let stompClient = null
+
+// Connection Management
+
+/**
+ * Establishes WebSocket connection to the backend.
+ *
+ * Uses SockJS transport with STOMP protocol.
+ * Automatically reconnects on disconnect (5s delay).
+ * Subscribes to all relevant topics on connect.
+ *
+ * @returns {void}
  */
 export function connectWebSocket() {
   if (stompClient && connected.value) {
@@ -60,7 +126,15 @@ export function connectWebSocket() {
 }
 
 /**
- * Subscribe to all relevant topics
+ * Subscribes to all WebSocket topics.
+ *
+ * Topics:
+ * - /topic/sensors: Environmental sensor readings
+ * - /topic/device-state: LED state changes
+ * - /topic/device-updates: General device updates
+ * - /topic/scenes: Scene application events and ACKs
+ *
+ * @private
  */
 function subscribeToTopics() {
   if (!stompClient || !stompClient.connected) {
@@ -72,7 +146,6 @@ function subscribeToTopics() {
     try {
       const data = JSON.parse(message.body)
       log('Sensor update:', data)
-      // Handle sensor data: {type: "SENSOR_UPDATE", data: {sensorName, readings}}
       const sensorName = data.data?.sensorName
       const readings = data.data?.readings || {}
       if (sensorName) {
@@ -92,7 +165,6 @@ function subscribeToTopics() {
     try {
       const data = JSON.parse(message.body)
       log('Device state update:', data)
-      // Handle both DEVICE_STATE_CHANGE and DEVICE_STATE_UPDATE formats
       const deviceId = data.deviceId || data.data?.deviceId
       const state = data.data?.state || data.data || {}
       if (deviceId) {
@@ -118,11 +190,11 @@ function subscribeToTopics() {
     }
   })
 
-  // Subscribe to scene events
+  // Subscribe to scene events (including ACK tracking)
   stompClient.subscribe('/topic/scenes', message => {
     try {
       const data = JSON.parse(message.body)
-      
+
       const sceneEvent = {
         type: data.type,
         sceneId: data.data?.sceneId,
@@ -135,35 +207,34 @@ function subscribeToTopics() {
         lightsExpected: data.data?.lightsExpected,
         timestamp: data.timestamp
       }
-      
+
       // Handle different scene event types
       switch (data.type) {
         case 'SCENE_PENDING':
-          // Track pending command
+          // Track pending command awaiting ACK
           pendingScenes[sceneEvent.correlationId] = sceneEvent
           break
-          
+
         case 'SCENE_CONFIRMED':
-          // Remove from pending and mark as confirmed
+          // All ACKs received - command successful
           delete pendingScenes[sceneEvent.correlationId]
           lastSceneApplied.value = { ...sceneEvent, confirmed: true }
           break
-          
+
         case 'SCENE_TIMEOUT':
-          // Remove from pending and mark as timeout
+          // Not all ACKs received within timeout
           delete pendingScenes[sceneEvent.correlationId]
           lastSceneApplied.value = { ...sceneEvent, timedOut: true }
           break
-          
+
         case 'SCENE_APPLIED':
-          // Legacy event (without ack tracking)
+          // Legacy event (without ACK tracking)
           lastSceneApplied.value = sceneEvent
           break
       }
-      
-      // Keep last 10 scene events
+
+      // Keep last 10 scene events for activity feed
       sceneEvents.value = [sceneEvent, ...sceneEvents.value.slice(0, 9)]
-      
     } catch (e) {
       logError('Error parsing scene message:', e)
     }
@@ -173,7 +244,11 @@ function subscribeToTopics() {
 }
 
 /**
- * Disconnect WebSocket
+ * Disconnects the WebSocket connection.
+ *
+ * Should be called when the app unmounts or user logs out.
+ *
+ * @returns {void}
  */
 export function disconnectWebSocket() {
   if (stompClient) {
@@ -183,36 +258,56 @@ export function disconnectWebSocket() {
   }
 }
 
+// Data Access Functions
+
 /**
- * Get sensor data for a specific sensor
+ * Gets sensor readings for a specific sensor.
+ *
+ * @param {string} sensorName - Sensor identifier
+ * @returns {Object|null} Sensor readings or null if not available
  */
 export function getSensorData(sensorName) {
   return sensorData[sensorName] || null
 }
 
 /**
- * Get device state for a specific device
+ * Gets the current state of a device.
+ *
+ * @param {string} deviceId - Device UUID
+ * @returns {Object|null} Device state or null if not available
  */
 export function getDeviceState(deviceId) {
   return deviceStates[deviceId] || null
 }
 
 /**
- * Clear last scene applied (for UI feedback dismissal)
+ * Clears the last scene applied notification.
+ *
+ * Call this after displaying a toast to dismiss it.
+ *
+ * @returns {void}
  */
 export function clearLastSceneApplied() {
   lastSceneApplied.value = null
 }
 
 /**
- * Check if a scene command is pending confirmation
+ * Checks if a scene command is pending acknowledgment.
+ *
+ * @param {string} correlationId - Command correlation ID
+ * @returns {boolean} True if still pending
  */
 export function isScenePending(correlationId) {
   return !!pendingScenes[correlationId]
 }
 
 /**
- * Export reactive state for components
+ * Composable function to access WebSocket state and methods.
+ *
+ * Provides reactive access to connection status, device states,
+ * and scene events for use in Vue components.
+ *
+ * @returns {Object} WebSocket state and methods
  */
 export function useWebSocket() {
   return {
