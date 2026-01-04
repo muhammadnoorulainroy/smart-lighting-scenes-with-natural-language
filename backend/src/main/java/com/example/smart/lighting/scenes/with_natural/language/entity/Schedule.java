@@ -1,6 +1,14 @@
 package com.example.smart.lighting.scenes.with_natural.language.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,10 +27,20 @@ import java.util.UUID;
 
 /**
  * Entity representing a scheduled automation rule.
- * Schedules define when and what lighting actions should be triggered.
  *
- * @author Smart Lighting Team
- * @version 1.0
+ * <p>Schedules define time-based or event-based triggers for lighting actions.
+ * They support various trigger types:</p>
+ * <ul>
+ *   <li><b>time</b> - Execute at specific times with weekday filtering</li>
+ *   <li><b>sun</b> - Execute relative to sunrise/sunset</li>
+ *   <li><b>sensor</b> - Execute based on sensor thresholds</li>
+ * </ul>
+ *
+ * <p>Schedules can have conditions and multiple actions, supporting
+ * complex automation scenarios.</p>
+ *
+
+ * @see User
  */
 @Entity
 @Table(name = "schedules", schema = "smartlighting")
@@ -100,4 +118,3 @@ public class Schedule {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }
-

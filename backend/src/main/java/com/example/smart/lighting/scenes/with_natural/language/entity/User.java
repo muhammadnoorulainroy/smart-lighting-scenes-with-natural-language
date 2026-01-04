@@ -30,8 +30,7 @@ import java.util.UUID;
  *   <li>{@link UserRole#GUEST} - Limited read-only access</li>
  * </ul>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see UserRole
  * @see OAuthProvider
  */

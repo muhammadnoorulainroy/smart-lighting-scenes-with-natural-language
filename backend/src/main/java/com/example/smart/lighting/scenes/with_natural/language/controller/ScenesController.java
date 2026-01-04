@@ -14,17 +14,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * REST controller for managing lighting scenes.
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  */
 @RestController
 @RequestMapping("/api/scenes")
@@ -167,8 +177,8 @@ public class ScenesController {
 
         // Register command for tracking acks
         String correlationId = sceneCommandTracker.registerCommand(
-            scene.getId(), 
-            scene.getName(), 
+            scene.getId(),
+            scene.getName(),
             ledIndices.size()
         );
 

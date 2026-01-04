@@ -13,6 +13,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * Custom OAuth2 user principal that wraps both the OIDC user and our domain User entity.
+ *
+ * <p>Bridges Spring Security's OAuth2 authentication with our application's
+ * user management system. Provides access to both OAuth claims and our
+ * internal user data including role information.</p>
+ *
+
+ * @see OidcUser
+ * @see User
+ */
 @Getter
 public class CustomOAuth2User implements OidcUser, Serializable {
 
@@ -21,6 +32,12 @@ public class CustomOAuth2User implements OidcUser, Serializable {
     private final OidcUser oidcUser;
     private final User user;
 
+    /**
+     * Creates a new CustomOAuth2User wrapping the OIDC user and domain user.
+     *
+     * @param oidcUser the Spring Security OIDC user
+     * @param user the application's User entity
+     */
     public CustomOAuth2User(OidcUser oidcUser, User user) {
         this.oidcUser = oidcUser;
         this.user = user;

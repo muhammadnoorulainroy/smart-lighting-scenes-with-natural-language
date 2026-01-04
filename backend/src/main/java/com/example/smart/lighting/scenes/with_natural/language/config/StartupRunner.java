@@ -6,6 +6,24 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+/**
+ * Startup runner that displays application configuration information.
+ *
+ * <p>Executed after the Spring context is fully initialized, this component
+ * logs helpful URLs and configuration details for developers.</p>
+ *
+ * <h3>Displayed Information:</h3>
+ * <ul>
+ *   <li>API base URL and WebSocket endpoint</li>
+ *   <li>OAuth test page location</li>
+ *   <li>Infrastructure service ports (PostgreSQL, Redis, MQTT)</li>
+ *   <li>Frontend development server URL</li>
+ *   <li>Setup reminders for OAuth credentials</li>
+ * </ul>
+ *
+
+ * @see CommandLineRunner
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -13,6 +31,12 @@ public class StartupRunner implements CommandLineRunner {
 
     private final Environment env;
 
+    /**
+     * Runs on application startup to display configuration information.
+     *
+     * @param args command line arguments (not used)
+     * @throws Exception if an error occurs during execution
+     */
     @Override
     public void run(String... args) throws Exception {
         String port = env.getProperty("server.port", "8080");

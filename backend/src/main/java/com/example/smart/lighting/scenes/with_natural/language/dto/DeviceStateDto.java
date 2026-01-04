@@ -7,6 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Data Transfer Object for device state information.
+ *
+ * <p>Contains the current operational state of a lighting device
+ * including power, brightness, and color settings.</p>
+ *
+
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,4 +27,3 @@ public class DeviceStateDto {
     private LocalDateTime lastSeen;
     private LocalDateTime updatedAt;
 }
-

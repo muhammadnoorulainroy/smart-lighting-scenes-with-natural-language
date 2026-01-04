@@ -23,6 +23,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Entity representing a system event for audit logging.
+ *
+ * <p>Records all significant actions in the system including:</p>
+ * <ul>
+ *   <li>Device state changes from manual or automated actions</li>
+ *   <li>Scene applications</li>
+ *   <li>Rule/schedule executions</li>
+ *   <li>User actions (login, configuration changes)</li>
+ *   <li>System events (startup, errors)</li>
+ * </ul>
+ *
+
+ * @see EventType
+ */
 @Entity
 @Table(name = "events", schema = "smartlighting")
 @Data
@@ -67,6 +82,9 @@ public class Event {
     @Column(name = "cause_chain", columnDefinition = "jsonb")
     private Map<String, Object> causeChain;
 
+    /**
+     * Types of events that can be logged.
+     */
     public enum EventType {
         device_state_changed,
         scene_applied,

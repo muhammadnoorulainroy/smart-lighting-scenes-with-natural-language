@@ -14,7 +14,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tracks pending scene commands and their acknowledgments from ESP32 devices.
- * Provides correlation between commands sent and acks received.
+ *
+ * <p>Implements an end-to-end acknowledgment system for MQTT commands:</p>
+ * <ol>
+ *   <li>Backend sends command with correlation ID to ESP32</li>
+ *   <li>ESP32 processes command and sends ACK back</li>
+ *   <li>This service correlates ACKs and broadcasts status via WebSocket</li>
+ * </ol>
+ *
+ * <h3>Status Flow:</h3>
+ * <ul>
+ *   <li>PENDING - Command sent, awaiting acknowledgment</li>
+ *   <li>CONFIRMED - All expected ACKs received</li>
+ *   <li>TIMEOUT - ACKs not received within timeout period</li>
+ * </ul>
+ *
+
+ * @see WebSocketEventService
  */
 @Service
 @RequiredArgsConstructor
@@ -34,7 +50,7 @@ public class SceneCommandTracker {
      */
     public String registerCommand(UUID sceneId, String sceneName, int lightsAffected) {
         String correlationId = UUID.randomUUID().toString();
-        
+
         PendingCommand pending = new PendingCommand(
             correlationId,
             sceneId,
@@ -42,13 +58,13 @@ public class SceneCommandTracker {
             lightsAffected,
             Instant.now()
         );
-        
+
         pendingCommands.put(correlationId, pending);
         log.info("Registered pending scene command: {} for scene '{}'", correlationId, sceneName);
-        
+
         // Broadcast pending status via WebSocket
         webSocketEventService.broadcastScenePending(sceneId, sceneName, correlationId, lightsAffected);
-        
+
         return correlationId;
     }
 
@@ -60,29 +76,29 @@ public class SceneCommandTracker {
      */
     public void processAck(String correlationId, boolean success, int ledIndex) {
         PendingCommand pending = pendingCommands.get(correlationId);
-        
+
         if (pending == null) {
             log.warn("Received ack for unknown correlation ID: {}", correlationId);
             return;
         }
-        
+
         pending.incrementAckCount();
-        log.info("Received ack {}/{} for scene '{}' (LED {})", 
-            pending.getAckCount(), pending.getLightsAffected(), 
+        log.info("Received ack {}/{} for scene '{}' (LED {})",
+            pending.getAckCount(), pending.getLightsAffected(),
             pending.getSceneName(), ledIndex);
-        
+
         // Check if all expected acks received
         if (pending.getAckCount() >= pending.getLightsAffected()) {
             pendingCommands.remove(correlationId);
             long latencyMs = Instant.now().toEpochMilli() - pending.getCreatedAt().toEpochMilli();
-            
-            log.info("Scene '{}' confirmed by all {} devices in {}ms", 
+
+            log.info("Scene '{}' confirmed by all {} devices in {}ms",
                 pending.getSceneName(), pending.getLightsAffected(), latencyMs);
-            
+
             // Broadcast confirmed status via WebSocket
             webSocketEventService.broadcastSceneConfirmed(
-                pending.getSceneId(), 
-                pending.getSceneName(), 
+                pending.getSceneId(),
+                pending.getSceneName(),
                 correlationId,
                 pending.getLightsAffected(),
                 latencyMs
@@ -96,16 +112,16 @@ public class SceneCommandTracker {
     @Scheduled(fixedRate = 2000) // Check every 2 seconds
     public void checkTimeouts() {
         Instant now = Instant.now();
-        
+
         pendingCommands.entrySet().removeIf(entry -> {
             PendingCommand pending = entry.getValue();
             long elapsed = now.toEpochMilli() - pending.getCreatedAt().toEpochMilli();
-            
+
             if (elapsed > COMMAND_TIMEOUT_MS) {
-                log.warn("Scene command timed out: {} for scene '{}' (received {}/{} acks)", 
-                    entry.getKey(), pending.getSceneName(), 
+                log.warn("Scene command timed out: {} for scene '{}' (received {}/{} acks)",
+                    entry.getKey(), pending.getSceneName(),
                     pending.getAckCount(), pending.getLightsAffected());
-                
+
                 // Broadcast timeout status via WebSocket
                 webSocketEventService.broadcastSceneTimeout(
                     pending.getSceneId(),
@@ -114,7 +130,7 @@ public class SceneCommandTracker {
                     pending.getAckCount(),
                     pending.getLightsAffected()
                 );
-                
+
                 return true; // Remove from map
             }
             return false;
@@ -137,7 +153,7 @@ public class SceneCommandTracker {
         private final Instant createdAt;
         private int ackCount = 0;
 
-        public PendingCommand(String correlationId, UUID sceneId, String sceneName, 
+        PendingCommand(String correlationId, UUID sceneId, String sceneName,
                             int lightsAffected, Instant createdAt) {
             this.correlationId = correlationId;
             this.sceneId = sceneId;
@@ -151,4 +167,3 @@ public class SceneCommandTracker {
         }
     }
 }
-

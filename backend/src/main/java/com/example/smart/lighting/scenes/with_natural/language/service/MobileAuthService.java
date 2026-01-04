@@ -28,6 +28,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Service for authenticating mobile app users with Google ID tokens.
+ *
+ * <p>Mobile apps cannot use the standard OAuth2 redirect flow, so they
+ * obtain a Google ID token directly and send it to this service for
+ * verification and session creation.</p>
+ *
+ * <h3>Authentication Flow:</h3>
+ * <ol>
+ *   <li>Mobile app authenticates with Google Sign-In</li>
+ *   <li>Mobile app sends ID token to backend</li>
+ *   <li>This service verifies the token with Google</li>
+ *   <li>User is created/updated in database</li>
+ *   <li>Session is created for subsequent requests</li>
+ * </ol>
+ *
+
+ * @see GoogleIdTokenVerifier
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,10 +57,18 @@ public class MobileAuthService {
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
 
+    /**
+     * Authenticates a mobile user using a Google ID token.
+     *
+     * @param idTokenString the Google ID token from the mobile app
+     * @param request the HTTP request for session creation
+     * @return the authenticated user's DTO
+     * @throws Exception if token verification fails or email is not verified
+     */
     @Transactional
     public UserDto authenticateWithGoogleToken(String idTokenString, HttpServletRequest request) throws Exception {
         log.info("Verifying Google ID token with client ID: {}", googleClientId != null ? googleClientId.substring(0, Math.min(20, googleClientId.length())) + "..." : "null");
-        
+
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 GsonFactory.getDefaultInstance())
@@ -53,7 +80,7 @@ public class MobileAuthService {
             log.error("Google ID token verification failed: token is null or invalid");
             throw new SecurityException("Invalid ID token - verification failed");
         }
-        
+
         log.info("Google ID token verified successfully");
 
         GoogleIdToken.Payload payload = idToken.getPayload();
@@ -116,7 +143,7 @@ public class MobileAuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
+
         if (request.getSession(false) == null) {
             request.getSession(true);
         }
@@ -137,4 +164,3 @@ public class MobileAuthService {
                 .build();
     }
 }
-

@@ -11,6 +11,14 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Repository for {@link Event} entity persistence operations.
+ *
+ * <p>Provides paginated access to the system event audit log.</p>
+ *
+
+ * @see Event
+ */
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
 
@@ -23,4 +31,3 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     List<Event> findTop10ByOrderByTimestampDesc();
 }
-

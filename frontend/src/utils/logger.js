@@ -1,12 +1,19 @@
 /**
  * @fileoverview Structured logging utility for the Smart Lighting frontend.
+ *
+ * Provides consistent logging with:
+ * - ISO timestamps
+ * - Log level prefixes
+ * - Module/component context
+ * - Environment-aware filtering (DEBUG only in dev)
+ *
  * @module utils/logger
- * @author Smart Lighting Team
- * @version 1.0.0
  */
 
 /**
  * Log level constants for filtering messages.
+ * Lower numbers = more verbose.
+ *
  * @constant {Object.<string, number>}
  */
 const LOG_LEVELS = {
@@ -18,18 +25,22 @@ const LOG_LEVELS = {
 
 /**
  * Current log level based on environment.
- * Production uses INFO, development uses DEBUG.
- * @type {number}
+ *
+ * - Production: INFO and above
+ * - Development: DEBUG and above
+ *
+ * @constant {number}
  */
 const currentLevel = import.meta.env.PROD ? LOG_LEVELS.INFO : LOG_LEVELS.DEBUG
 
 /**
  * Formats a log message with timestamp, level, and module prefix.
- * @param {string} level - The log level (DEBUG, INFO, WARN, ERROR)
- * @param {string} module - The module/component name
+ *
+ * @param {string} level - Log level (DEBUG, INFO, WARN, ERROR)
+ * @param {string} module - Module/component name for context
  * @param {string} message - The log message
  * @param {*} data - Optional additional data
- * @returns {{prefix: string, message: string, data: *}} Formatted message parts
+ * @returns {{prefix: string, message: string, data: *}} Formatted parts
  * @private
  */
 const formatMessage = (level, module, message, data) => {
@@ -40,13 +51,23 @@ const formatMessage = (level, module, message, data) => {
 
 /**
  * Logger instance with methods for each log level.
- * @namespace
+ *
+ * Usage pattern:
+ * 1. Define a MODULE constant at the top of your file
+ * 2. Call logger methods with MODULE as first argument
+ * 3. Include optional data object for structured logging
+ *
+ * @namespace logger
  */
 const logger = {
   /**
-   * Logs a debug message. Only shown in development.
-   * @param {string} module - The module/component name
-   * @param {string} message - The log message
+   * Logs a debug message.
+   *
+   * Only shown in development mode. Use for detailed
+   * troubleshooting information that would clutter production logs.
+   *
+   * @param {string} module - Module/component name
+   * @param {string} message - Log message
    * @param {*} [data=null] - Optional data to log
    */
   debug(module, message, data = null) {
@@ -61,9 +82,13 @@ const logger = {
   },
 
   /**
-   * Logs an info message. Shown in production and development.
-   * @param {string} module - The module/component name
-   * @param {string} message - The log message
+   * Logs an info message.
+   *
+   * Shown in both production and development.
+   * Use for significant events like user actions or state changes.
+   *
+   * @param {string} module - Module/component name
+   * @param {string} message - Log message
    * @param {*} [data=null] - Optional data to log
    */
   info(module, message, data = null) {
@@ -79,8 +104,12 @@ const logger = {
 
   /**
    * Logs a warning message.
-   * @param {string} module - The module/component name
-   * @param {string} message - The log message
+   *
+   * Use for potentially problematic situations that don't
+   * prevent operation but should be noted.
+   *
+   * @param {string} module - Module/component name
+   * @param {string} message - Log message
    * @param {*} [data=null] - Optional data to log
    */
   warn(module, message, data = null) {
@@ -96,9 +125,13 @@ const logger = {
 
   /**
    * Logs an error message.
-   * @param {string} module - The module/component name
-   * @param {string} message - The log message
-   * @param {Error|*} [error=null] - Optional error object or data
+   *
+   * Use for errors that affect functionality.
+   * Always logged regardless of environment.
+   *
+   * @param {string} module - Module/component name
+   * @param {string} message - Log message
+   * @param {Error|*} [error=null] - Error object or additional data
    */
   error(module, message, error = null) {
     if (currentLevel <= LOG_LEVELS.ERROR) {

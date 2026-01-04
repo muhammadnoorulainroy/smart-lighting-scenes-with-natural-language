@@ -133,7 +133,7 @@ class AsyncSensorLogic:
             # Map temperature range to Kelvin: cold=6500K (blue), neutral=4000K, hot=2700K (warm)
             temp_norm = (temperature - self.cfg.TEMP_MIN) / (self.cfg.TEMP_MAX - self.cfg.TEMP_MIN)
             temp_norm = clamp(temp_norm, 0.0, 1.0)
-            # Inverse: low temp → high Kelvin (cool), high temp → low Kelvin (warm)
+            # Inverse: low temp -> high Kelvin (cool), high temp -> low Kelvin (warm)
             color_temp_kelvin = int(lerp(6500, 2700, temp_norm))
 
         if self.cfg.HUMIDITY_EFFECTS_ENABLED:
@@ -252,7 +252,7 @@ class AsyncSensorLogic:
             last_t = self._last_temp_logged.get(led_index)
             last_h = self._last_humidity_logged.get(led_index)
             if last_t is None or last_h is None or abs(temp - last_t) >= 2.0 or abs(hum - last_h) >= 10.0:
-                log(_SRC, f"LED{led_index} 🌡️T={temp:.1f}C H={hum:.0f}% {base_rgb}→{adjusted_rgb} Sat={saturation_pct}% CT={color_temp_kelvin}K")
+                log(_SRC, f"LED{led_index} 🌡️T={temp:.1f}C H={hum:.0f}% {base_rgb}->{adjusted_rgb} Sat={saturation_pct}% CT={color_temp_kelvin}K")
                 self._last_temp_logged[led_index] = temp
                 self._last_humidity_logged[led_index] = hum
 
@@ -304,7 +304,7 @@ class AsyncSensorLogic:
                 else:
                     # Interpolate inversely between min and scene_max
                     lux_factor = (lux - self.cfg.LUX_MIN) / (self.cfg.LUX_MAX - self.cfg.LUX_MIN)
-                    # Invert: 0 lux → scene_max, LUX_MAX → min_br
+                    # Invert: 0 lux -> scene_max, LUX_MAX -> min_br
                     target_brightness_percent = scene_max - (lux_factor * (scene_max - min_br))
                 
                 # Quantize to 1% steps
@@ -320,7 +320,7 @@ class AsyncSensorLogic:
                 # Log the change
                 last_brightness = self._last_brightness_logged.get(led_index, -1)
                 if adjusted_brightness != last_brightness:
-                    log(_SRC, f"LED {led_index} 💡 Lux {last_lux if last_lux else 0}→{lux} → Brightness {adjusted_brightness}% (max {scene_max}%)")
+                    log(_SRC, f"LED {led_index} 💡 Lux {last_lux if last_lux else 0}->{lux} -> Brightness {adjusted_brightness}% (max {scene_max}%)")
                     self._last_brightness_logged[led_index] = adjusted_brightness
                 
                 # Update last processed lux

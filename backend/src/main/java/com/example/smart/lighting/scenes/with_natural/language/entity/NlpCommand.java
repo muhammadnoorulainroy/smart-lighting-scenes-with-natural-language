@@ -1,6 +1,14 @@
 package com.example.smart.lighting.scenes.with_natural.language.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,10 +24,20 @@ import java.util.UUID;
 
 /**
  * Entity storing natural language command history.
- * Used for debugging, learning, and audit purposes.
  *
- * @author Smart Lighting Team
- * @version 1.0
+ * <p>Records all NLP commands processed by the system for:</p>
+ * <ul>
+ *   <li>Audit trail of voice/text commands</li>
+ *   <li>Debugging command parsing issues</li>
+ *   <li>Future ML training data</li>
+ * </ul>
+ *
+ * <p>Links to the user who issued the command and any schedule
+ * created as a result.</p>
+ *
+
+ * @see User
+ * @see Schedule
  */
 @Entity
 @Table(name = "nlp_commands", schema = "smartlighting")
@@ -82,4 +100,3 @@ public class NlpCommand {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 }
-

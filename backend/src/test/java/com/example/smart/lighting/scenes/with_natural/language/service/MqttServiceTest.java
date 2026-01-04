@@ -1,9 +1,6 @@
 package com.example.smart.lighting.scenes.with_natural.language.service;
 
-import com.example.smart.lighting.scenes.with_natural.language.repository.DeviceRepository;
-import com.example.smart.lighting.scenes.with_natural.language.repository.DeviceStateRepository;
-import com.example.smart.lighting.scenes.with_natural.language.repository.SensorReadingRepository;
-import com.example.smart.lighting.scenes.with_natural.language.websocket.WebSocketEventService;
+import com.example.smart.lighting.scenes.with_natural.language.service.mqtt.MqttMessageHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,16 +31,7 @@ class MqttServiceTest {
     private MessageChannel mqttOutputChannel;
 
     @Mock
-    private DeviceRepository deviceRepository;
-
-    @Mock
-    private DeviceStateRepository deviceStateRepository;
-
-    @Mock
-    private SensorReadingRepository sensorReadingRepository;
-
-    @Mock
-    private WebSocketEventService webSocketEventService;
+    private MqttMessageHandler messageHandler;
 
     private ObjectMapper objectMapper;
     private MqttService mqttService;
@@ -57,10 +45,7 @@ class MqttServiceTest {
         mqttService = new MqttService(
                 mqttOutputChannel,
                 objectMapper,
-                deviceRepository,
-                deviceStateRepository,
-                sensorReadingRepository,
-                webSocketEventService
+                messageHandler
         );
     }
 

@@ -32,8 +32,7 @@ import java.util.UUID;
  *
  * <p>Room names must be unique across the system.</p>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see Device
  * @see User
  */

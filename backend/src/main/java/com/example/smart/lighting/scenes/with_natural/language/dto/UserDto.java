@@ -14,8 +14,7 @@ import java.util.UUID;
  * <p>Used for API responses containing user profile information.
  * Excludes sensitive data like OAuth tokens.</p>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  */
 @Data
 @Builder

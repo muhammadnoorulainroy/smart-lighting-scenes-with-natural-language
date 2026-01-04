@@ -18,7 +18,12 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -37,8 +42,9 @@ public class AuthController {
     private static final String LOCAL_USER_SESSION_KEY = "LOCAL_AUTH_USER";
 
     private final LocalAuthService localAuthService;
-    
-    @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.google.client-id:}")
+
+    @org.springframework.beans.factory.annotation.Value(
+        "${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleClientId;
 
     /**
@@ -81,12 +87,12 @@ public class AuthController {
         List<SimpleGrantedAuthority> authorities = List.of(
             new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );
-        
-        UsernamePasswordAuthenticationToken authentication = 
+
+        UsernamePasswordAuthenticationToken authentication =
             new UsernamePasswordAuthenticationToken(principal, null, authorities);
-        
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
+
         // Store in session for persistence across requests
         HttpSession session = request.getSession(true);
         session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
@@ -100,23 +106,23 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UserDto> getCurrentUser(HttpServletRequest request) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        
+
         if (authentication != null && authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
-            
+
             // Check OAuth2 user
             if (principal instanceof CustomOAuth2User oauthUser) {
                 log.debug("OAuth user profile accessed: {}", oauthUser.getEmail());
                 return ResponseEntity.ok(buildUserDto(oauthUser.getUser()));
             }
-            
+
             // Check local auth user
             if (principal instanceof LocalAuthUserPrincipal localUser) {
                 log.debug("Local user profile accessed: {}", localUser.getEmail());
                 return ResponseEntity.ok(buildUserDto(localUser.getUser()));
             }
         }
-        
+
         // Fallback: check session directly
         HttpSession session = request.getSession(false);
         if (session != null) {
@@ -126,7 +132,7 @@ public class AuthController {
                 return ResponseEntity.ok(buildUserDto(localUser));
             }
         }
-        
+
         log.debug("GET /api/me called without authentication");
         return ResponseEntity.notFound().build();
     }
@@ -137,21 +143,21 @@ public class AuthController {
     @GetMapping("/auth/check")
     public ResponseEntity<Boolean> checkAuthentication(HttpServletRequest request) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        
+
         if (authentication != null && authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
-            
+
             if (principal instanceof CustomOAuth2User oauthUser) {
                 log.debug("Auth check: OAuth user authenticated: {}", oauthUser.getEmail());
                 return ResponseEntity.ok(true);
             }
-            
+
             if (principal instanceof LocalAuthUserPrincipal localUser) {
                 log.debug("Auth check: Local user authenticated: {}", localUser.getEmail());
                 return ResponseEntity.ok(true);
             }
         }
-        
+
         // Fallback: check session directly
         HttpSession session = request.getSession(false);
         if (session != null) {
@@ -161,7 +167,7 @@ public class AuthController {
                 return ResponseEntity.ok(true);
             }
         }
-        
+
         log.debug("Auth check: not authenticated");
         return ResponseEntity.ok(false);
     }
@@ -174,35 +180,36 @@ public class AuthController {
         HttpSession session = request.getSession(false);
         if (session != null) {
             String userEmail = null;
-            
+
             // Get user email before invalidating
             User localUser = (User) session.getAttribute(LOCAL_USER_SESSION_KEY);
             if (localUser != null) {
                 userEmail = localUser.getEmail();
             }
-            
+
             session.invalidate();
             log.info("User logged out: {}", userEmail != null ? userEmail : "unknown");
         }
-        
+
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
-    
+
     /**
      * Get authentication configuration for mobile app.
      * Returns Google Client ID if configured.
      */
     @GetMapping("/auth/config")
     public ResponseEntity<Map<String, String>> getAuthConfig() {
-        log.debug("Fetching auth config, Google Client ID present: {}", googleClientId != null && !googleClientId.isEmpty());
-        
+        boolean hasClientId = googleClientId != null && !googleClientId.isEmpty();
+        log.debug("Fetching auth config, Google Client ID present: {}", hasClientId);
+
         Map<String, String> config = Map.of(
             "googleClientId", googleClientId != null ? googleClientId : ""
         );
-        
+
         return ResponseEntity.ok(config);
     }
-    
+
     /**
      * Debug endpoint for authentication troubleshooting.
      */
@@ -210,18 +217,20 @@ public class AuthController {
     public ResponseEntity<?> debugAuth(HttpServletRequest request) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         HttpSession session = request.getSession(false);
-        
-        String principalType = authentication != null ? authentication.getPrincipal().getClass().getSimpleName() : "none";
+
+        String principalType = authentication != null
+            ? authentication.getPrincipal().getClass().getSimpleName() : "none";
         String principalEmail = null;
-        
+
         if (authentication != null && authentication.getPrincipal() instanceof CustomOAuth2User oauthUser) {
             principalEmail = oauthUser.getEmail();
-        } else if (authentication != null && authentication.getPrincipal() instanceof LocalAuthUserPrincipal localUser) {
+        } else if (authentication != null
+                && authentication.getPrincipal() instanceof LocalAuthUserPrincipal localUser) {
             principalEmail = localUser.getEmail();
         }
-        
+
         User sessionUser = session != null ? (User) session.getAttribute(LOCAL_USER_SESSION_KEY) : null;
-        
+
         Map<String, Object> debug = Map.of(
             "authenticated", authentication != null && authentication.isAuthenticated(),
             "principalType", principalType,
@@ -229,7 +238,7 @@ public class AuthController {
             "sessionUser", sessionUser != null ? sessionUser.getEmail() : "none",
             "sessionId", session != null ? session.getId() : "none"
         );
-        
+
         return ResponseEntity.ok(debug);
     }
 

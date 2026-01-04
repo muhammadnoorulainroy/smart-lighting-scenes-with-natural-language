@@ -20,6 +20,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * REST controller for accessing system event history.
+ *
+ * <p>Provides paginated access to the event log which tracks all
+ * significant system activities including:</p>
+ * <ul>
+ *   <li>Device state changes</li>
+ *   <li>Scene applications</li>
+ *   <li>Schedule executions</li>
+ *   <li>User actions</li>
+ *   <li>System events</li>
+ * </ul>
+ *
+
+ * @see Event
+ * @see EventDto
+ */
 @RestController
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
@@ -30,6 +47,14 @@ public class EventsController {
 
     private final EventRepository eventRepository;
 
+    /**
+     * Retrieves paginated event history.
+     *
+     * @param page page number (0-based, default 0)
+     * @param size page size (default 10)
+     * @param limit optional limit override for size
+     * @return paginated list of events with metadata
+     */
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllEvents(
             @RequestParam(defaultValue = "0") int page,

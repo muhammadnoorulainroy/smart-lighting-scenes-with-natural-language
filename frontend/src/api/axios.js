@@ -1,30 +1,40 @@
 /**
  * @fileoverview Axios HTTP client configuration with interceptors.
+ *
+ * This module provides a pre-configured Axios instance for all API communication
+ * with the backend. It handles:
+ * - Base URL configuration (supports both Docker and local development)
+ * - Session cookies for authentication
+ * - Request/response logging for debugging
+ * - Centralized error handling with status-specific messages
+ *
  * @module api/axios
- * @author Smart Lighting Team
- * @version 1.0.0
  */
 
 import axios from 'axios'
 import logger from '../utils/logger'
 
+/** @constant {string} Module name for logging */
 const MODULE = 'ApiClient'
 
 /**
  * Base URL for API requests.
- * Uses empty string in production (Docker/Nginx) for relative URLs.
- * @type {string}
+ *
+ * - In Docker/production: Uses empty string for relative URLs (Nginx proxy)
+ * - In development: Uses VITE_API_URL env variable
+ *
+ * @constant {string}
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? ''
 
 /**
  * Pre-configured Axios instance for API communication.
  *
- * Includes:
- * - Base URL configuration
- * - Credential support for session cookies
- * - Request/response logging
- * - Centralized error handling
+ * Features:
+ * - Automatic JSON content type headers
+ * - Credentials included for session cookie authentication
+ * - Request logging in development mode
+ * - Centralized error handling with user-friendly messages
  *
  * @type {Object}
  */
@@ -37,6 +47,10 @@ const apiClient = axios.create({
   }
 })
 
+/**
+ * Request interceptor for logging outgoing requests.
+ * Logs the HTTP method and URL for debugging purposes.
+ */
 apiClient.interceptors.request.use(
   config => {
     logger.debug(MODULE, `${config.method?.toUpperCase()} ${config.url}`)
@@ -48,6 +62,16 @@ apiClient.interceptors.request.use(
   }
 )
 
+/**
+ * Response interceptor for handling responses and errors.
+ *
+ * Success responses are logged and passed through.
+ * Error responses are categorized by status code:
+ * - 401: Unauthorized
+ * - 403: Forbidden
+ * - 404: Resource not found
+ * - 500: Server error (logged with full details)
+ */
 apiClient.interceptors.response.use(
   response => {
     logger.debug(MODULE, `Response ${response.status} from ${response.config.url}`)

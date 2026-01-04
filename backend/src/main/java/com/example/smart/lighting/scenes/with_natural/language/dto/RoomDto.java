@@ -10,6 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Data Transfer Object for Room entities.
+ *
+ * <p>Contains room information including name, description, and
+ * the list of devices assigned to the room.</p>
+ *
+
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -28,4 +36,3 @@ public class RoomDto {
     @Builder.Default
     private List<DeviceDto> devicesList = new ArrayList<>();
 }
-

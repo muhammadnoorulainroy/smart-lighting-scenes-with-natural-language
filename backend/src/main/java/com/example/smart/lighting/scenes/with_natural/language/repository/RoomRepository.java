@@ -15,8 +15,7 @@ import java.util.UUID;
  * <p>Provides CRUD operations and custom queries for room management,
  * including eager fetching of associated devices.</p>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see Room
  */
 @Repository

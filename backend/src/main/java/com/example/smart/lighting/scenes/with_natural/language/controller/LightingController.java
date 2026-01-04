@@ -7,7 +7,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import java.util.HashMap;
@@ -17,8 +22,7 @@ import java.util.UUID;
 * REST controller for controlling smart lighting devices.
 * Provides endpoints to send commands to LED devices via MQTT.
 *
-* @author Smart Lighting Team
-* @version 1.0
+
 */
 @RestController
 @RequestMapping("/api/lighting")
@@ -52,15 +56,15 @@ public class LightingController {
         if (ledIndex == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Device does not have LED index configured");
         }
-        
+
         // Register command for ACK tracking and get correlationId
         String commandName = "Manual: " + device.getName();
         String correlationId = sceneCommandTracker.registerCommand(null, commandName, 1);
-        
+
         // Add correlationId to command
         Map<String, Object> commandWithCorrelation = new HashMap<>(command);
         commandWithCorrelation.put("correlationId", correlationId);
-        
+
         // Publish command to MQTT
         mqttService.publishLedCommand(ledIndex, commandWithCorrelation);
         log.info("LED command published for LED index {} with correlationId {}", ledIndex, correlationId);

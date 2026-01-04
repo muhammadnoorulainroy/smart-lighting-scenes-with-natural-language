@@ -13,14 +13,31 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service that executes scheduled lighting automations.
- * Runs every minute to check for schedules that should be triggered.
  *
- * @author Smart Lighting Team
- * @version 1.0
+ * <p>Runs every minute to check for time-based schedules that should
+ * be triggered. Supports weekday filtering and various lighting actions.</p>
+ *
+ * <h3>Supported Actions:</h3>
+ * <ul>
+ *   <li>Apply scenes</li>
+ *   <li>Turn lights on/off</li>
+ *   <li>Set brightness levels</li>
+ *   <li>Set colors</li>
+ *   <li>Set color temperature</li>
+ * </ul>
+ *
+
+ * @see Schedule
+ * @see Scene
  */
 @Service
 @RequiredArgsConstructor
@@ -74,7 +91,9 @@ public class SchedulerService {
 
         // Get scheduled time
         String atTime = (String) config.get("at");
-        if (atTime == null) return false;
+        if (atTime == null) {
+            return false;
+        }
 
         LocalTime scheduledTime;
         try {
