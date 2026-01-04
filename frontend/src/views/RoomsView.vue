@@ -192,7 +192,8 @@ const handleDeviceUpdated = () => {
   loadRooms() // Reload rooms to get updated data
 }
 
-// Handle delete room
+// Handle delete room (reserved for future delete button)
+// eslint-disable-next-line no-unused-vars
 const handleDeleteRoom = async (roomId) => {
   if (!confirm('Are you sure you want to delete this room? All devices in this room will also be deleted.')) {
     return

@@ -193,7 +193,7 @@ const allConflictsResolved = computed(() => {
   if (!nlpResult.value?.conflictAnalysis?.conflicts) {
     return true
   }
-  const conflicts = nlpResult.value.conflictAnalysis.conflicts
+  const { conflicts } = nlpResult.value.conflictAnalysis
   return conflicts.every((_, idx) => selectedResolutions.value[idx])
 })
 
@@ -276,7 +276,7 @@ const applyResolutionsAndCreate = async () => {
   nlpProcessing.value = true
   try {
     // Apply all selected resolutions first
-    const conflicts = nlpResult.value.conflictAnalysis.conflicts
+    const { conflicts } = nlpResult.value.conflictAnalysis
     for (let idx = 0; idx < conflicts.length; idx++) {
       const conflict = conflicts[idx]
       const resolutionId = selectedResolutions.value[idx]
@@ -298,7 +298,7 @@ const applyResolutionsAndCreate = async () => {
     }
   } catch (err) {
     console.error('Error applying resolutions:', err)
-    alert('Failed to apply resolutions: ' + (err.message || 'Unknown error'))
+    alert(`Failed to apply resolutions: ${err.message || 'Unknown error'}`)
   } finally {
     nlpProcessing.value = false
   }

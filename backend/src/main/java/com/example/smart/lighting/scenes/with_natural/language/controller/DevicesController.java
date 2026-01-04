@@ -93,7 +93,7 @@ public class DevicesController {
             .mqttCmdTopic(deviceDto.getMqttCmdTopic())
             .mqttStateTopic(deviceDto.getMqttStateTopic())
             .metaJson(deviceDto.getMetaJson() != null ? deviceDto.getMetaJson() : new java.util.HashMap<>())
-            .isActive(deviceDto.getIsActive() != null && deviceDto.getIsActive())
+            .isActive(deviceDto.getIsActive() != null ? deviceDto.getIsActive() : true)
             .build();
 
         device = deviceRepository.save(device);
