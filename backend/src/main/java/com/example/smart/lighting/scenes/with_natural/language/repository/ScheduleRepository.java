@@ -12,8 +12,10 @@ import java.util.UUID;
 /**
  * Repository for {@link Schedule} entity persistence operations.
  *
- * @author Smart Lighting Team
- * @version 1.0
+ * <p>Provides queries for finding enabled schedules by trigger type.</p>
+ *
+
+ * @see Schedule
  */
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
@@ -45,4 +47,3 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
     @Query("SELECT s FROM Schedule s WHERE s.triggerType = 'sun' AND s.enabled = true")
     List<Schedule> findEnabledSunSchedules();
 }
-

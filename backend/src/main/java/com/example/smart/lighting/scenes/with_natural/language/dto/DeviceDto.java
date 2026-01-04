@@ -16,8 +16,7 @@ import java.util.UUID;
  * <p>Used for API request/response serialization. Contains device
  * configuration, MQTT topics, and current state information.</p>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see DeviceStateDto
  */
 @Data

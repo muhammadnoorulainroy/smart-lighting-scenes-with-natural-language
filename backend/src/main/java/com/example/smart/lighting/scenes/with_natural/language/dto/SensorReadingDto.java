@@ -10,7 +10,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * DTO for sensor reading data.
+ * Data Transfer Object for sensor reading data.
+ *
+ * <p>Contains a single sensor measurement with metric, value,
+ * unit, and timestamp information.</p>
+ *
+
  */
 @Data
 @Builder

@@ -79,7 +79,7 @@ make clean      # Remove build artifacts
 
 **What it Automates:**
 1. **Dependency Resolution:** Downloads 200+ JAR files from Maven Central
-2. **Compilation:** Compiles Java source to bytecode (.java → .class)
+2. **Compilation:** Compiles Java source to bytecode (.java -> .class)
 3. **Testing:** Runs JUnit 5 tests with reporting
 4. **Packaging:** Creates executable JAR with all dependencies (45MB)
 5. **Annotation Processing:** Lombok code generation
@@ -132,8 +132,8 @@ npm run format     # Prettier code formatting
 **What it Automates:**
 1. **Dependency Management:** Downloads 344 npm packages
 2. **Development Server:** Hot reload, API proxying
-3. **Transpilation:** Vue SFC → JavaScript, modern → legacy syntax
-4. **Bundling:** Multiple files → optimized chunks
+3. **Transpilation:** Vue SFC -> JavaScript, modern -> legacy syntax
+4. **Bundling:** Multiple files -> optimized chunks
 5. **Minification:** Removes whitespace, shortens names
 6. **Asset Optimization:** Images, fonts, CSS
 7. **Code Splitting:** Lazy loading for better performance
@@ -330,15 +330,15 @@ npm audit fix
 ### Full Build Pipeline
 
 ```bash
-# Complete build (clean → install → build → test)
+# Complete build (clean -> install -> build -> test)
 make all
 ```
 
 **What happens:**
 1. Clean old artifacts
 2. Download dependencies
-3. Compile backend (Java → bytecode)
-4. Compile frontend (Vue → JavaScript)
+3. Compile backend (Java -> bytecode)
+4. Compile frontend (Vue -> JavaScript)
 5. Run tests
 6. Package applications
 
@@ -395,8 +395,8 @@ npm run build
 
 **Steps:**
 1. **Transpilation:** Convert modern JavaScript/TypeScript
-   - Vue SFC (Single File Components) → JavaScript
-   - ES2022 → ES2015 (for browser compatibility)
+   - Vue SFC (Single File Components) -> JavaScript
+   - ES2022 -> ES2015 (for browser compatibility)
    - Takes ~3 seconds
 
 2. **Bundling:** Combine modules
@@ -436,9 +436,9 @@ frontend/dist/
 ```
 
 **Optimization Results:**
-- **Size Reduction:** 2.5MB → 180KB (93% smaller)
-- **Load Time:** ~5 seconds → ~0.8 seconds
-- **Files:** 344 modules → 3 bundles
+- **Size Reduction:** 2.5MB -> 180KB (93% smaller)
+- **Load Time:** ~5 seconds -> ~0.8 seconds
+- **Files:** 344 modules -> 3 bundles
 
 ### Incremental Builds
 
@@ -868,7 +868,7 @@ This project demonstrates professional build automation using:
 
 **Total automation achieved:**
 - Dependencies: 544+ packages managed automatically
-- Build time: Minutes of manual work → 60 seconds automated
+- Build time: Minutes of manual work -> 60 seconds automated
 - Testing: Automatic test discovery and execution
 - Packaging: One-command deployment artifacts
 - External APIs: OpenAI integration for NLP features

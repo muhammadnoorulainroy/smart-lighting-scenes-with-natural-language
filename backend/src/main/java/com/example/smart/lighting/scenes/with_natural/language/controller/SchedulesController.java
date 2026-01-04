@@ -12,17 +12,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * REST controller for managing lighting schedules/automations.
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  */
 @RestController
 @RequestMapping("/api/schedules")
@@ -62,23 +72,23 @@ public class SchedulesController {
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<ScheduleDto> createSchedule(@RequestBody ScheduleDto scheduleDto, Authentication auth) {
         log.info("Creating schedule: {}", scheduleDto.getName());
-        
+
         User user = getCurrentUser(auth);
-        
+
         Schedule schedule = Schedule.builder()
             .name(scheduleDto.getName())
             .description(scheduleDto.getDescription())
-            .enabled(scheduleDto.getEnabled() != null ? scheduleDto.getEnabled() : true)
+            .enabled(scheduleDto.getEnabled() == null || scheduleDto.getEnabled())
             .triggerType(scheduleDto.getTriggerType())
             .triggerConfig(scheduleDto.getTriggerConfig() != null ? scheduleDto.getTriggerConfig() : new HashMap<>())
             .conditions(scheduleDto.getConditions() != null ? scheduleDto.getConditions() : new ArrayList<>())
             .actions(scheduleDto.getActions() != null ? scheduleDto.getActions() : new ArrayList<>())
             .createdBy(user)
             .build();
-        
+
         schedule = scheduleRepository.save(schedule);
         log.info("Schedule created: {}", schedule.getId());
-        
+
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(schedule));
     }
 
@@ -87,10 +97,11 @@ public class SchedulesController {
      */
     @PutMapping("/{scheduleId}")
     @PreAuthorize("hasRole('OWNER')")
-    public ResponseEntity<ScheduleDto> updateSchedule(@PathVariable UUID scheduleId, @RequestBody ScheduleDto scheduleDto) {
+    public ResponseEntity<ScheduleDto> updateSchedule(
+            @PathVariable UUID scheduleId, @RequestBody ScheduleDto scheduleDto) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found"));
-        
+
         if (scheduleDto.getName() != null) {
             schedule.setName(scheduleDto.getName());
         }
@@ -112,7 +123,7 @@ public class SchedulesController {
         if (scheduleDto.getActions() != null) {
             schedule.setActions(scheduleDto.getActions());
         }
-        
+
         schedule = scheduleRepository.save(schedule);
         return ResponseEntity.ok(toDto(schedule));
     }
@@ -125,12 +136,12 @@ public class SchedulesController {
     public ResponseEntity<ScheduleDto> toggleSchedule(@PathVariable UUID scheduleId) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found"));
-        
+
         schedule.setEnabled(!schedule.getEnabled());
         schedule = scheduleRepository.save(schedule);
-        
+
         log.info("Schedule {} {}", schedule.getId(), schedule.getEnabled() ? "enabled" : "disabled");
-        
+
         return ResponseEntity.ok(toDto(schedule));
     }
 
@@ -143,10 +154,10 @@ public class SchedulesController {
         if (!scheduleRepository.existsById(scheduleId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found");
         }
-        
+
         scheduleRepository.deleteById(scheduleId);
         log.info("Schedule deleted: {}", scheduleId);
-        
+
         return ResponseEntity.noContent().build();
     }
 
@@ -178,13 +189,12 @@ public class SchedulesController {
             .triggerCount(schedule.getTriggerCount())
             .createdAt(schedule.getCreatedAt())
             .updatedAt(schedule.getUpdatedAt());
-        
+
         if (schedule.getCreatedBy() != null) {
             builder.createdBy(schedule.getCreatedBy().getId())
                 .createdByName(schedule.getCreatedBy().getName());
         }
-        
+
         return builder.build();
     }
 }
-

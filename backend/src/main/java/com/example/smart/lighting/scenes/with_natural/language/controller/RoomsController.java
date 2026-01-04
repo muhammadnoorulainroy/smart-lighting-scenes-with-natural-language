@@ -28,6 +28,23 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * REST controller for managing rooms in the smart lighting system.
+ *
+ * <p>Rooms are logical groupings of devices (LEDs, sensors) that correspond
+ * to physical spaces. Each room can contain multiple devices and supports
+ * collective operations.</p>
+ *
+ * <h3>Access Control:</h3>
+ * <ul>
+ *   <li>OWNER - Full access (create, update, delete rooms)</li>
+ *   <li>RESIDENT - Read access only</li>
+ * </ul>
+ *
+
+ * @see Room
+ * @see RoomDto
+ */
 @RestController
 @RequestMapping("/api/rooms")
 @RequiredArgsConstructor
@@ -39,6 +56,11 @@ public class RoomsController {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
 
+    /**
+     * Retrieves all rooms with their associated devices.
+     *
+     * @return list of all rooms with device information
+     */
     @GetMapping
     public ResponseEntity<List<RoomDto>> getAllRooms() {
         List<Room> rooms = roomRepository.findAllWithDevices();
@@ -48,6 +70,12 @@ public class RoomsController {
         return ResponseEntity.ok(roomDtos);
     }
 
+    /**
+     * Retrieves a specific room by ID with its devices.
+     *
+     * @param roomId the room UUID
+     * @return the room with devices
+     */
     @GetMapping("/{roomId}")
     public ResponseEntity<RoomDto> getRoomById(@PathVariable UUID roomId) {
         Room room = roomRepository.findByIdWithDevices(roomId)
@@ -55,6 +83,13 @@ public class RoomsController {
         return ResponseEntity.ok(toDto(room));
     }
 
+    /**
+     * Creates a new room.
+     *
+     * @param roomDto the room data
+     * @param currentUser the authenticated user creating the room
+     * @return the created room
+     */
     @PostMapping
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<RoomDto> createRoom(
@@ -74,6 +109,13 @@ public class RoomsController {
         return ResponseEntity.ok(toDto(room));
     }
 
+    /**
+     * Updates an existing room.
+     *
+     * @param roomId the room UUID to update
+     * @param roomDto the updated room data
+     * @return the updated room
+     */
     @PutMapping("/{roomId}")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<RoomDto> updateRoom(@PathVariable UUID roomId, @RequestBody RoomDto roomDto) {
@@ -91,6 +133,12 @@ public class RoomsController {
         return ResponseEntity.ok(toDto(room));
     }
 
+    /**
+     * Deletes a room (unless it's a default room).
+     *
+     * @param roomId the room UUID to delete
+     * @return no content on success, bad request for default rooms
+     */
     @DeleteMapping("/{roomId}")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<Void> deleteRoom(@PathVariable UUID roomId) {

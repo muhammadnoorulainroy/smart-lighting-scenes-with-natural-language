@@ -11,8 +11,10 @@ import java.util.UUID;
 /**
  * Repository for {@link Scene} entity persistence operations.
  *
- * @author Smart Lighting Team
- * @version 1.0
+ * <p>Provides queries for finding active, preset, and custom scenes.</p>
+ *
+
+ * @see Scene
  */
 @Repository
 public interface SceneRepository extends JpaRepository<Scene, UUID> {

@@ -8,6 +8,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Request DTO for user self-registration.
+ *
+ * <p>Contains validated email, password, and name fields for creating
+ * a new user account. New users are assigned GUEST role by default.</p>
+ *
+
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,4 +34,3 @@ public class SignupRequest {
     @Pattern(regexp = "^[a-zA-Z\\s'-]+$", message = "Name can only contain letters, spaces, hyphens, and apostrophes")
     private String name;
 }
-

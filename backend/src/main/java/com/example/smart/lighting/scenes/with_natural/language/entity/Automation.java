@@ -7,8 +7,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Automation configuration (similar to Home Assistant automations).
- * Loaded from YAML file.
+ * Automation configuration loaded from YAML files.
+ *
+ * <p>Provides Home Assistant-style automation support with triggers,
+ * conditions, and actions. Automations are defined in YAML and loaded
+ * at runtime.</p>
+ *
+ * <h3>Execution Modes:</h3>
+ * <ul>
+ *   <li><b>single</b> - Only one instance runs at a time</li>
+ *   <li><b>restart</b> - Cancel current and start new</li>
+ *   <li><b>queued</b> - Queue new runs until current completes</li>
+ *   <li><b>parallel</b> - Allow multiple concurrent runs</li>
+ * </ul>
+ *
+
  */
 @Data
 public class Automation {
@@ -21,6 +34,10 @@ public class Automation {
     private List<Action> actions;
     private boolean enabled = true;
 
+    /**
+     * Trigger configuration for an automation.
+     * Supports state, time, sun, numeric_state, event, and mqtt triggers.
+     */
     @Data
     public static class Trigger {
         private String trigger; // state, time, sun, numeric_state, event, mqtt
@@ -37,6 +54,10 @@ public class Automation {
         private Map<String, Object> data;
     }
 
+    /**
+     * Condition that must be met for an automation to execute.
+     * Supports state, numeric_state, time, and template conditions.
+     */
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Condition {
@@ -56,6 +77,10 @@ public class Automation {
         private String valueTemplate;
     }
 
+    /**
+     * Action to execute when an automation triggers.
+     * Typically calls a service with target entities and data.
+     */
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Action {

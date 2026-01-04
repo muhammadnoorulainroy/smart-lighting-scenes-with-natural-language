@@ -8,6 +8,26 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Service for broadcasting events to WebSocket clients.
+ *
+ * <p>Provides methods to push real-time updates to connected frontend clients
+ * using STOMP over WebSocket. Events are broadcast to topic channels that
+ * clients subscribe to.</p>
+ *
+ * <h3>Topic Channels:</h3>
+ * <ul>
+ *   <li>{@code /topic/device-state} - Device state changes (on/off, brightness, color)</li>
+ *   <li>{@code /topic/scenes} - Scene application status (pending, confirmed, timeout)</li>
+ *   <li>{@code /topic/sensors} - Sensor data updates (temperature, humidity, etc.)</li>
+ *   <li>{@code /topic/rules} - Automation rule triggers</li>
+ *   <li>{@code /topic/system} - System-level events</li>
+ * </ul>
+ *
+
+ * @see SimpMessagingTemplate
+ * @see WebSocketMessage
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -15,6 +35,12 @@ public class WebSocketEventService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
+    /**
+     * Broadcasts a device state change to all subscribed clients.
+     *
+     * @param deviceId the device UUID
+     * @param state the new device state
+     */
     public void broadcastDeviceStateChange(UUID deviceId, Map<String, Object> state) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("DEVICE_STATE_CHANGE")
@@ -27,6 +53,13 @@ public class WebSocketEventService {
         log.debug("Broadcasted device state change for device: {}", deviceId);
     }
 
+    /**
+     * Broadcasts that a scene has been applied.
+     *
+     * @param sceneId the scene UUID
+     * @param sceneName the scene name
+     * @param devicesAffected number of devices affected
+     */
     public void broadcastSceneApplied(UUID sceneId, String sceneName, int devicesAffected) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SCENE_APPLIED")
@@ -83,7 +116,7 @@ public class WebSocketEventService {
     /**
      * Broadcast scene command confirmed (ESP32 acknowledged).
      */
-    public void broadcastSceneConfirmed(UUID sceneId, String sceneName, String correlationId, 
+    public void broadcastSceneConfirmed(UUID sceneId, String sceneName, String correlationId,
                                         int devicesConfirmed, long latencyMs) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SCENE_CONFIRMED")
@@ -122,6 +155,12 @@ public class WebSocketEventService {
         log.warn("Broadcasted scene timeout: {} ({}/{} acks)", sceneName, acksReceived, lightsExpected);
     }
 
+    /**
+     * Broadcasts that an automation rule was triggered.
+     *
+     * @param ruleId the rule UUID
+     * @param ruleName the rule name
+     */
     public void broadcastRuleTriggered(UUID ruleId, String ruleName) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("RULE_TRIGGERED")
@@ -136,6 +175,12 @@ public class WebSocketEventService {
         log.info("Broadcasted rule triggered: {}", ruleName);
     }
 
+    /**
+     * Broadcasts a system-level event.
+     *
+     * @param eventType the type of system event
+     * @param eventData additional event data
+     */
     public void broadcastSystemEvent(String eventType, Map<String, Object> eventData) {
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SYSTEM_EVENT")

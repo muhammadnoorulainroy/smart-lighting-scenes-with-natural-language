@@ -38,8 +38,7 @@ import java.util.UUID;
  *
  * <p>Device names must be unique within a room (enforced by database constraint).</p>
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  * @see Room
  * @see DeviceState
  */

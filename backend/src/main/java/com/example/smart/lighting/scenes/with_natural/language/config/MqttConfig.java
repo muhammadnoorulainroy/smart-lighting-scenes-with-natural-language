@@ -14,6 +14,26 @@ import org.springframework.messaging.MessageHandler;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * MQTT configuration for IoT device communication.
+ *
+ * <p>Configures MQTT v5 client with Spring Integration for bidirectional
+ * communication with ESP32 lighting controllers. Uses Eclipse Paho client
+ * with automatic reconnection.</p>
+ *
+ * <h3>Topic Structure:</h3>
+ * <ul>
+ *   <li>{@code smartlighting/command/#} - Commands to devices</li>
+ *   <li>{@code smartlighting/status/#} - Status updates from devices</li>
+ *   <li>{@code smartlighting/sensor/#} - Sensor data (temperature, humidity, etc.)</li>
+ *   <li>{@code smartlighting/led/#} - LED state changes</li>
+ *   <li>{@code smartlighting/config/#} - Configuration updates</li>
+ *   <li>{@code smartlighting/ack/#} - Command acknowledgments</li>
+ * </ul>
+ *
+
+ * @see org.springframework.integration.mqtt.core.Mqttv5ClientManager
+ */
 @Slf4j
 @Configuration
 public class MqttConfig {
@@ -60,6 +80,11 @@ public class MqttConfig {
     @Value("${mqtt.keep-alive-interval}")
     private int keepAliveInterval;
 
+    /**
+     * Creates MQTT connection options with configured broker settings.
+     *
+     * @return configured MqttConnectionOptions for broker connection
+     */
     @Bean
     public MqttConnectionOptions mqttConnectionOptions() {
         MqttConnectionOptions options = new MqttConnectionOptions();
@@ -80,6 +105,11 @@ public class MqttConfig {
         return options;
     }
 
+    /**
+     * Creates the MQTT v5 client manager for connection lifecycle management.
+     *
+     * @return configured Mqttv5ClientManager instance
+     */
     @Bean
     public Mqttv5ClientManager mqttClientManager() {
         // Create a simple client manager implementation
@@ -88,13 +118,23 @@ public class MqttConfig {
         return clientManager;
     }
 
-    // Inbound channel for receiving messages from MQTT
+    /**
+     * Creates the inbound message channel for receiving MQTT messages.
+     *
+     * @return DirectChannel for MQTT inbound messages
+     */
     @Bean
     public MessageChannel mqttInputChannel() {
         return new DirectChannel();
     }
 
-    // Inbound adapter for status, sensor, LED, and ack messages
+    /**
+     * Creates the inbound adapter for receiving messages from subscribed topics.
+     *
+     * <p>Subscribes to status, sensor, LED state, config, and ack topics.</p>
+     *
+     * @return configured message-driven channel adapter
+     */
     @Bean
     public Mqttv5PahoMessageDrivenChannelAdapter mqttStatusInbound() {
         String[] topics = {statusTopic, sensorTopic, ledTopic, configTopic, ackTopic};
@@ -107,13 +147,23 @@ public class MqttConfig {
         return adapter;
     }
 
-    // Outbound channel for sending messages to MQTT
+    /**
+     * Creates the outbound message channel for sending MQTT messages.
+     *
+     * @return DirectChannel for MQTT outbound messages
+     */
     @Bean
     public MessageChannel mqttOutputChannel() {
         return new DirectChannel();
     }
 
-    // Outbound adapter for command messages
+    /**
+     * Creates the outbound message handler for publishing to MQTT topics.
+     *
+     * <p>Configured as async with default QoS and non-retained messages.</p>
+     *
+     * @return configured MQTT message handler
+     */
     @Bean
     @ServiceActivator(inputChannel = "mqttOutputChannel")
     public MessageHandler mqttOutbound() {

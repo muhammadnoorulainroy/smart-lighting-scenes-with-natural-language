@@ -16,6 +16,16 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * REST controller for managing Home Assistant-style automations.
+ *
+ * <p>Provides endpoints to view, execute, and reload YAML-based automations
+ * that define complex lighting behaviors with triggers, conditions, and actions.</p>
+ *
+
+ * @see AutomationService
+ * @see Automation
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/automations")

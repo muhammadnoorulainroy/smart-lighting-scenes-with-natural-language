@@ -30,6 +30,23 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * REST controller for user management (admin only).
+ *
+ * <p>Provides endpoints for managing user accounts including:</p>
+ * <ul>
+ *   <li>Listing all users</li>
+ *   <li>Creating new users with local authentication</li>
+ *   <li>Updating user roles</li>
+ *   <li>Enabling/disabling user accounts</li>
+ * </ul>
+ *
+ * <p>All endpoints require OWNER role.</p>
+ *
+
+ * @see User
+ * @see UserDto
+ */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -41,6 +58,11 @@ public class UsersController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Retrieves all users in the system.
+     *
+     * @return list of all users
+     */
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {
         List<User> users = userRepository.findAll();
@@ -50,6 +72,12 @@ public class UsersController {
         return ResponseEntity.ok(userDtos);
     }
 
+    /**
+     * Creates a new user with local authentication.
+     *
+     * @param request the user creation request
+     * @return the created user
+     */
     @PostMapping
     public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequest request) {
         log.info("Admin creating user: {}", request.getEmail());
@@ -73,6 +101,14 @@ public class UsersController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(savedUser));
     }
 
+    /**
+     * Updates a user's role.
+     *
+     * @param userId the user UUID
+     * @param request the role update request
+     * @param currentUser the authenticated admin user
+     * @return the updated user
+     */
     @PutMapping("/{userId}/role")
     public ResponseEntity<UserDto> updateUserRole(
             @PathVariable UUID userId,
@@ -95,6 +131,13 @@ public class UsersController {
         }
     }
 
+    /**
+     * Disables a user account.
+     *
+     * @param userId the user UUID to disable
+     * @param currentUser the authenticated admin user
+     * @return the updated user
+     */
     @PutMapping("/{userId}/disable")
     public ResponseEntity<UserDto> disableUser(
             @PathVariable UUID userId,
@@ -112,6 +155,12 @@ public class UsersController {
         return ResponseEntity.ok(toDto(user));
     }
 
+    /**
+     * Enables a user account.
+     *
+     * @param userId the user UUID to enable
+     * @return the updated user
+     */
     @PutMapping("/{userId}/enable")
     public ResponseEntity<UserDto> enableUser(@PathVariable UUID userId) {
         User user = userRepository.findById(userId)

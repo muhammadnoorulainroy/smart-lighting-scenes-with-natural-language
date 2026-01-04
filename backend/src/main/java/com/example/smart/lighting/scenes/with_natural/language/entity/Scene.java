@@ -27,8 +27,7 @@ import java.util.UUID;
  * Entity representing a lighting scene (preset configuration).
  * Scenes define a snapshot of light settings that can be applied instantly.
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  */
 @Entity
 @Table(name = "scenes", schema = "smartlighting")

@@ -12,8 +12,7 @@ import java.util.UUID;
 /**
  * Data Transfer Object for Scene entities.
  *
- * @author Smart Lighting Team
- * @version 1.0
+
  */
 @Data
 @Builder

@@ -11,7 +11,13 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Repository for sensor reading data access.
+ * Repository for {@link SensorReading} entity persistence operations.
+ *
+ * <p>Provides time-series queries for sensor data including latest
+ * readings and data retention cleanup.</p>
+ *
+
+ * @see SensorReading
  */
 @Repository
 public interface SensorReadingRepository extends JpaRepository<SensorReading, Long> {

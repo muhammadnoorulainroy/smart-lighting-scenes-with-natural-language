@@ -20,6 +20,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Service for managing and executing Home Assistant-style automations.
+ *
+ * <p>Loads automation rules from YAML files and executes them based on
+ * triggers and conditions. Supports light control and scene activation.</p>
+ *
+ * <h3>Features:</h3>
+ * <ul>
+ *   <li>YAML-based automation configuration</li>
+ *   <li>Hot-reload of automation files</li>
+ *   <li>Trigger, condition, and action evaluation</li>
+ *   <li>Integration with MQTT for device control</li>
+ * </ul>
+ *
+
+ * @see Automation
+ * @see MqttService
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

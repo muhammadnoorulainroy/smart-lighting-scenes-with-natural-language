@@ -13,8 +13,10 @@ import java.util.UUID;
 /**
  * Data Transfer Object for Schedule entities.
  *
- * @author Smart Lighting Team
- * @version 1.0
+ * <p>Contains schedule configuration including trigger type,
+ * conditions, and actions to execute.</p>
+ *
+
  */
 @Data
 @Builder
@@ -36,4 +38,3 @@ public class ScheduleDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
-
