@@ -218,7 +218,7 @@ import { nlpApi } from '../api/nlp'
 import { useWebSocket } from '../stores/websocket'
 import SceneModal from '../components/scenes/SceneModal.vue'
 
-const { connected: wsConnected, lastSceneApplied, pendingScenes, clearLastSceneApplied, connect: connectWs } = useWebSocket()
+const { connected: wsConnected, lastSceneApplied, clearLastSceneApplied, connect: connectWs } = useWebSocket()
 
 // State
 const scenes = ref([])
@@ -231,7 +231,6 @@ const showToastNotification = ref(false)
 const toastMessage = ref('')
 const toastType = ref('success')
 let toastTimeout = null
-const sceneStates = ref({})
 
 // NLP State
 const nlpCommand = ref('')
@@ -265,11 +264,6 @@ const showToast = (message, type = 'success') => {
   toastTimeout = setTimeout(() => {
     showToastNotification.value = false
   }, type === 'error' ? 5000 : 3000)
-}
-
-// Check if any scene is pending for a given sceneId
-const isSceneApplyPending = (sceneId) => {
-  return Object.values(pendingScenes).some(p => p.sceneId === sceneId)
 }
 
 // Computed

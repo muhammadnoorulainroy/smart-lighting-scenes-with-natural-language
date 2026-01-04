@@ -24,9 +24,10 @@ version = "0.0.1-SNAPSHOT"
 description = "Smart Lighting Scenes with Natural Language - Backend API"
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+	// Use the Java version from the environment
+	val javaVersion = System.getProperty("java.specification.version")?.toIntOrNull() ?: 21
+	sourceCompatibility = JavaVersion.toVersion(javaVersion)
+	targetCompatibility = JavaVersion.toVersion(javaVersion)
 }
 
 configurations {

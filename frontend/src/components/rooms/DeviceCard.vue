@@ -147,7 +147,9 @@ const isSensorDevice = computed(() => ['SENSOR', 'MULTI_SENSOR'].includes(props.
 
 // Get live state from WebSocket for LED devices
 const liveDeviceState = computed(() => {
-  if (!props.device?.id || !isLedDevice.value) return null
+  if (!props.device?.id || !isLedDevice.value) {
+    return null
+  }
   return wsStore.deviceStates[props.device.id]
 })
 
