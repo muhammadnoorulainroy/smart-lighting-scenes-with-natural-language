@@ -43,10 +43,9 @@ public class NlpScheduleBuilder {
         if ("time".equals(triggerType)) {
             triggerConfigMap.put("at", scheduleConfig.getTime() + ":00");
             if (scheduleConfig.getRecurrence() != null) {
-                if ("weekdays".equals(scheduleConfig.getRecurrence())) {
-                    triggerConfigMap.put("weekdays", List.of("mon", "tue", "wed", "thu", "fri"));
-                } else if ("weekends".equals(scheduleConfig.getRecurrence())) {
-                    triggerConfigMap.put("weekdays", List.of("sat", "sun"));
+                List<String> weekdays = parseRecurrence(scheduleConfig.getRecurrence());
+                if (weekdays != null && !weekdays.isEmpty()) {
+                    triggerConfigMap.put("weekdays", weekdays);
                 }
             }
         } else {
@@ -101,12 +100,59 @@ public class NlpScheduleBuilder {
         ScheduleConfig schedule = parsed.getSchedule();
 
         String timeStr = schedule.getTime() != null ? schedule.getTime() : schedule.getTrigger();
+        
+        // Add recurrence info to name
+        String recurrenceStr = "";
+        if (schedule.getRecurrence() != null) {
+            List<String> days = parseRecurrence(schedule.getRecurrence());
+            if (days != null && !days.isEmpty() && days.size() < 7) {
+                recurrenceStr = " on " + String.join(", ", days);
+            }
+        }
 
-        return String.format("%s %s at %s",
+        return String.format("%s %s at %s%s",
             intent.substring(0, 1).toUpperCase() + intent.substring(1),
             target.replace("_", " "),
-            timeStr
+            timeStr,
+            recurrenceStr
         );
+    }
+
+    /**
+     * Parse recurrence configuration into a list of day abbreviations.
+     *
+     * @param recurrence the recurrence value (String or List)
+     * @return list of day abbreviations, or null for daily
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> parseRecurrence(Object recurrence) {
+        if (recurrence == null) {
+            return null;
+        }
+
+        // Handle list of days directly from LLM
+        if (recurrence instanceof List<?>) {
+            List<String> days = ((List<?>) recurrence).stream()
+                .map(Object::toString)
+                .map(String::toLowerCase)
+                .toList();
+            log.debug("Parsed recurrence list: {}", days);
+            return days;
+        }
+
+        // Handle string values
+        String recurrenceStr = recurrence.toString().toLowerCase();
+        return switch (recurrenceStr) {
+            case "weekdays" -> List.of("mon", "tue", "wed", "thu", "fri");
+            case "weekends" -> List.of("sat", "sun");
+            case "daily", "everyday", "every day" ->
+                List.of("mon", "tue", "wed", "thu", "fri", "sat", "sun");
+            case "once" -> null; // One-time schedule, no weekdays filter
+            default -> {
+                log.warn("Unknown recurrence value: {}", recurrenceStr);
+                yield null;
+            }
+        };
     }
 
     /**
@@ -124,11 +170,9 @@ public class NlpScheduleBuilder {
         if (scheduleConfig.getTime() != null) {
             triggerConfig.put("at", scheduleConfig.getTime() + ":00");
             if (scheduleConfig.getRecurrence() != null) {
-                String recurrence = scheduleConfig.getRecurrence().toString();
-                if ("weekdays".equals(recurrence)) {
-                    triggerConfig.put("weekdays", List.of("mon", "tue", "wed", "thu", "fri"));
-                } else if ("weekends".equals(recurrence)) {
-                    triggerConfig.put("weekdays", List.of("sat", "sun"));
+                List<String> weekdays = parseRecurrence(scheduleConfig.getRecurrence());
+                if (weekdays != null && !weekdays.isEmpty()) {
+                    triggerConfig.put("weekdays", weekdays);
                 }
             }
         } else if (scheduleConfig.getTrigger() != null) {
@@ -148,4 +192,3 @@ public class NlpScheduleBuilder {
             .build();
     }
 }
-

@@ -274,10 +274,28 @@ public class NlpCommandParser {
                 preview.append(", on weekdays");
             } else if ("weekends".equals(recurrence)) {
                 preview.append(", on weekends");
-            } else if (recurrence instanceof List) {
-                preview.append(", on ").append(recurrence);
+            } else if (recurrence instanceof List<?> days) {
+                String daysFormatted = days.stream()
+                    .map(d -> formatDayName(d.toString()))
+                    .collect(java.util.stream.Collectors.joining(", "));
+                preview.append(", on ").append(daysFormatted);
             }
         }
     }
-}
 
+    /**
+     * Format day abbreviation to full name.
+     */
+    private String formatDayName(String day) {
+        return switch (day.toLowerCase()) {
+            case "mon" -> "Monday";
+            case "tue" -> "Tuesday";
+            case "wed" -> "Wednesday";
+            case "thu" -> "Thursday";
+            case "fri" -> "Friday";
+            case "sat" -> "Saturday";
+            case "sun" -> "Sunday";
+            default -> day;
+        };
+    }
+}

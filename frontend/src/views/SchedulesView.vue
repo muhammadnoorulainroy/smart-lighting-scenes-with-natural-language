@@ -25,7 +25,13 @@
           </button>
         </div>
         <button class="btn btn-accent" :disabled="!nlpCommand.trim() || nlpProcessing" @click="processNlpCommand">
-          <span v-if="nlpProcessing">...</span>
+          <span v-if="nlpProcessing" class="flex items-center gap-2">
+            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Processing...
+          </span>
           <span v-else>Create</span>
         </button>
       </div>
@@ -82,22 +88,45 @@ class="text-xs px-2 py-1 rounded" :class="{
             <div class="flex gap-3 mt-4">
               <button
                 class="btn btn-accent"
-                :disabled="!allConflictsResolved"
+                :disabled="!allConflictsResolved || nlpProcessing"
                 @click="applyResolutionsAndCreate"
               >
-                Apply Resolutions & Create
+                <span v-if="nlpProcessing" class="flex items-center gap-2">
+                  <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Applying...
+                </span>
+                <span v-else>Apply Resolutions & Create</span>
               </button>
-              <button class="btn btn-primary" @click="confirmNlpCommand">
-                Create Anyway
+              <button class="btn btn-primary" :disabled="nlpProcessing" @click="confirmNlpCommand">
+                <span v-if="nlpProcessing" class="flex items-center gap-2">
+                  <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Creating...
+                </span>
+                <span v-else>Create Anyway</span>
               </button>
-              <button class="btn btn-secondary" @click="nlpResult = null">Cancel</button>
+              <button class="btn btn-secondary" :disabled="nlpProcessing" @click="nlpResult = null">Cancel</button>
             </div>
           </div>
 
           <!-- No conflicts - normal flow -->
           <div v-else class="flex gap-3">
-            <button class="btn btn-primary" @click="confirmNlpCommand">Create Schedule</button>
-            <button class="btn btn-secondary" @click="nlpResult = null">Cancel</button>
+            <button class="btn btn-primary" :disabled="nlpProcessing" @click="confirmNlpCommand">
+              <span v-if="nlpProcessing" class="flex items-center gap-2">
+                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Creating...
+              </span>
+              <span v-else>Create Schedule</span>
+            </button>
+            <button class="btn btn-secondary" :disabled="nlpProcessing" @click="nlpResult = null">Cancel</button>
           </div>
         </div>
         <p v-else class="text-red-700 dark:text-red-300">{{ nlpResult.error }}</p>
@@ -174,9 +203,11 @@ class="text-xs px-2 py-1 rounded" :class="{
 import { ref, computed, onMounted } from 'vue'
 import { schedulesApi } from '../api/schedules'
 import { nlpApi } from '../api/nlp'
+import { scenesApi } from '../api/scenes'
 import ScheduleModal from '../components/schedules/ScheduleModal.vue'
 
 const schedules = ref([])
+const scenes = ref([])
 const loading = ref(false)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
@@ -200,7 +231,14 @@ const allConflictsResolved = computed(() => {
 
 const loadSchedules = async () => {
   loading.value = true
-  try { schedules.value = await schedulesApi.getAll() }
+  try {
+    const [schedulesData, scenesData] = await Promise.all([
+      schedulesApi.getAll(),
+      scenesApi.getAll()
+    ])
+    schedules.value = schedulesData
+    scenes.value = scenesData
+  }
   catch (err) { console.error('Failed to load schedules:', err) }
   finally { loading.value = false }
 }
@@ -276,7 +314,7 @@ const applyResolutionsAndCreate = async () => {
 
   nlpProcessing.value = true
   try {
-    // Apply all selected resolutions first
+    // Apply all selected resolutions
     const { conflicts } = nlpResult.value.conflictAnalysis
     for (let idx = 0; idx < conflicts.length; idx++) {
       const conflict = conflicts[idx]
@@ -284,7 +322,24 @@ const applyResolutionsAndCreate = async () => {
       const params = selectedResolutionParams.value[idx] || {}
 
       if (resolutionId) {
-        await nlpApi.resolveConflict(conflict.scheduleId2, resolutionId, params)
+        // For 'adjust_new' resolution, modify the new schedule's time before creating
+        if (resolutionId === 'adjust_new' && params.new_time) {
+          // Update the parsed command's schedule time
+          if (nlpResult.value.parsed?.schedule) {
+            nlpResult.value.parsed.schedule.time = params.new_time
+          }
+        } else if (resolutionId === 'ai_suggested') {
+          const resolution = conflict.resolutions.find(r => r.id === 'ai_suggested')
+          if (resolution?.description) {
+            const timeMatch = resolution.description.match(/(\d{1,2}):(\d{2})/)
+            if (timeMatch && nlpResult.value.parsed?.schedule) {
+              const [, hours, minutes] = timeMatch
+              nlpResult.value.parsed.schedule.time = `${hours.padStart(2, '0')}:${minutes}`
+            }
+          }
+        } else {
+          await nlpApi.resolveConflict(conflict.scheduleId2, resolutionId, params)
+        }
       }
     }
 
@@ -340,7 +395,12 @@ const formatActions = schedule => {
   const actions = schedule.actions || []
   if (!actions.length) {return 'No actions'}
   const a = actions[0]
-  if (a.type === 'scene') {return `Apply scene: ${a.scene || a.scene_id}`}
+  if (a.type === 'scene') {
+    const sceneId = a.scene_id || a.scene
+    const scene = scenes.value.find(s => s.id === sceneId || s.name === sceneId)
+    const sceneName = scene?.name || sceneId
+    return `Apply scene: ${sceneName}`
+  }
   if (a.intent === 'light.off') {return `Turn off ${a.target || 'all'} lights`}
   if (a.intent === 'light.on') {return `Turn on ${a.target || 'all'} lights`}
   if (a.intent === 'light.brightness') {return `Set ${a.target || 'all'} to ${a.params?.brightness}%`}

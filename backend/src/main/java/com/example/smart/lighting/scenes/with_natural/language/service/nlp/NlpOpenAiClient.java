@@ -142,17 +142,29 @@ public class NlpOpenAiClient {
               }
             }
 
+            For specific days (e.g., Monday, Wednesday, Friday):
+            {
+              "schedule": {
+                "time": "22:00",
+                "trigger": null,
+                "offsetMinutes": null,
+                "recurrence": ["mon", "wed", "fri"]
+              }
+            }
+
             Rules:
             - For "all lights" or no room specified, use target: "all"
             - For colors, convert to RGB array [r, g, b]
             - For "warm" colors, use color_temp: 2700-3000
             - For "cool" colors, use color_temp: 5000-6500
             - For "every day" or "daily", use recurrence: "daily"
-            - For "weekdays", use recurrence: "weekdays"
+            - For "weekdays" (Mon-Fri), use recurrence: "weekdays"
+            - For "weekends" (Sat-Sun), use recurrence: "weekends"
+            - For specific days, use recurrence as array: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+            - Day abbreviations: mon, tue, wed, thu, fri, sat, sun (lowercase)
             - Set confidence based on how certain you are (0.0 to 1.0)
 
             User command: "%s"
             """.formatted(String.join(", ", sceneNames), userInput);
     }
 }
-
