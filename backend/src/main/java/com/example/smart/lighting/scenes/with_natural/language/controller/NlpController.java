@@ -29,7 +29,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "${cors.allowed-origins}", allowCredentials = "true")
-@PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
 public class NlpController {
 
     private final NlpService nlpService;
@@ -38,11 +37,13 @@ public class NlpController {
     /**
      * Parse a natural language command without executing it.
      * Returns a preview of what the command will do.
+     * All authenticated users can parse commands.
      *
      * @param request The request containing the text command
      * @return Parsed command with preview
      */
     @PostMapping("/parse")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<NlpCommandDto> parseCommand(@RequestBody Map<String, String> request) {
         String text = request.get("text");
 
@@ -64,12 +65,15 @@ public class NlpController {
     /**
      * Execute a natural language command.
      * First parses the command, then executes if valid.
+     * All authenticated users can execute immediate commands (light control, apply scenes).
+     * Schedule creation requires OWNER or RESIDENT role (enforced in service layer).
      *
      * @param request The request containing the text command
      * @param auth Authentication context
      * @return Execution result
      */
     @PostMapping("/execute")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<NlpCommandDto> executeCommand(
             @RequestBody Map<String, String> request,
             Authentication auth) {
@@ -104,12 +108,14 @@ public class NlpController {
     /**
      * Parse and execute a command in one step (convenience endpoint).
      * Skips the preview/confirm flow.
+     * All authenticated users can execute immediate commands.
      *
      * @param request The request containing the text command
      * @param auth Authentication context
      * @return Execution result
      */
     @PostMapping("/command")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<NlpCommandDto> command(
             @RequestBody Map<String, String> request,
             Authentication auth) {
@@ -118,12 +124,15 @@ public class NlpController {
 
     /**
      * Confirm and execute a previously parsed command.
+     * All authenticated users can confirm immediate commands.
+     * Schedule creation requires OWNER or RESIDENT role (enforced in service layer).
      *
      * @param commandDto The parsed command to execute
      * @param auth Authentication context
      * @return Execution result
      */
     @PostMapping("/confirm")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<NlpCommandDto> confirmCommand(
             @RequestBody NlpCommandDto commandDto,
             Authentication auth) {
@@ -140,11 +149,13 @@ public class NlpController {
 
     /**
      * Apply a conflict resolution for a schedule.
+     * Only OWNER and RESIDENT can resolve schedule conflicts.
      *
      * @param request The resolution request containing scheduleId, resolutionId, and params
      * @return Result of applying the resolution
      */
     @PostMapping("/resolve-conflict")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<Map<String, Object>> resolveConflict(@RequestBody Map<String, Object> request) {
         String scheduleIdStr = (String) request.get("scheduleId");
         String resolutionId = (String) request.get("resolutionId");
