@@ -110,9 +110,6 @@ public class NlpService {
             ConflictAnalysisDto conflictAnalysis = null;
             if (isScheduled) {
                 conflictAnalysis = checkForScheduleConflicts(parsed);
-                if (conflictAnalysis != null && conflictAnalysis.isHasConflicts()) {
-                    preview += "\n\n" + conflictAnalysis.getSummary();
-                }
             }
 
             return NlpCommandDto.builder()

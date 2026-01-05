@@ -40,7 +40,6 @@ public class ConflictResolutionGenerator {
     public List<ConflictResolution> generateBasicResolutions(
             Schedule s1, Schedule s2, long minutesDiff) {
         List<ConflictResolution> resolutions = new ArrayList<>();
-        String type = conflictDetector.determineConflictType(s1, s2);
 
         if (minutesDiff < 15) {
             Map<String, Object> changes = new HashMap<>();
@@ -67,19 +66,6 @@ public class ConflictResolutionGenerator {
             "delete",
             Map.of("schedule_id", s2.getId().toString())
         ));
-
-        if ("contradiction".equals(type)) {
-            resolutions.add(new ConflictResolution(
-                "merge_toggle",
-                "Create a single schedule that turns lights on, then off after a duration",
-                "merge",
-                Map.of(
-                    "schedule_id_1", s1.getId().toString(),
-                    "schedule_id_2", s2.getId().toString(),
-                    "suggested_duration", "30"
-                )
-            ));
-        }
 
         return resolutions;
     }
@@ -188,10 +174,6 @@ public class ConflictResolutionGenerator {
                     return "Schedule '" + name + "' has been deleted";
                 }
             }
-            case "merge_toggle" -> {
-                return "Merge functionality requires manual configuration. "
-                    + "Please edit the schedules manually.";
-            }
             default -> {
                 return "Resolution applied (custom action)";
             }
@@ -209,4 +191,3 @@ public class ConflictResolutionGenerator {
         return timeStr;
     }
 }
-

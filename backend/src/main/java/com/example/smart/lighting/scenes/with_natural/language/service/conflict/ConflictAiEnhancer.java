@@ -99,23 +99,19 @@ public class ConflictAiEnhancer {
 
             Provide a JSON response with:
             {
-              "summary": "A user-friendly summary of all conflicts (1-2 sentences)",
+              "summary": "Brief conflict summary (max 15 words, no tips or suggestions)",
               "enhanced_resolutions": [
                 {
                   "conflict_index": 0,
-                  "best_resolution": "The ID of the best resolution from the existing options",
-                  "reasoning": "Why this is the best choice",
-                  "additional_suggestion": "Any smart alternative not in the basic options (optional)"
+                  "best_resolution": "The ID of the best resolution from the existing options (adjust_new, prioritize_existing, replace_existing)"
                 }
-              ],
-              "user_tip": "A helpful tip for avoiding future conflicts"
+              ]
             }
 
-            Be practical and consider real-world lighting usage patterns. For example:
-            - Morning routines need gradual wake-up lighting
-            - Bedtime should have dimming sequences
-            - Contradicting on/off commands are usually user errors
-            - Similar scenes close together are often intended as backups
+            IMPORTANT:
+            - Keep the summary VERY brief (e.g., "Conflicts with schedule that turns off lights at 23:00")
+            - Only use existing resolution IDs: adjust_new, prioritize_existing, replace_existing
+            - Do NOT add tips, suggestions, or custom alternatives
             """);
 
         return sb.toString();
@@ -177,11 +173,6 @@ public class ConflictAiEnhancer {
                 String.format("Found %d potential conflict(s).", basicConflicts.size())
             );
 
-            String userTip = root.path("user_tip").asText("");
-            if (!userTip.isEmpty()) {
-                summary += " Tip: " + userTip;
-            }
-
             JsonNode enhancedResolutions = root.path("enhanced_resolutions");
             List<ScheduleConflict> enhancedConflicts = new ArrayList<>();
 
@@ -204,13 +195,11 @@ public class ConflictAiEnhancer {
 
     private ScheduleConflict enhanceConflict(
             ScheduleConflict original, JsonNode enhancedResolutions, int index) {
-        String additionalSuggestion = null;
         String bestResolutionId = null;
 
         if (enhancedResolutions.isArray()) {
             for (JsonNode enhancement : enhancedResolutions) {
                 if (enhancement.path("conflict_index").asInt(-1) == index) {
-                    additionalSuggestion = enhancement.path("additional_suggestion").asText(null);
                     bestResolutionId = enhancement.path("best_resolution").asText(null);
                     break;
                 }
@@ -218,15 +207,8 @@ public class ConflictAiEnhancer {
         }
 
         List<ConflictResolution> enhancedResList = new ArrayList<>(original.resolutions());
-        if (additionalSuggestion != null && !additionalSuggestion.isBlank()) {
-            enhancedResList.add(0, new ConflictResolution(
-                "ai_suggested",
-                additionalSuggestion,
-                "custom",
-                Map.of("ai_generated", true)
-            ));
-        }
 
+        // Sort to put the AI-recommended best resolution first
         if (bestResolutionId != null) {
             String finalBestId = bestResolutionId;
             enhancedResList.sort((a, b) -> {
@@ -234,12 +216,6 @@ public class ConflictAiEnhancer {
                     return -1;
                 }
                 if (b.id().equals(finalBestId)) {
-                    return 1;
-                }
-                if (a.id().equals("ai_suggested")) {
-                    return -1;
-                }
-                if (b.id().equals("ai_suggested")) {
                     return 1;
                 }
                 return 0;
@@ -258,4 +234,3 @@ public class ConflictAiEnhancer {
         );
     }
 }
-
