@@ -67,18 +67,23 @@ public class SchedulerService {
         LocalTime currentTime = now.toLocalTime();
         DayOfWeek currentDay = now.getDayOfWeek();
 
-        log.debug("Checking schedules at {}", now);
+        log.info("Checking schedules at {} ({})", now, currentDay);
 
         List<Schedule> timeSchedules = scheduleRepository.findEnabledTimeSchedules();
+        log.info("Found {} enabled time schedules", timeSchedules.size());
 
         for (Schedule schedule : timeSchedules) {
+            log.debug("Checking schedule: {} - config: {}", schedule.getName(), schedule.getTriggerConfig());
             if (shouldTrigger(schedule, currentTime, currentDay)) {
                 try {
+                    log.info("Triggering schedule: {}", schedule.getName());
                     executeSchedule(schedule);
                     updateScheduleStats(schedule);
                 } catch (Exception e) {
                     log.error("Error executing schedule {}: {}", schedule.getId(), e.getMessage(), e);
                 }
+            } else {
+                log.debug("Schedule {} not triggered", schedule.getName());
             }
         }
     }
@@ -89,8 +94,11 @@ public class SchedulerService {
     private boolean shouldTrigger(Schedule schedule, LocalTime currentTime, DayOfWeek currentDay) {
         Map<String, Object> config = schedule.getTriggerConfig();
 
-        // Get scheduled time
+        // Get scheduled time - support both "at" and "time" keys
         String atTime = (String) config.get("at");
+        if (atTime == null) {
+            atTime = (String) config.get("time");
+        }
         if (atTime == null) {
             return false;
         }
@@ -114,13 +122,24 @@ public class SchedulerService {
             return false;
         }
 
-        // Check day of week
+        // Check day of week - support both "weekdays" and "days" keys
         Object weekdaysObj = config.get("weekdays");
-        if (weekdaysObj instanceof List<?> weekdays) {
+        if (weekdaysObj == null) {
+            weekdaysObj = config.get("days");
+        }
+        
+        if (weekdaysObj instanceof List<?> weekdays && !((List<?>) weekdays).isEmpty()) {
             @SuppressWarnings("unchecked")
             List<String> days = (List<String>) weekdays;
             boolean dayMatches = days.stream()
-                .map(String::toLowerCase)
+                .map(day -> {
+                    // Support both formats: "MONDAY" and "mon"
+                    String dayStr = day.toString().toLowerCase();
+                    if (dayStr.length() > 3) {
+                        dayStr = dayStr.substring(0, 3); // "monday" -> "mon"
+                    }
+                    return dayStr;
+                })
                 .map(DAY_MAP::get)
                 .filter(Objects::nonNull)
                 .anyMatch(d -> d == currentDay);
@@ -128,7 +147,7 @@ public class SchedulerService {
                 return false;
             }
         }
-        // If no weekdays specified, assume every day
+        // If no weekdays specified or empty list, assume every day
 
         return true;
     }
@@ -295,7 +314,8 @@ public class SchedulerService {
      */
     private void updateScheduleStats(Schedule schedule) {
         schedule.setLastTriggeredAt(LocalDateTime.now());
-        schedule.setTriggerCount(schedule.getTriggerCount() + 1);
+        Integer currentCount = schedule.getTriggerCount();
+        schedule.setTriggerCount(currentCount != null ? currentCount + 1 : 1);
         scheduleRepository.save(schedule);
     }
 }
