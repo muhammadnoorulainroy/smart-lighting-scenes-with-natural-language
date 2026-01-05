@@ -7,6 +7,7 @@ import com.example.smart.lighting.scenes.with_natural.language.entity.User;
 import com.example.smart.lighting.scenes.with_natural.language.security.CustomOAuth2User;
 import com.example.smart.lighting.scenes.with_natural.language.security.LocalAuthUserPrincipal;
 import com.example.smart.lighting.scenes.with_natural.language.service.LocalAuthService;
+import com.example.smart.lighting.scenes.with_natural.language.service.MobileAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -42,9 +43,9 @@ public class AuthController {
     private static final String LOCAL_USER_SESSION_KEY = "LOCAL_AUTH_USER";
 
     private final LocalAuthService localAuthService;
+    private final MobileAuthService mobileAuthService;
 
-    @org.springframework.beans.factory.annotation.Value(
-        "${spring.security.oauth2.client.registration.google.client-id:}")
+    @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleClientId;
 
     /**
@@ -210,6 +211,43 @@ public class AuthController {
         return ResponseEntity.ok(config);
     }
 
+    /**
+     * Mobile Google authentication endpoint.
+     * Accepts Google ID token from mobile app, verifies it, and creates session.
+     */
+    @PostMapping("/auth/mobile/google")
+    public ResponseEntity<?> mobileGoogleAuth(@RequestBody Map<String, String> payload, HttpServletRequest httpRequest) {
+        try {
+            String idToken = payload.get("idToken");
+            if (idToken == null || idToken.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "idToken is required"));
+            }
+            
+            log.info("Mobile Google authentication request received");
+            
+            // Verify token and get/create user
+            User user = mobileAuthService.authenticateWithGoogle(idToken);
+            
+            // Authenticate user (creates session)
+            authenticateUser(user, httpRequest);
+            
+            // Return user info
+            UserDto userDto = buildUserDto(user);
+            log.info("Mobile user authenticated: {}", user.getEmail());
+            
+            return ResponseEntity.ok(userDto);
+            
+        } catch (SecurityException e) {
+            log.error("Mobile auth failed - security: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Authentication failed: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("Mobile auth failed - unexpected error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Authentication failed: " + e.getMessage()));
+        }
+    }
+    
     /**
      * Debug endpoint for authentication troubleshooting.
      */
