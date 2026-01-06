@@ -123,12 +123,13 @@ class SystemState:
         self.wake_oled()
     
     def next_page(self):
-        max_pages = 5
+        # Dynamic page count: Home + Brightness + actual configured sensors
+        max_pages = config.OLED_PAGE_SENSOR_START + len(config.SENSOR_DEVICES)
         self.current_page = (self.current_page + 1) % max_pages
         self.wake_oled()
     
     def prev_page(self):
-        max_pages = 5
+        max_pages = config.OLED_PAGE_SENSOR_START + len(config.SENSOR_DEVICES)
         self.current_page = (self.current_page - 1) % max_pages
         self.wake_oled()
     
@@ -704,14 +705,14 @@ async def main_loop():
     # Intervals
     led_interval = 16  # 60Hz
     oled_interval = 200  # 5Hz
-    mqtt_pub_interval = 60000  # Publish every 1 minute (backup, main publish is on-change)
+    mqtt_pub_interval = 1000  # Publish every second for real-time webapp updates
     heartbeat_interval = 10000  # 10s
     
     frame_count = 0
     oled_count = 0
     mqtt_pub_count = 0
     
-    log(_SRC, "\n🚀 Main loop starting...\n")
+    log(_SRC, "\nMain loop starting...\n")
     
     while True:
         try:
@@ -910,6 +911,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\nStopped by user")
-
-
-

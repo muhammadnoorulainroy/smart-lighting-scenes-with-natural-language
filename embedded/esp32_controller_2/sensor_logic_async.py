@@ -243,6 +243,8 @@ class AsyncSensorLogic:
         last_h = self._last_humidity_logged.get(led_index)
         if last_t is None or last_h is None or abs(temp - last_t) >= 2.0 or abs(hum - last_h) >= 10.0:
             log(_SRC, f"LED{led_index} Sensors: T={temp:.1f}C H={hum:.0f}% L={lux} A={audio}")
+            self._last_temp_logged[led_index] = temp
+            self._last_humidity_logged[led_index] = hum
 
         adjusted_rgb, saturation_pct, color_temp_kelvin = self.adjust_color_for_climate(base_rgb, temp, hum)
         adjusted_brightness = base_brightness

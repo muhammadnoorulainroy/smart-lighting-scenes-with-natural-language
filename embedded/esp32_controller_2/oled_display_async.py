@@ -25,10 +25,46 @@ _SRC = "oled_display_async.py"
 # France timezone offset (UTC+1)
 FRANCE_TZ_OFFSET_SECONDS = 3600  # +1 hour
 
+# I2C operation timeout (ms) - prevent infinite hangs
+I2C_TIMEOUT_MS = 100
+
 
 def _cfg(key, default=None):
     """Get config value from RuntimeConfig or fallback."""
     return getattr(runtime_cfg, key, default)
+
+
+def _recover_i2c_bus(scl_pin, sda_pin):
+    """
+    Attempt to recover a stuck I2C bus by toggling SCL.
+    This can unstick a slave holding SDA low.
+    """
+    try:
+        scl = Pin(scl_pin, Pin.OUT, value=1)
+        sda = Pin(sda_pin, Pin.IN, Pin.PULL_UP)
+        
+        # Toggle SCL up to 9 times to release stuck slave
+        for _ in range(9):
+            if sda.value():  # SDA is high, bus is free
+                break
+            scl.value(0)
+            time.sleep_us(5)
+            scl.value(1)
+            time.sleep_us(5)
+        
+        # Generate STOP condition
+        sda_out = Pin(sda_pin, Pin.OUT, value=0)
+        time.sleep_us(5)
+        scl.value(1)
+        time.sleep_us(5)
+        sda_out.value(1)
+        time.sleep_us(5)
+        
+        print(f"[{_SRC}] I2C bus recovery attempted")
+        return True
+    except Exception as e:
+        print(f"[{_SRC}] I2C recovery failed: {e}")
+        return False
 
 
 class AsyncOLEDDisplay:
@@ -48,7 +84,7 @@ class AsyncOLEDDisplay:
         for bus_num in (0, 1):
             try:
                 print(f"[{_SRC}] Trying I2C bus {bus_num}...")
-                i2c = I2C(bus_num, scl=Pin(self.scl_pin), sda=Pin(self.sda_pin), freq=400000)
+                i2c = I2C(bus_num, scl=Pin(self.scl_pin), sda=Pin(self.sda_pin), freq=100000)
                 devices = [hex(d) for d in i2c.scan()]
                 print(f"[{_SRC}] Devices on bus {bus_num}: {devices}")
                 if self.addr in i2c.scan():
@@ -73,25 +109,83 @@ class AsyncOLEDDisplay:
     async def clear(self):
         """Clear display (for power save mode)"""
         if self.enabled and self.display:
-            self.display.fill(0)
-            await asyncio.sleep_ms(0)
-            self.display.show()
-            await asyncio.sleep_ms(0)
+            try:
+                self.display.fill(0)
+                await asyncio.sleep_ms(0)
+                self.display.show()
+                await asyncio.sleep_ms(0)
+            except Exception as e:
+                print(f"[{_SRC}] Clear failed: {e}")
+                self._handle_i2c_error()
     
     def sleep(self):
-        """Turn off OLED display (power save)"""
+        """Turn off OLED display (power save) - with error handling"""
         if self.enabled and self.display:
-            self.display.sleep(True)
+            try:
+                self.display.sleep(True)
+                self._consecutive_errors = 0
+            except Exception as e:
+                print(f"[{_SRC}] Sleep failed: {e}")
+                self._handle_i2c_error()
     
     def wake(self):
-        """Turn on OLED display"""
+        """Turn on OLED display - with error handling"""
         if self.enabled and self.display:
-            self.display.sleep(False)
+            try:
+                self.display.sleep(False)
+                self._consecutive_errors = 0
+            except Exception as e:
+                print(f"[{_SRC}] Wake failed: {e}")
+                self._handle_i2c_error()
+    
+    def _handle_i2c_error(self):
+        """Handle I2C errors with bus recovery"""
+        if not hasattr(self, '_consecutive_errors'):
+            self._consecutive_errors = 0
+        self._consecutive_errors += 1
+        
+        if self._consecutive_errors >= 3:
+            print(f"[{_SRC}] Too many I2C errors, attempting bus recovery...")
+            _recover_i2c_bus(self.scl_pin, self.sda_pin)
+            self._consecutive_errors = 0
+            # Reinitialize I2C and display
+            try:
+                self._reinit_display()
+            except Exception as e:
+                print(f"[{_SRC}] Reinit failed: {e}")
+                self.enabled = False
+    
+    def _reinit_display(self):
+        """Reinitialize the display after I2C recovery"""
+        import gc
+        try:
+            # Clean up old display object first
+            if self.display:
+                self.display = None
+            gc.collect()  # Free memory from old objects
+            
+            # Use lower frequency for stability
+            i2c = I2C(0, scl=Pin(self.scl_pin), sda=Pin(self.sda_pin), freq=100000)
+            self.display = sh1107.SH1107_I2C(self.width, self.height, i2c, address=self.addr)
+            self.display.fill(0)
+            self.display.show()
+            self.enabled = True
+            gc.collect()  # Clean up after init
+            print(f"[{_SRC}] Display reinitialized successfully")
+        except Exception as e:
+            print(f"[{_SRC}] Display reinit failed: {e}")
+            self.enabled = False
     
     async def update(self):
         if self.enabled and self.display:
-            self.display.show()  # Blocking I2C write (10-20ms)
-            await asyncio.sleep_ms(0)  # Yield immediately after I2C write
+            try:
+                self.display.show()  # Blocking I2C write (10-20ms)
+                await asyncio.sleep_ms(0)  # Yield immediately after I2C write
+                self._consecutive_errors = 0
+            except Exception as e:
+                print(f"[{_SRC}] Update failed: {e}")
+                self._handle_i2c_error()
+                await asyncio.sleep_ms(0)
 
     def _connected_count(self, ble_status):
         """Count connected BLE sensors from status dict."""
@@ -160,14 +254,25 @@ class AsyncOLEDDisplay:
         if not self.enabled:
             return
         
-        if page == 0:
-            await self._show_home_page(ble_status, sensor_data)
-        elif page == 1:
-            await self._show_brightness_page(room_states)
-        else:
-            # Sensor detail pages (page 2, 3, 4, ...)
-            sensor_index = page - config.OLED_PAGE_SENSOR_START
-            await self._show_sensor_detail_page(sensor_index, sensor_data, room_states)
+        try:
+            if page == 0:
+                await self._show_home_page(ble_status, sensor_data)
+            elif page == 1:
+                await self._show_brightness_page(room_states)
+            else:
+                # Sensor detail pages (page 2, 3, 4, ...)
+                sensor_index = page - config.OLED_PAGE_SENSOR_START
+                await self._show_sensor_detail_page(sensor_index, sensor_data, room_states)
+            self._consecutive_errors = 0
+        except MemoryError:
+            # Memory exhausted - try to recover
+            import gc
+            gc.collect()
+            print(f"[{_SRC}] MemoryError in show_page - collected garbage")
+        except Exception as e:
+            print(f"[{_SRC}] show_page failed: {e}")
+            self._handle_i2c_error()
+            await asyncio.sleep_ms(0)
     
     async def _show_home_page(self, ble_status, sensor_data):
         """
@@ -274,9 +379,7 @@ class AsyncOLEDDisplay:
         # Get sensor key by index from config
         sensor_keys = list(config.SENSOR_DEVICES.keys())
         if sensor_index >= len(sensor_keys):
-            self._center_text("No Sensor", 28)
-            await self.update()
-            return
+            return  # No sensor at this index, skip silently
         
         sensor_key = sensor_keys[sensor_index]
         sensor_config = config.SENSOR_DEVICES[sensor_key]
@@ -290,22 +393,9 @@ class AsyncOLEDDisplay:
         # sensor_key is like "SmartLight-Sensor-1"
         data = sensor_data.get(sensor_key)
         
-        # Debug: show what we have
+        # No data received yet for this sensor
         if not data:
-            # Show what sensors we have
-            y = 14
-            self.display.text("No data for:", 0, y, 1)
-            y += 10
-            sensor_short = sensor_key[-10:] if len(sensor_key) > 10 else sensor_key
-            self.display.text(sensor_short, 0, y, 1)
-            y += 14
-            # List available sensors
-            self.display.text("Available:", 0, y, 1)
-            y += 10
-            for i, name in enumerate(list(sensor_data.keys())[:3]):
-                short = name[-12:] if len(name) > 12 else name
-                self.display.text(short, 0, y, 1)
-                y += 10
+            self._center_text("Waiting...", 28)
             await self.update()
             return
         
