@@ -5,6 +5,7 @@ import com.example.smart.lighting.scenes.with_natural.language.dto.NlpCommandDto
 import com.example.smart.lighting.scenes.with_natural.language.entity.Schedule;
 import com.example.smart.lighting.scenes.with_natural.language.entity.User;
 import com.example.smart.lighting.scenes.with_natural.language.repository.ScheduleRepository;
+import com.example.smart.lighting.scenes.with_natural.language.websocket.WebSocketEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class NlpScheduleBuilder {
 
     private final ScheduleRepository scheduleRepository;
+    private final WebSocketEventService webSocketEventService;
 
     /**
      * Create a schedule from a parsed command.
@@ -41,7 +43,13 @@ public class NlpScheduleBuilder {
 
         Map<String, Object> triggerConfigMap = new HashMap<>();
         if ("time".equals(triggerType)) {
-            triggerConfigMap.put("at", scheduleConfig.getTime() + ":00");
+            // Normalize time to HH:mm:ss format
+            String timeStr = scheduleConfig.getTime();
+            if (timeStr != null && timeStr.length() == 5) {
+                timeStr = timeStr + ":00"; // 22:00 -> 22:00:00
+            }
+            triggerConfigMap.put("at", timeStr);
+            log.info("Creating schedule with trigger time: {}", timeStr);
             if (scheduleConfig.getRecurrence() != null) {
                 List<String> weekdays = parseRecurrence(scheduleConfig.getRecurrence());
                 if (weekdays != null && !weekdays.isEmpty()) {
@@ -68,7 +76,12 @@ public class NlpScheduleBuilder {
             .createdBy(user)
             .build();
 
-        return scheduleRepository.save(schedule);
+        schedule = scheduleRepository.save(schedule);
+
+        // Broadcast WebSocket event for real-time sync
+        webSocketEventService.broadcastScheduleCreated(schedule.getId(), schedule.getName());
+
+        return schedule;
     }
 
     private List<Map<String, Object>> buildActions(ParsedCommand parsed) {
@@ -168,7 +181,12 @@ public class NlpScheduleBuilder {
         String triggerType = "time";
 
         if (scheduleConfig.getTime() != null) {
-            triggerConfig.put("at", scheduleConfig.getTime() + ":00");
+            // Normalize time to HH:mm:ss format
+            String timeStr = scheduleConfig.getTime();
+            if (timeStr != null && timeStr.length() == 5) {
+                timeStr = timeStr + ":00";
+            }
+            triggerConfig.put("at", timeStr);
             if (scheduleConfig.getRecurrence() != null) {
                 List<String> weekdays = parseRecurrence(scheduleConfig.getRecurrence());
                 if (weekdays != null && !weekdays.isEmpty()) {
