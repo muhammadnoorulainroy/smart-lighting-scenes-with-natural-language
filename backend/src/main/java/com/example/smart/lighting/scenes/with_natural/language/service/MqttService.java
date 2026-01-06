@@ -97,6 +97,10 @@ public class MqttService {
             return;
         }
 
+        // Check if message is retained (stored on broker, not fresh from device)
+        Boolean retained = (Boolean) message.getHeaders().get(MqttHeaders.RECEIVED_RETAINED);
+        boolean isRetained = Boolean.TRUE.equals(retained);
+
         Object payloadObj = message.getPayload();
         String payload;
         if (payloadObj instanceof byte[]) {
@@ -105,7 +109,7 @@ public class MqttService {
             payload = payloadObj.toString();
         }
 
-        messageHandler.handleMessage(topic, payload);
+        messageHandler.handleMessage(topic, payload, isRetained);
     }
 
     /**

@@ -62,16 +62,22 @@ public class MqttMessageHandler {
      *
      * @param topic the MQTT topic
      * @param payload the message payload
+     * @param isRetained whether the message is a retained message from the broker
      */
-    public void handleMessage(String topic, String payload) {
-        log.debug("Received from {}: {}", topic, payload);
+    public void handleMessage(String topic, String payload, boolean isRetained) {
+        // Log all incoming MQTT messages for debugging ACK issues
+        if (topic.contains("/ack/")) {
+            log.info("MQTT ACK message received - topic: {}, payload: {}", topic, payload);
+        } else {
+            log.debug("Received from {}: {} (retained={})", topic, payload, isRetained);
+        }
 
         if (topic.contains("/led/") && topic.endsWith("/state")) {
-            handleLedStateMessage(topic, payload);
+            handleLedStateMessage(topic, payload, isRetained);
         } else if (topic.contains("/status/")) {
-            handleStatusMessage(topic, payload);
+            handleStatusMessage(topic, payload, isRetained);
         } else if (topic.contains("/sensor/")) {
-            handleSensorMessage(topic, payload);
+            handleSensorMessage(topic, payload, isRetained);
         } else if (topic.contains("/ack/")) {
             handleAckMessage(topic, payload);
         } else if (topic.endsWith("/config/request")) {
@@ -80,7 +86,11 @@ public class MqttMessageHandler {
     }
 
     /**
-     * Handle acknowledgment messages from ESP32.
+     * Handle acknowledgment messages from ESP32 for any command type.
+     * Supports acks from:
+     * - /ack/scene/{correlationId} - Scene application acks
+     * - /ack/led/{ledIndex} - Individual LED command acks
+     * - /ack/command - General command acks
      */
     private void handleAckMessage(String topic, String payload) {
         try {
@@ -88,20 +98,26 @@ public class MqttMessageHandler {
 
             Map<String, Object> ackData = objectMapper.readValue(payload, new TypeReference<>() {});
 
-            if (topic.contains("/ack/scene/")) {
-                String correlationId = ackData.get("correlationId") != null
-                    ? ackData.get("correlationId").toString()
-                    : extractCorrelationIdFromTopic(topic);
+            // Extract correlationId from payload (primary) or topic (fallback)
+            String correlationId = null;
+            if (ackData.containsKey("correlationId") && ackData.get("correlationId") != null) {
+                correlationId = ackData.get("correlationId").toString();
+            } else {
+                correlationId = extractCorrelationIdFromTopic(topic);
+            }
 
-                boolean success = !ackData.containsKey("success") || (Boolean) ackData.get("success");
+            boolean success = !ackData.containsKey("success") || (Boolean) ackData.get("success");
 
-                int ledIndex = ackData.containsKey("ledIndex")
-                    ? ((Number) ackData.get("ledIndex")).intValue()
-                    : -1;
+            int ledIndex = ackData.containsKey("ledIndex")
+                ? ((Number) ackData.get("ledIndex")).intValue()
+                : extractLedIndexFromTopic(topic);
 
-                if (correlationId != null && sceneCommandTracker != null) {
-                    sceneCommandTracker.processAck(correlationId, success, ledIndex);
-                }
+            if (correlationId != null && sceneCommandTracker != null) {
+                log.info("Processing ack for correlationId={}, success={}, ledIndex={}",
+                    correlationId, success, ledIndex);
+                sceneCommandTracker.processAck(correlationId, success, ledIndex);
+            } else {
+                log.warn("Received ack without correlationId: topic={}, payload={}", topic, payload);
             }
         } catch (Exception e) {
             log.error("Error processing ack message: {}", e.getMessage(), e);
@@ -110,10 +126,24 @@ public class MqttMessageHandler {
 
     private String extractCorrelationIdFromTopic(String topic) {
         String[] parts = topic.split("/");
+        // Check for /ack/scene/{correlationId} pattern
         if (parts.length >= 4 && "scene".equals(parts[2])) {
             return parts[3];
         }
         return null;
+    }
+
+    private int extractLedIndexFromTopic(String topic) {
+        String[] parts = topic.split("/");
+        // Check for /ack/led/{ledIndex} pattern
+        if (parts.length >= 4 && "led".equals(parts[2])) {
+            try {
+                return Integer.parseInt(parts[3]);
+            } catch (NumberFormatException e) {
+                return -1;
+            }
+        }
+        return -1;
     }
 
     private void handleConfigRequest(String payload) {
@@ -123,12 +153,12 @@ public class MqttMessageHandler {
         }
     }
 
-    private void handleStatusMessage(String topic, String payload) {
+    private void handleStatusMessage(String topic, String payload, boolean isRetained) {
         try {
             String[] parts = topic.split("/");
 
             if (topic.contains("/led/") && topic.endsWith("/state")) {
-                handleLedStateUpdate(parts, payload);
+                handleLedStateUpdate(parts, payload, isRetained);
             } else if (parts.length >= 3) {
                 String controllerId = parts[2];
                 log.info("Status update from {}: {}", controllerId, payload);
@@ -139,14 +169,14 @@ public class MqttMessageHandler {
         }
     }
 
-    private void handleLedStateMessage(String topic, String payload) {
-        log.info("LED state received - topic: {}, payload: {}", topic, payload);
+    private void handleLedStateMessage(String topic, String payload, boolean isRetained) {
+        log.info("LED state received - topic: {}, payload: {}, retained: {}", topic, payload, isRetained);
         String[] parts = topic.split("/");
-        handleLedStateUpdate(parts, payload);
+        handleLedStateUpdate(parts, payload, isRetained);
     }
 
     @SuppressWarnings("unchecked")
-    private void handleLedStateUpdate(String[] topicParts, String payload) {
+    private void handleLedStateUpdate(String[] topicParts, String payload, boolean isRetained) {
         try {
             int ledIndex = Integer.parseInt(topicParts[2]);
 
@@ -168,24 +198,30 @@ public class MqttMessageHandler {
             Integer colorTemp = state.containsKey("color_temp")
                 ? ((Number) state.get("color_temp")).intValue() : null;
             String rgbColor = extractRgbColor(state);
-            LocalDateTime now = LocalDateTime.now();
 
             log.info("LED {} update: on={}, brightness={}, saturation={}, colorTemp={}K, rgb={}",
                 ledIndex, isOn, brightness, saturation, colorTemp, rgbColor);
 
-            deviceStateRepository.upsertLedState(device.getId(), isOn, brightness, rgbColor, now);
-            log.info("Saved LED {} state to DB: on={}, brightness={}, rgb={}",
-                ledIndex, isOn, brightness, rgbColor);
+            // Only update lastSeen for fresh messages, not retained messages from broker
+            // Retained messages are old state stored on broker, not fresh device communication
+            if (!isRetained) {
+                LocalDateTime now = LocalDateTime.now();
+                deviceStateRepository.upsertLedState(device.getId(), isOn, brightness, rgbColor, now);
+                log.info("Saved LED {} state to DB with lastSeen={}", ledIndex, now);
 
-            Map<String, Object> wsState = new HashMap<>(state);
-            wsState.put("brightnessPct", brightness);
-            wsState.put("isOn", isOn);
-            wsState.put("rgbColor", rgbColor);
-            wsState.put("saturationPct", saturation);
-            wsState.put("colorTempKelvin", colorTemp);
-            wsState.put("lastSeen", now.toString());
-            webSocketEventService.broadcastDeviceStateUpdate(device.getId().toString(), wsState);
-            log.info("Broadcasted LED {} state via WebSocket", ledIndex);
+                // Broadcast fresh state with current timestamp
+                Map<String, Object> wsState = new HashMap<>(state);
+                wsState.put("brightnessPct", brightness);
+                wsState.put("isOn", isOn);
+                wsState.put("rgbColor", rgbColor);
+                wsState.put("saturationPct", saturation);
+                wsState.put("colorTempKelvin", colorTemp);
+                wsState.put("lastSeen", now.toString());
+                webSocketEventService.broadcastDeviceStateUpdate(device.getId().toString(), wsState);
+                log.info("Broadcasted LED {} state via WebSocket", ledIndex);
+            } else {
+                log.info("Skipping lastSeen update for retained message (LED {})", ledIndex);
+            }
 
         } catch (Exception e) {
             log.error("Error updating LED state: {}", e.getMessage(), e);
@@ -211,7 +247,7 @@ public class MqttMessageHandler {
     }
 
     @SuppressWarnings("unchecked")
-    private void handleSensorMessage(String topic, String payload) {
+    private void handleSensorMessage(String topic, String payload, boolean isRetained) {
         try {
             String[] parts = topic.split("/");
             if (parts.length < 3) {
@@ -219,7 +255,7 @@ public class MqttMessageHandler {
             }
 
             String sensorName = parts[2];
-            log.debug("Sensor data from {}: {}", sensorName, payload);
+            log.debug("Sensor data from {}: {} (retained={})", sensorName, payload, isRetained);
 
             Map<String, Object> sensorData = parseSensorPayload(payload);
             if (sensorData == null) {
@@ -233,17 +269,23 @@ public class MqttMessageHandler {
             }
 
             Device device = deviceOpt.get();
-            LocalDateTime now = LocalDateTime.now();
 
-            storeSensorReading(device, sensorData, "temperature", "t", "°C", now);
-            storeSensorReading(device, sensorData, "humidity", "h", "%", now);
-            storeSensorReading(device, sensorData, "luminosity", "l", "lux", now);
-            storeSensorReading(device, sensorData, "light", "l", "lux", now);
-            storeSensorReading(device, sensorData, "pressure", "p", "hPa", now);
-            storeSensorReading(device, sensorData, "audio", "a", "dB", now);
+            // Only update database and lastSeen for fresh messages, not retained
+            if (!isRetained) {
+                LocalDateTime now = LocalDateTime.now();
 
-            deviceStateRepository.upsertLastSeen(device.getId(), now);
-            webSocketEventService.broadcastSensorUpdate(sensorName, sensorData);
+                storeSensorReading(device, sensorData, "temperature", "t", "°C", now);
+                storeSensorReading(device, sensorData, "humidity", "h", "%", now);
+                storeSensorReading(device, sensorData, "luminosity", "l", "lux", now);
+                storeSensorReading(device, sensorData, "light", "l", "lux", now);
+                storeSensorReading(device, sensorData, "pressure", "p", "hPa", now);
+                storeSensorReading(device, sensorData, "audio", "a", "dB", now);
+
+                deviceStateRepository.upsertLastSeen(device.getId(), now);
+                webSocketEventService.broadcastSensorUpdate(sensorName, sensorData);
+            } else {
+                log.info("Skipping sensor reading storage for retained message (sensor {})", sensorName);
+            }
 
         } catch (Exception e) {
             log.error("Error processing sensor message: {}", e.getMessage(), e);
