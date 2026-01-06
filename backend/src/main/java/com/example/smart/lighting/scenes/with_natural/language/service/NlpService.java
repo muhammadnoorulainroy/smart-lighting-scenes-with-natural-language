@@ -151,6 +151,12 @@ public class NlpService {
             String result;
 
             if (Boolean.TRUE.equals(commandDto.getIsScheduled())) {
+                // GUEST users cannot create schedules
+                if (user != null && user.getRole() == User.UserRole.GUEST) {
+                    commandDto.setExecuted(false);
+                    commandDto.setResult("Error: Guests cannot create schedules. Please ask an owner or resident.");
+                    return commandDto;
+                }
                 Schedule schedule = scheduleBuilder.createScheduleFromParsed(parsed, user);
                 result = "Created schedule: " + schedule.getName();
                 commandDto.setResult(result);
