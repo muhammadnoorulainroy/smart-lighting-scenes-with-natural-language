@@ -49,12 +49,12 @@ export const requireAuth = async (to, from, next) => {
 /**
  * Route guard requiring RESIDENT or OWNER role.
  *
- * Use for routes that require ability to control lights
+ * Use for routes that require ability to manage resources
  * (create scenes, modify schedules, etc.)
  *
  * Redirects:
  * - Unauthenticated -> Home
- * - GUEST role -> Dashboard (with no edit capability)
+ * - GUEST role -> Rooms (view only)
  *
  * @async
  * @param {Object} to - Target route
@@ -72,8 +72,8 @@ export const requireResident = async (to, from, next) => {
   if (authStore.isAuthenticated && authStore.isResident) {
     next()
   } else if (authStore.isAuthenticated) {
-    // Authenticated but not resident - go to dashboard
-    next({ path: '/dashboard', replace: true })
+    // Authenticated but GUEST - redirect to rooms (view only)
+    next({ path: '/rooms', replace: true })
   } else {
     // Not authenticated - go to home
     next({ path: '/', query: { redirect: to.fullPath, requiresAuth: 'true' } })
@@ -88,7 +88,7 @@ export const requireResident = async (to, from, next) => {
  *
  * Redirects:
  * - Unauthenticated -> Home
- * - RESIDENT/GUEST -> Dashboard
+ * - RESIDENT/GUEST -> Rooms
  *
  * @async
  * @param {Object} to - Target route
@@ -106,8 +106,8 @@ export const requireOwner = async (to, from, next) => {
   if (authStore.isAuthenticated && authStore.isOwner) {
     next()
   } else if (authStore.isAuthenticated) {
-    // Authenticated but not owner - go to dashboard
-    next({ path: '/dashboard', replace: true })
+    // Authenticated but not owner - go to rooms
+    next({ path: '/rooms', replace: true })
   } else {
     // Not authenticated - go to home
     next({ path: '/', query: { redirect: to.fullPath, requiresAuth: 'true' } })

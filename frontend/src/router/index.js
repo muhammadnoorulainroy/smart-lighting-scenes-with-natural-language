@@ -22,7 +22,7 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import { requireAuth } from '../utils/routeGuards'
+import { requireAuth, requireResident, requireOwner } from '../utils/routeGuards'
 
 /**
  * Vue Router instance with HTML5 history mode.
@@ -54,13 +54,20 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/DashboardView.vue'),
-      meta: { requiresAuth: true },
-      beforeEnter: requireAuth
+      meta: { requiresAuth: true, requiresResident: true },
+      beforeEnter: requireResident
     },
     {
       path: '/rooms',
       name: 'rooms',
       component: () => import('../views/RoomsView.vue'),
+      meta: { requiresAuth: true },
+      beforeEnter: requireAuth
+    },
+    {
+      path: '/devices',
+      name: 'devices',
+      component: () => import('../views/DevicesView.vue'),
       meta: { requiresAuth: true },
       beforeEnter: requireAuth
     },
@@ -83,7 +90,7 @@ const router = createRouter({
       name: 'settings',
       component: () => import('../views/SettingsView.vue'),
       meta: { requiresAuth: true, requiresOwner: true, title: 'Settings' },
-      beforeEnter: requireAuth
+      beforeEnter: requireOwner
     },
     {
       path: '/:pathMatch(.*)*',

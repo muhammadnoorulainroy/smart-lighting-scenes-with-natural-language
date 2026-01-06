@@ -78,8 +78,11 @@ export const useAuthStore = defineStore('auth', () => {
   /** Whether user has OWNER role (full admin access) */
   const isOwner = computed(() => userRole.value === 'OWNER')
 
-  /** Whether user has RESIDENT or higher role (can control lights) */
+  /** Whether user has RESIDENT or OWNER role*/
   const isResident = computed(() => userRole.value === 'RESIDENT' || userRole.value === 'OWNER')
+
+  /** Whether user has GUEST role*/
+  const isGuest = computed(() => userRole.value === 'GUEST')
 
   // Actions
 
@@ -273,6 +276,7 @@ export const useAuthStore = defineStore('auth', () => {
     userRole,
     isOwner,
     isResident,
+    isGuest,
     checkAuth,
     fetchCurrentUser,
     login,
