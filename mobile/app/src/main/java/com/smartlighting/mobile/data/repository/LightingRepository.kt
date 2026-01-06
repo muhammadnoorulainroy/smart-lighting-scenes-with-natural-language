@@ -140,42 +140,19 @@ class LightingRepository @Inject constructor(
             }
         }
     
-    suspend fun sendLightCommand(command: LightCommand): Result<CommandResult> = 
+    suspend fun sendLightCommand(deviceId: String, command: Map<String, Any>): Result<Map<String, Any>> = 
         withContext(Dispatchers.IO) {
             try {
-                val response = apiService.sendLightCommand(command)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.success == true && body.data != null) {
-                        Result.success(body.data)
-                    } else {
-                        Result.failure(Exception(body?.error ?: "Failed to execute command"))
-                    }
+                val response = apiService.sendLightCommand(deviceId, command)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
                 } else {
-                    Result.failure(Exception("Network error: ${response.code()}"))
+                    Result.failure(Exception("Failed to execute command: ${response.code()}"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
-    
-    suspend fun getGroups(): Result<List<Room>> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiService.getGroups()
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body?.success == true && body.data != null) {
-                    Result.success(body.data)
-                } else {
-                    Result.failure(Exception(body?.error ?: "Failed to fetch groups"))
-                }
-            } else {
-                Result.failure(Exception("Network error: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
     
     suspend fun authenticateWithGoogle(idToken: String): Result<Map<String, Any>> = 
         withContext(Dispatchers.IO) {
@@ -186,10 +163,13 @@ class LightingRepository @Inject constructor(
                     val body = response.body()!!
                     // Save user info (auth uses cookies/session)
                     tokenManager.saveToken("authenticated") // Mark as authenticated
+                    // Extract role from authorities or role field
+                    val role = extractRole(body)
                     tokenManager.saveUserInfo(
                         userId = body["id"]?.toString(),
                         email = body["email"]?.toString(),
-                        name = body["name"]?.toString()
+                        name = body["name"]?.toString(),
+                        role = role
                     )
                     Result.success(body)
                 } else {
@@ -206,6 +186,36 @@ class LightingRepository @Inject constructor(
                 Result.failure(Exception(e.message ?: "An unexpected error occurred"))
             }
         }
+    
+    /**
+     * Extract user role from auth response
+     */
+    private fun extractRole(body: Map<String, Any>): String {
+        // Try direct role field
+        val role = body["role"]?.toString()
+        if (!role.isNullOrEmpty()) {
+            return role.replace("ROLE_", "")
+        }
+        
+        // Try authorities array (Spring Security format)
+        val authorities = body["authorities"] as? List<*>
+        if (!authorities.isNullOrEmpty()) {
+            for (auth in authorities) {
+                val authMap = auth as? Map<*, *>
+                val authority = authMap?.get("authority")?.toString() ?: auth.toString()
+                if (authority.contains("OWNER", ignoreCase = true)) return "OWNER"
+                if (authority.contains("RESIDENT", ignoreCase = true)) return "RESIDENT"
+                if (authority.contains("GUEST", ignoreCase = true)) return "GUEST"
+            }
+        }
+        
+        return "GUEST" // Default role
+    }
+    
+    /**
+     * Check if current user can edit (create/update/delete schedules and scenes)
+     */
+    fun canEdit(): Boolean = tokenManager.canEdit()
     
     suspend fun getAuthConfig(): Result<Map<String, String>> = 
         withContext(Dispatchers.IO) {
@@ -252,10 +262,12 @@ class LightingRepository @Inject constructor(
                     val body = response.body()!!
                     // Save user info (auth uses cookies/session)
                     tokenManager.saveToken("authenticated") // Mark as authenticated
+                    val role = extractRole(body)
                     tokenManager.saveUserInfo(
                         userId = body["id"]?.toString(),
                         email = body["email"]?.toString() ?: email,
-                        name = body["name"]?.toString() ?: name
+                        name = body["name"]?.toString() ?: name,
+                        role = role
                     )
                     Result.success(body)
                 } else {
@@ -282,10 +294,12 @@ class LightingRepository @Inject constructor(
                     val body = response.body()!!
                     // Save user info (auth uses cookies/session)
                     tokenManager.saveToken("authenticated") // Mark as authenticated
+                    val role = extractRole(body)
                     tokenManager.saveUserInfo(
                         userId = body["id"]?.toString(),
                         email = body["email"]?.toString() ?: email,
-                        name = body["name"]?.toString()
+                        name = body["name"]?.toString(),
+                        role = role
                     )
                     Result.success(body)
                 } else {
