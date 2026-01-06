@@ -531,16 +531,16 @@ npm run docker:down     # Stop infrastructure
 
 ---
 
-## Detailed Documentation
+## Documentation
 
-For comprehensive documentation, see:
-- **[docs/API.md](docs/API.md)** - Complete API reference
-- **[docs/EMBEDDED_SYSTEM.md](docs/EMBEDDED_SYSTEM.md)** - Hardware documentation
-- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development guide
+**[View Full Documentation](https://muhammadnoorulainroy.github.io/smart-lighting-scenes-with-natural-language/)**
 
-For comprehensive build automation documentation, see:
-- **[BUILD.md](docs/BUILD.md)** - Complete build system documentation
-- **[docs/tutorials/tutorial.md](docs/tutorials/tutorial.md)** - Getting started tutorial
+### Quick Links
+- **[Development Guide](docs/DEVELOPMENT.md)** - Local setup and development
+- **[API Reference](docs/API.md)** - REST API documentation
+- **[Build Instructions](docs/BUILD.md)** - Build automation
+- **[Embedded System](docs/EMBEDDED_SYSTEM.md)** - ESP32/nRF52840 hardware
+- **[Getting Started Tutorial](docs/tutorials/tutorial.md)** - Step-by-step guide
 
 ---
 
