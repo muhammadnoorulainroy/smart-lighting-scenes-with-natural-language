@@ -27,6 +27,7 @@ services:
     ports:
       - "8080:8080"
     environment:
+      TZ: ${TZ:-Europe/Paris}
       # Database
       DB_URL: jdbc:postgresql://postgres:5432/smartlighting?currentSchema=smartlighting
       DB_USERNAME: ${POSTGRES_USER:-postgres}
