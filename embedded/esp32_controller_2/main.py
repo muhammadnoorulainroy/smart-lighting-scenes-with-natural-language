@@ -631,6 +631,7 @@ async def init_hardware():
         _cfg("OLED_SDA",23), _cfg("OLED_SCL",22),
         _cfg("OLED_WIDTH",128), _cfg("OLED_HEIGHT",64),
         _cfg("OLED_ADDR",0x3C),
+        _cfg("OLED_ROTATE", 0),  # 0, 90, 180, or 270 degrees
     )
     await oled.init_async()
     

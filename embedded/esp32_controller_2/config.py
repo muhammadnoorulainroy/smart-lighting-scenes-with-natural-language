@@ -61,6 +61,7 @@ OLED_SCL = 22
 OLED_WIDTH = 128
 OLED_HEIGHT = 64
 OLED_ADDR = 0x3C
+OLED_ROTATE = 180  # 0, 90, 180, or 270 degrees (180 = flip upside down)
 OLED_ENABLED = True
 OLED_AUTO_SLEEP = True  # Auto-sleep to save power
 OLED_TIMEOUT = 15  # Seconds before auto-sleep

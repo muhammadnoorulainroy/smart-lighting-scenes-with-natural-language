@@ -70,12 +70,13 @@ def _recover_i2c_bus(scl_pin, sda_pin):
 class AsyncOLEDDisplay:
     """Async OLED display controller with multi-page support"""
 
-    def __init__(self, sda_pin, scl_pin, width, height, addr):
+    def __init__(self, sda_pin, scl_pin, width, height, addr, rotate=0):
         self.sda_pin = sda_pin
         self.scl_pin = scl_pin
         self.width = width
         self.height = height
         self.addr = addr
+        self.rotate = rotate
         self.display = None
         self.enabled = False
         self.rtc = RTC()  # For date/time display
@@ -90,13 +91,13 @@ class AsyncOLEDDisplay:
                 if self.addr in i2c.scan():
                     print(f"[{_SRC}] Found OLED at 0x{self.addr:02x} on bus {bus_num}")
                     try:
-                        self.display = sh1107.SH1107_I2C(self.width, self.height, i2c, address=self.addr)
+                        self.display = sh1107.SH1107_I2C(self.width, self.height, i2c, address=self.addr, rotate=self.rotate)
                     except TypeError:
                         self.display = sh1107.SH1107_I2C(self.width, self.height, i2c, address=self.addr)
                     self.display.fill(0)
                     self.display.show()
                     self.enabled = True
-                    print(f"[{_SRC}] ✓ SH1107 initialized on bus {bus_num}")
+                    print(f"[{_SRC}] SH1107 initialized on bus {bus_num} (rotate={self.rotate}°)")
                     return True
             except Exception as e:
                 print(f"[{_SRC}] Bus {bus_num} failed: {e}")
@@ -166,12 +167,12 @@ class AsyncOLEDDisplay:
             
             # Use lower frequency for stability
             i2c = I2C(0, scl=Pin(self.scl_pin), sda=Pin(self.sda_pin), freq=100000)
-            self.display = sh1107.SH1107_I2C(self.width, self.height, i2c, address=self.addr)
+            self.display = sh1107.SH1107_I2C(self.width, self.height, i2c, address=self.addr, rotate=self.rotate)
             self.display.fill(0)
             self.display.show()
             self.enabled = True
             gc.collect()  # Clean up after init
-            print(f"[{_SRC}] Display reinitialized successfully")
+            print(f"[{_SRC}] Display reinitialized successfully (rotate={self.rotate}°)")
         except Exception as e:
             print(f"[{_SRC}] Display reinit failed: {e}")
             self.enabled = False
