@@ -7,6 +7,7 @@ import com.example.smart.lighting.scenes.with_natural.language.repository.SceneR
 import com.example.smart.lighting.scenes.with_natural.language.repository.UserRepository;
 import com.example.smart.lighting.scenes.with_natural.language.service.MqttService;
 import com.example.smart.lighting.scenes.with_natural.language.service.SceneCommandTracker;
+import com.example.smart.lighting.scenes.with_natural.language.websocket.WebSocketEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -41,18 +42,20 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "${cors.allowed-origins}", allowCredentials = "true")
-@PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
 public class ScenesController {
 
     private final SceneRepository sceneRepository;
     private final UserRepository userRepository;
     private final MqttService mqttService;
     private final SceneCommandTracker sceneCommandTracker;
+    private final WebSocketEventService webSocketEventService;
 
     /**
      * Get all active scenes.
+     * All authenticated users can view scenes.
      */
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SceneDto>> getAllScenes() {
         List<Scene> scenes = sceneRepository.findByIsActiveTrue();
         List<SceneDto> dtos = scenes.stream().map(this::toDto).collect(Collectors.toList());
@@ -61,8 +64,10 @@ public class ScenesController {
 
     /**
      * Get a scene by ID.
+     * All authenticated users can view scenes.
      */
     @GetMapping("/{sceneId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SceneDto> getSceneById(@PathVariable UUID sceneId) {
         Scene scene = sceneRepository.findById(sceneId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Scene not found"));
@@ -71,9 +76,10 @@ public class ScenesController {
 
     /**
      * Create a new scene.
+     * OWNER and RESIDENT can create scenes.
      */
     @PostMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<SceneDto> createScene(@RequestBody SceneDto sceneDto, Authentication auth) {
         log.info("Creating scene: {}", sceneDto.getName());
 
@@ -92,14 +98,18 @@ public class ScenesController {
         scene = sceneRepository.save(scene);
         log.info("Scene created: {}", scene.getId());
 
+        // Broadcast real-time event
+        webSocketEventService.broadcastSceneCreated(scene.getId(), scene.getName());
+
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(scene));
     }
 
     /**
      * Update an existing scene.
+     * OWNER and RESIDENT can update scenes.
      */
     @PutMapping("/{sceneId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<SceneDto> updateScene(@PathVariable UUID sceneId, @RequestBody SceneDto sceneDto) {
         Scene scene = sceneRepository.findById(sceneId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Scene not found"));
@@ -122,14 +132,19 @@ public class ScenesController {
         }
 
         scene = sceneRepository.save(scene);
+        
+        // Broadcast real-time event
+        webSocketEventService.broadcastSceneUpdated(scene.getId(), scene.getName());
+        
         return ResponseEntity.ok(toDto(scene));
     }
 
     /**
      * Delete a scene (soft delete).
+     * OWNER and RESIDENT can delete scenes.
      */
     @DeleteMapping("/{sceneId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<Void> deleteScene(@PathVariable UUID sceneId) {
         Scene scene = sceneRepository.findById(sceneId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Scene not found"));
@@ -141,13 +156,18 @@ public class ScenesController {
         scene.setIsActive(false);
         sceneRepository.save(scene);
 
+        // Broadcast real-time event
+        webSocketEventService.broadcastSceneDeleted(sceneId);
+
         return ResponseEntity.noContent().build();
     }
 
     /**
      * Apply a scene to the lights.
+     * All authenticated users (including GUEST) can apply scenes.
      */
     @PostMapping("/{sceneId}/apply")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> applyScene(@PathVariable UUID sceneId) {
         Scene scene = sceneRepository.findById(sceneId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Scene not found"));

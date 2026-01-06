@@ -13,7 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,7 +51,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "${cors.allowed-origins}", allowCredentials = "true")
-@PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
 public class RoomsController {
 
     private final RoomRepository roomRepository;
@@ -58,10 +58,12 @@ public class RoomsController {
 
     /**
      * Retrieves all rooms with their associated devices.
+     * All authenticated users can view rooms.
      *
      * @return list of all rooms with device information
      */
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<RoomDto>> getAllRooms() {
         List<Room> rooms = roomRepository.findAllWithDevices();
         List<RoomDto> roomDtos = rooms.stream()
@@ -72,11 +74,13 @@ public class RoomsController {
 
     /**
      * Retrieves a specific room by ID with its devices.
+     * All authenticated users can view rooms.
      *
      * @param roomId the room UUID
      * @return the room with devices
      */
     @GetMapping("/{roomId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<RoomDto> getRoomById(@PathVariable UUID roomId) {
         Room room = roomRepository.findByIdWithDevices(roomId)
             .orElseThrow(() -> new RuntimeException("Room not found"));
@@ -85,19 +89,19 @@ public class RoomsController {
 
     /**
      * Creates a new room.
+     * OWNER and RESIDENT can create rooms.
      *
      * @param roomDto the room data
-     * @param currentUser the authenticated user creating the room
+     * @param auth the authentication context
      * @return the created room
      */
     @PostMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<RoomDto> createRoom(
             @RequestBody RoomDto roomDto,
-            @AuthenticationPrincipal CustomOAuth2User currentUser) {
+            Authentication auth) {
 
-        User creator = userRepository.findById(currentUser.getUser().getId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        User creator = getCurrentUser(auth);
 
         Room room = Room.builder()
             .name(roomDto.getName())
@@ -110,14 +114,39 @@ public class RoomsController {
     }
 
     /**
+     * Get current user from authentication (supports both OAuth and local auth).
+     */
+    private User getCurrentUser(Authentication auth) {
+        if (auth == null) {
+            return null;
+        }
+        
+        // Handle OAuth2 users
+        if (auth.getPrincipal() instanceof CustomOAuth2User customUser) {
+            return customUser.getUser();
+        }
+        
+        // Handle OAuth2User (standard)
+        if (auth.getPrincipal() instanceof OAuth2User oauth2User) {
+            String email = oauth2User.getAttribute("email");
+            return userRepository.findByEmail(email).orElse(null);
+        }
+        
+        // Handle local auth users (email stored in principal name)
+        String email = auth.getName();
+        return userRepository.findByEmail(email).orElse(null);
+    }
+
+    /**
      * Updates an existing room.
+     * OWNER and RESIDENT can update rooms.
      *
      * @param roomId the room UUID to update
      * @param roomDto the updated room data
      * @return the updated room
      */
     @PutMapping("/{roomId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<RoomDto> updateRoom(@PathVariable UUID roomId, @RequestBody RoomDto roomDto) {
         Room room = roomRepository.findById(roomId)
             .orElseThrow(() -> new RuntimeException("Room not found"));
@@ -135,12 +164,13 @@ public class RoomsController {
 
     /**
      * Deletes a room (unless it's a default room).
+     * OWNER and RESIDENT can delete rooms.
      *
      * @param roomId the room UUID to delete
      * @return no content on success, bad request for default rooms
      */
     @DeleteMapping("/{roomId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<Void> deleteRoom(@PathVariable UUID roomId) {
         Room room = roomRepository.findById(roomId).orElse(null);
         if (room == null) {

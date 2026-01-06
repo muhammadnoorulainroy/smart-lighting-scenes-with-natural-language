@@ -5,6 +5,7 @@ import com.example.smart.lighting.scenes.with_natural.language.entity.Schedule;
 import com.example.smart.lighting.scenes.with_natural.language.entity.User;
 import com.example.smart.lighting.scenes.with_natural.language.repository.ScheduleRepository;
 import com.example.smart.lighting.scenes.with_natural.language.repository.UserRepository;
+import com.example.smart.lighting.scenes.with_natural.language.websocket.WebSocketEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -39,16 +40,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "${cors.allowed-origins}", allowCredentials = "true")
-@PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
 public class SchedulesController {
 
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
+    private final WebSocketEventService webSocketEventService;
 
     /**
      * Get all schedules.
+     * All authenticated users can view schedules.
      */
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<ScheduleDto>> getAllSchedules() {
         List<Schedule> schedules = scheduleRepository.findAll();
         List<ScheduleDto> dtos = schedules.stream().map(this::toDto).collect(Collectors.toList());
@@ -57,8 +60,10 @@ public class SchedulesController {
 
     /**
      * Get a schedule by ID.
+     * All authenticated users can view schedules.
      */
     @GetMapping("/{scheduleId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ScheduleDto> getScheduleById(@PathVariable UUID scheduleId) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found"));
@@ -67,9 +72,10 @@ public class SchedulesController {
 
     /**
      * Create a new schedule.
+     * OWNER and RESIDENT can create schedules.
      */
     @PostMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<ScheduleDto> createSchedule(@RequestBody ScheduleDto scheduleDto, Authentication auth) {
         log.info("Creating schedule: {}", scheduleDto.getName());
 
@@ -89,14 +95,18 @@ public class SchedulesController {
         schedule = scheduleRepository.save(schedule);
         log.info("Schedule created: {}", schedule.getId());
 
+        // Broadcast WebSocket event for real-time sync
+        webSocketEventService.broadcastScheduleCreated(schedule.getId(), schedule.getName());
+
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(schedule));
     }
 
     /**
      * Update an existing schedule.
+     * OWNER and RESIDENT can update schedules.
      */
     @PutMapping("/{scheduleId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<ScheduleDto> updateSchedule(
             @PathVariable UUID scheduleId, @RequestBody ScheduleDto scheduleDto) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
@@ -125,14 +135,19 @@ public class SchedulesController {
         }
 
         schedule = scheduleRepository.save(schedule);
+
+        // Broadcast WebSocket event for real-time sync
+        webSocketEventService.broadcastScheduleUpdated(schedule.getId(), schedule.getName());
+
         return ResponseEntity.ok(toDto(schedule));
     }
 
     /**
      * Toggle schedule enabled/disabled.
+     * OWNER and RESIDENT can toggle schedules.
      */
     @PostMapping("/{scheduleId}/toggle")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<ScheduleDto> toggleSchedule(@PathVariable UUID scheduleId) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found"));
@@ -142,14 +157,19 @@ public class SchedulesController {
 
         log.info("Schedule {} {}", schedule.getId(), schedule.getEnabled() ? "enabled" : "disabled");
 
+        // Broadcast WebSocket event for real-time sync
+        webSocketEventService.broadcastScheduleToggled(
+            schedule.getId(), schedule.getName(), schedule.getEnabled());
+
         return ResponseEntity.ok(toDto(schedule));
     }
 
     /**
      * Delete a schedule.
+     * OWNER and RESIDENT can delete schedules.
      */
     @DeleteMapping("/{scheduleId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<Void> deleteSchedule(@PathVariable UUID scheduleId) {
         if (!scheduleRepository.existsById(scheduleId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found");
@@ -157,6 +177,9 @@ public class SchedulesController {
 
         scheduleRepository.deleteById(scheduleId);
         log.info("Schedule deleted: {}", scheduleId);
+
+        // Broadcast WebSocket event for real-time sync
+        webSocketEventService.broadcastScheduleDeleted(scheduleId);
 
         return ResponseEntity.noContent().build();
     }

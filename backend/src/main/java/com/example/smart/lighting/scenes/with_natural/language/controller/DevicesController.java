@@ -47,14 +47,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "${cors.allowed-origins}", allowCredentials = "true")
-@PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
 public class DevicesController {
 
     private final DeviceRepository deviceRepository;
     private final RoomRepository roomRepository;
     private final SensorReadingRepository sensorReadingRepository;
 
+    /**
+     * Get all devices.
+     * All authenticated users can view devices.
+     */
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<DeviceDto>> getAllDevices(@RequestParam(required = false) UUID roomId) {
         log.debug("Fetching devices with roomId filter: {}", roomId);
 
@@ -73,8 +77,12 @@ public class DevicesController {
         return ResponseEntity.ok(deviceDtos);
     }
 
+    /**
+     * Create a device.
+     * OWNER and RESIDENT can create devices.
+     */
     @PostMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<DeviceDto> createDevice(@RequestBody DeviceDto deviceDto) {
         log.debug("Creating device: name={}, type={}, roomId={}",
             deviceDto.getName(), deviceDto.getType(), deviceDto.getRoomId());
@@ -100,8 +108,12 @@ public class DevicesController {
         return ResponseEntity.ok(toDto(device));
     }
 
+    /**
+     * Update a device.
+     * OWNER and RESIDENT can update devices.
+     */
     @PutMapping("/{deviceId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<DeviceDto> updateDevice(@PathVariable UUID deviceId, @RequestBody DeviceDto deviceDto) {
         log.debug("Updating device: id={}", deviceId);
 
@@ -149,8 +161,12 @@ public class DevicesController {
         return ResponseEntity.ok(toDto(device));
     }
 
+    /**
+     * Delete a device.
+     * OWNER and RESIDENT can delete devices.
+     */
     @DeleteMapping("/{deviceId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'RESIDENT')")
     public ResponseEntity<Void> deleteDevice(@PathVariable UUID deviceId) {
         log.debug("Deleting device: id={}", deviceId);
 

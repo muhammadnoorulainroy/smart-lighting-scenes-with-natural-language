@@ -201,12 +201,15 @@ public class AuthController {
      */
     @GetMapping("/auth/config")
     public ResponseEntity<Map<String, String>> getAuthConfig() {
-        boolean hasClientId = googleClientId != null && !googleClientId.isEmpty();
+        String clientId = (googleClientId != null && !googleClientId.equals("your_google_client_id")) 
+            ? googleClientId : "";
+        boolean hasClientId = !clientId.isEmpty();
         log.debug("Fetching auth config, Google Client ID present: {}", hasClientId);
 
-        Map<String, String> config = Map.of(
-            "googleClientId", googleClientId != null ? googleClientId : ""
-        );
+        // Use HashMap to safely handle null values
+        Map<String, String> config = new java.util.HashMap<>();
+        config.put("googleClientId", clientId);
+        config.put("googleSignInEnabled", String.valueOf(hasClientId));
 
         return ResponseEntity.ok(config);
     }
