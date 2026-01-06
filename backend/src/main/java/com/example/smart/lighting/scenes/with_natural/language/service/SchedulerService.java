@@ -4,6 +4,7 @@ import com.example.smart.lighting.scenes.with_natural.language.entity.Scene;
 import com.example.smart.lighting.scenes.with_natural.language.entity.Schedule;
 import com.example.smart.lighting.scenes.with_natural.language.repository.SceneRepository;
 import com.example.smart.lighting.scenes.with_natural.language.repository.ScheduleRepository;
+import com.example.smart.lighting.scenes.with_natural.language.websocket.WebSocketEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -47,6 +48,8 @@ public class SchedulerService {
     private final ScheduleRepository scheduleRepository;
     private final SceneRepository sceneRepository;
     private final MqttService mqttService;
+    private final WebSocketEventService webSocketEventService;
+    private final SceneCommandTracker sceneCommandTracker;
 
     private static final Map<String, DayOfWeek> DAY_MAP = Map.of(
         "mon", DayOfWeek.MONDAY,
@@ -58,32 +61,50 @@ public class SchedulerService {
         "sun", DayOfWeek.SUNDAY
     );
 
+    /** Track the last processed minute to prevent duplicate executions. */
+    private volatile String lastProcessedMinute = "";
+
     /**
-     * Check and execute schedules every minute.
+     * Check and execute schedules every minute at second 0.
      */
-    @Scheduled(cron = "0 * * * * *") // Every minute at second 0
+    @Scheduled(cron = "0 * * * * *", zone = "${app.timezone}")
     public void checkSchedules() {
         LocalDateTime now = LocalDateTime.now();
         LocalTime currentTime = now.toLocalTime();
         DayOfWeek currentDay = now.getDayOfWeek();
 
-        log.info("Checking schedules at {} ({})", now, currentDay);
+        // Prevent duplicate execution within the same minute
+        String currentMinuteKey = String.format("%02d:%02d", currentTime.getHour(), currentTime.getMinute());
+        if (currentMinuteKey.equals(lastProcessedMinute)) {
+            log.debug("Skipping duplicate execution for minute {}", currentMinuteKey);
+            return;
+        }
+        lastProcessedMinute = currentMinuteKey;
+
+        log.info("=== Schedule Check at {}:{} ({}) ===", 
+            String.format("%02d", currentTime.getHour()),
+            String.format("%02d", currentTime.getMinute()),
+            currentDay);
 
         List<Schedule> timeSchedules = scheduleRepository.findEnabledTimeSchedules();
         log.info("Found {} enabled time schedules", timeSchedules.size());
 
         for (Schedule schedule : timeSchedules) {
-            log.debug("Checking schedule: {} - config: {}", schedule.getName(), schedule.getTriggerConfig());
+            Map<String, Object> config = schedule.getTriggerConfig();
+            String scheduleTime = (String) config.getOrDefault("at", config.get("time"));
+            log.info("Checking schedule '{}': scheduled for {}, weekdays: {}", 
+                schedule.getName(), scheduleTime, config.get("weekdays"));
+                
             if (shouldTrigger(schedule, currentTime, currentDay)) {
                 try {
-                    log.info("Triggering schedule: {}", schedule.getName());
+                    log.info(">>> TRIGGERING schedule: {} <<<", schedule.getName());
                     executeSchedule(schedule);
                     updateScheduleStats(schedule);
                 } catch (Exception e) {
                     log.error("Error executing schedule {}: {}", schedule.getId(), e.getMessage(), e);
                 }
             } else {
-                log.debug("Schedule {} not triggered", schedule.getName());
+                log.debug("Schedule '{}' not triggered (time mismatch or wrong day)", schedule.getName());
             }
         }
     }
@@ -225,13 +246,18 @@ public class SchedulerService {
             default -> log.warn("Unknown intent: {}", intent);
         }
 
-        // Send to LEDs
+        // Send to LEDs with tracking
         List<Integer> ledIndices = getLedIndicesForTarget(target);
+        String commandName = "Schedule: " + intent;
+        String correlationId = sceneCommandTracker.registerCommand(null, commandName, ledIndices.size());
+
         for (int ledIndex : ledIndices) {
-            mqttService.publishLedCommand(ledIndex, command);
+            Map<String, Object> trackedCommand = new HashMap<>(command);
+            trackedCommand.put("correlationId", correlationId);
+            mqttService.publishLedCommand(ledIndex, trackedCommand);
         }
 
-        log.info("Executed action {} on {} LEDs", intent, ledIndices.size());
+        log.info("Executed action {} on {} LEDs (correlationId={})", intent, ledIndices.size(), correlationId);
     }
 
     /**
@@ -282,11 +308,18 @@ public class SchedulerService {
 
         List<Integer> ledIndices = getLedIndicesForTarget(effectiveTarget);
 
+        // Register for tracking and add correlationId
+        String correlationId = sceneCommandTracker.registerCommand(
+            scene.getId(), "Schedule: " + scene.getName(), ledIndices.size());
+
         for (int ledIndex : ledIndices) {
-            mqttService.publishLedCommand(ledIndex, command);
+            Map<String, Object> trackedCommand = new HashMap<>(command);
+            trackedCommand.put("correlationId", correlationId);
+            mqttService.publishLedCommand(ledIndex, trackedCommand);
         }
 
-        log.info("Applied scene '{}' to {} (LEDs: {})", scene.getName(), effectiveTarget, ledIndices);
+        log.info("Applied scene '{}' to {} (LEDs: {}, correlationId={})",
+            scene.getName(), effectiveTarget, ledIndices, correlationId);
     }
 
     /**
@@ -310,12 +343,17 @@ public class SchedulerService {
     }
 
     /**
-     * Update schedule statistics after execution.
+     * Update schedule statistics after execution and broadcast event.
      */
     private void updateScheduleStats(Schedule schedule) {
         schedule.setLastTriggeredAt(LocalDateTime.now());
         Integer currentCount = schedule.getTriggerCount();
-        schedule.setTriggerCount(currentCount != null ? currentCount + 1 : 1);
+        int newCount = currentCount != null ? currentCount + 1 : 1;
+        schedule.setTriggerCount(newCount);
         scheduleRepository.save(schedule);
+
+        // Broadcast WebSocket event for real-time notifications
+        webSocketEventService.broadcastScheduleTriggered(
+            schedule.getId(), schedule.getName(), newCount);
     }
 }

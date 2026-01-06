@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -118,15 +119,18 @@ public class WebSocketEventService {
      */
     public void broadcastSceneConfirmed(UUID sceneId, String sceneName, String correlationId,
                                         int devicesConfirmed, long latencyMs) {
+        Map<String, Object> data = new HashMap<>();
+        if (sceneId != null) {
+            data.put("sceneId", sceneId.toString());
+        }
+        data.put("sceneName", sceneName);
+        data.put("correlationId", correlationId);
+        data.put("devicesConfirmed", devicesConfirmed);
+        data.put("latencyMs", latencyMs);
+        
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SCENE_CONFIRMED")
-            .data(Map.of(
-                "sceneId", sceneId,
-                "sceneName", sceneName,
-                "correlationId", correlationId,
-                "devicesConfirmed", devicesConfirmed,
-                "latencyMs", latencyMs
-            ))
+            .data(data)
             .timestamp(System.currentTimeMillis())
             .build();
 
@@ -139,15 +143,18 @@ public class WebSocketEventService {
      */
     public void broadcastSceneTimeout(UUID sceneId, String sceneName, String correlationId,
                                      int acksReceived, int lightsExpected) {
+        Map<String, Object> data = new HashMap<>();
+        if (sceneId != null) {
+            data.put("sceneId", sceneId.toString());
+        }
+        data.put("sceneName", sceneName);
+        data.put("correlationId", correlationId);
+        data.put("acksReceived", acksReceived);
+        data.put("lightsExpected", lightsExpected);
+        
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SCENE_TIMEOUT")
-            .data(Map.of(
-                "sceneId", sceneId,
-                "sceneName", sceneName,
-                "correlationId", correlationId,
-                "acksReceived", acksReceived,
-                "lightsExpected", lightsExpected
-            ))
+            .data(data)
             .timestamp(System.currentTimeMillis())
             .build();
 
@@ -244,5 +251,170 @@ public class WebSocketEventService {
 
         messagingTemplate.convertAndSend("/topic/sensors", message);
         log.debug("Broadcasted sensor update: {}", sensorName);
+    }
+
+    //  Scene CRUD Events 
+
+    /**
+     * Broadcasts that a scene was created.
+     *
+     * @param sceneId the scene UUID
+     * @param sceneName the scene name
+     */
+    public void broadcastSceneCreated(UUID sceneId, String sceneName) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCENE_CREATED")
+            .data(Map.of(
+                "sceneId", sceneId,
+                "sceneName", sceneName
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/scenes", message);
+        log.info("Broadcasted scene created: {}", sceneName);
+    }
+
+    /**
+     * Broadcasts that a scene was updated.
+     *
+     * @param sceneId the scene UUID
+     * @param sceneName the scene name
+     */
+    public void broadcastSceneUpdated(UUID sceneId, String sceneName) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCENE_UPDATED")
+            .data(Map.of(
+                "sceneId", sceneId,
+                "sceneName", sceneName
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/scenes", message);
+        log.info("Broadcasted scene updated: {}", sceneName);
+    }
+
+    /**
+     * Broadcasts that a scene was deleted.
+     *
+     * @param sceneId the scene UUID
+     */
+    public void broadcastSceneDeleted(UUID sceneId) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCENE_DELETED")
+            .data(Map.of(
+                "sceneId", sceneId
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/scenes", message);
+        log.info("Broadcasted scene deleted: {}", sceneId);
+    }
+
+    //  Schedule Events 
+
+    /**
+     * Broadcasts that a schedule was created.
+     *
+     * @param scheduleId the schedule UUID
+     * @param scheduleName the schedule name
+     */
+    public void broadcastScheduleCreated(UUID scheduleId, String scheduleName) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCHEDULE_CREATED")
+            .data(Map.of(
+                "scheduleId", scheduleId,
+                "scheduleName", scheduleName
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/schedules", message);
+        log.info("Broadcasted schedule created: {}", scheduleName);
+    }
+
+    /**
+     * Broadcasts that a schedule was updated.
+     *
+     * @param scheduleId the schedule UUID
+     * @param scheduleName the schedule name
+     */
+    public void broadcastScheduleUpdated(UUID scheduleId, String scheduleName) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCHEDULE_UPDATED")
+            .data(Map.of(
+                "scheduleId", scheduleId,
+                "scheduleName", scheduleName
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/schedules", message);
+        log.info("Broadcasted schedule updated: {}", scheduleName);
+    }
+
+    /**
+     * Broadcasts that a schedule was deleted.
+     *
+     * @param scheduleId the schedule UUID
+     */
+    public void broadcastScheduleDeleted(UUID scheduleId) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCHEDULE_DELETED")
+            .data(Map.of(
+                "scheduleId", scheduleId
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/schedules", message);
+        log.info("Broadcasted schedule deleted: {}", scheduleId);
+    }
+
+    /**
+     * Broadcasts that a schedule was toggled (enabled/disabled).
+     *
+     * @param scheduleId the schedule UUID
+     * @param scheduleName the schedule name
+     * @param enabled the new enabled state
+     */
+    public void broadcastScheduleToggled(UUID scheduleId, String scheduleName, boolean enabled) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCHEDULE_TOGGLED")
+            .data(Map.of(
+                "scheduleId", scheduleId,
+                "scheduleName", scheduleName,
+                "enabled", enabled
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/schedules", message);
+        log.info("Broadcasted schedule toggled: {} -> {}", scheduleName, enabled ? "enabled" : "disabled");
+    }
+
+    /**
+     * Broadcasts that a scheduled automation was triggered.
+     *
+     * @param scheduleId the schedule UUID
+     * @param scheduleName the schedule name
+     * @param triggerCount the new trigger count
+     */
+    public void broadcastScheduleTriggered(UUID scheduleId, String scheduleName, int triggerCount) {
+        WebSocketMessage message = WebSocketMessage.builder()
+            .type("SCHEDULE_TRIGGERED")
+            .data(Map.of(
+                "scheduleId", scheduleId,
+                "scheduleName", scheduleName,
+                "triggerCount", triggerCount,
+                "triggeredAt", System.currentTimeMillis()
+            ))
+            .timestamp(System.currentTimeMillis())
+            .build();
+
+        messagingTemplate.convertAndSend("/topic/schedules", message);
+        log.info("Broadcasted schedule triggered: {} (count: {})", scheduleName, triggerCount);
     }
 }
