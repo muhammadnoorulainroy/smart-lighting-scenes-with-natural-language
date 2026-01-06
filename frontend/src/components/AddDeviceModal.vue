@@ -184,55 +184,6 @@
               <p class="text-xs text-neutral-500 mt-1">Unique identifier for the microcontroller</p>
             </div>
 
-            <!-- MQTT Topics (collapsible) -->
-            <div>
-              <button
-                type="button"
-                class="flex items-center text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
-                @click="showAdvanced = !showAdvanced"
-              >
-                <svg
-                  class="w-4 h-4 mr-1 transition-transform"
-                  :class="{ 'rotate-90': showAdvanced }"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                Advanced Options
-              </button>
-
-              <div
-                v-if="showAdvanced"
-                class="mt-3 space-y-3 pl-4 border-l-2 border-neutral-200 dark:border-neutral-700"
-              >
-                <div>
-                  <label class="block text-sm font-medium mb-1">MQTT Command Topic</label>
-                  <input
-                    v-model="form.mqttCmdTopic"
-                    type="text"
-                    class="input w-full"
-                    placeholder="Auto-generated if empty"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium mb-1">MQTT State Topic</label>
-                  <input
-                    v-model="form.mqttStateTopic"
-                    type="text"
-                    class="input w-full"
-                    placeholder="Auto-generated if empty"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
 
           <div class="flex justify-end gap-3 mt-6">
@@ -341,15 +292,12 @@ const form = ref({
   ledIndex: null,
   sensorType: '',
   selectedSensors: [],
-  deviceId: '',
-  mqttCmdTopic: '',
-  mqttStateTopic: ''
+  deviceId: ''
 })
 
 const loading = ref(false)
 const error = ref('')
 const sensorDropdownOpen = ref(false)
-const showAdvanced = ref(false)
 
 const selectedSensorCount = computed(() => form.value.selectedSensors.length)
 
@@ -364,13 +312,10 @@ watch(
         ledIndex: null,
         sensorType: '',
         selectedSensors: [],
-        deviceId: '',
-        mqttCmdTopic: '',
-        mqttStateTopic: ''
+        deviceId: ''
       }
       error.value = ''
       sensorDropdownOpen.value = false
-      showAdvanced.value = false
     }
   }
 )
@@ -425,8 +370,6 @@ const handleSubmit = async () => {
       roomId: form.value.type !== 'MICROCONTROLLER' ? form.value.roomId : null,
       name: form.value.name,
       type: form.value.type,
-      mqttCmdTopic: form.value.mqttCmdTopic || null,
-      mqttStateTopic: form.value.mqttStateTopic || null,
       metaJson: buildMetaJson()
     }
 
