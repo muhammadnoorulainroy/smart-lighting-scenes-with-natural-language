@@ -31,14 +31,14 @@ interface ApiService {
     @PUT("${Constants.Endpoints.SCENES}/{sceneId}")
     suspend fun updateScene(@Path("sceneId") sceneId: String, @Body scene: Scene): Response<Scene>
     
-    @POST(Constants.Endpoints.CONTROL)
-    suspend fun sendLightCommand(@Body command: LightCommand): Response<ApiResponse<CommandResult>>
+    @POST("${Constants.Endpoints.LIGHTING}/devices/{deviceId}/command")
+    suspend fun sendLightCommand(
+        @Path("deviceId") deviceId: String,
+        @Body command: Map<String, Any>
+    ): Response<Map<String, Any>>
     
-    @POST("api/lighting/command")
+    @POST("${Constants.Endpoints.NLP}/parse")
     suspend fun sendNaturalLanguageCommand(@Body request: Map<String, String>): Response<Map<String, Any>>
-    
-    @GET(Constants.Endpoints.GROUPS)
-    suspend fun getGroups(): Response<ApiResponse<List<Room>>>
     
     @POST("api/auth/mobile/google")
     suspend fun authenticateWithGoogle(@Body payload: Map<String, String>): Response<Map<String, Any>>
