@@ -158,8 +158,7 @@
             </div>
           </div>
 
-          <!-- LED Controls Section -->
-          <div class="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+          <div v-if="canEdit" class="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-700">
             <div class="flex items-center justify-between mb-4">
               <h3 class="font-medium text-neutral-700 dark:text-neutral-300">Manual Control</h3>
               <label class="relative inline-flex items-center cursor-pointer">
@@ -391,16 +390,19 @@ import { computed, defineComponent, ref, watch, reactive } from 'vue'
 import { devicesApi } from '../../api/devices'
 import { lightingApi } from '../../api/lighting'
 import { useWebSocket } from '../../stores/websocket'
+import { useToast } from '../../stores/toast'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
-  device: { type: Object, default: null }
+  device: { type: Object, default: null },
+  canEdit: { type: Boolean, default: true }
 })
 
 defineEmits(['close'])
 
 // WebSocket for real-time updates
 const { sensorData, deviceStates } = useWebSocket()
+const toast = useToast()
 
 // Manual control state
 const manualMode = ref(false)
@@ -453,10 +455,21 @@ const applyLedChanges = async () => {
       mode: 'manual' // Override auto mode
     }
 
-    await lightingApi.sendLedCommand(props.device.id, command)
+    const result = await lightingApi.sendLedCommand(props.device.id, command)
+    
+    // Show pending notification while waiting for ACK
+    if (result?.correlationId) {
+      toast.pendingWithTimeout(
+        `Sending command to ${props.device.name}...`,
+        30000,
+        `Command to "${props.device.name}" timed out. Device may be offline.`
+      )
+    } else {
+      toast.success('Command sent successfully')
+    }
   } catch (err) {
     console.error('Failed to apply LED changes:', err)
-    alert('Failed to apply changes. Please try again.')
+    toast.error('Failed to apply changes. Please try again.')
   } finally {
     applyingChanges.value = false
   }
@@ -471,7 +484,7 @@ const liveDeviceState = computed(() => {
     return {
       ...props.device?.deviceState,
       ...wsState,
-      lastSeen: new Date().toISOString() // Mark as live
+      lastSeen: wsState.lastSeen || props.device?.deviceState?.lastSeen
     }
   }
   return props.device?.deviceState || {}

@@ -1,16 +1,45 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useAuthStore } from './stores/auth'
-import { connectWebSocket, disconnectWebSocket } from './stores/websocket'
+import { connectWebSocket, disconnectWebSocket, useWebSocket } from './stores/websocket'
+import { useToast } from './stores/toast'
 import AuthButton from './components/AuthButton.vue'
 import AuthModal from './components/AuthModal.vue'
 import UserMenu from './components/UserMenu.vue'
 import LoadingSpinner from './components/LoadingSpinner.vue'
+import ToastNotification from './components/ToastNotification.vue'
 
 const authStore = useAuthStore()
+const toast = useToast()
 const showAuthModal = ref(false)
 const isDarkMode = ref(false)
+
+// Role-based access
+const isOwner = computed(() => authStore.isOwner)
+const isResident = computed(() => authStore.isResident)
+
+// Get WebSocket state for command tracking
+const { lastSceneApplied, clearLastSceneApplied } = useWebSocket()
+
+// Watch for LED command status changes
+watch(lastSceneApplied, (event) => {
+  if (!event) return
+
+  // Dismiss any pending toasts since we got a response
+  toast.dismissPending()
+
+  if (event.confirmed) {
+    toast.success(
+      `${event.sceneName} confirmed (${event.devicesConfirmed} device${event.devicesConfirmed > 1 ? 's' : ''}, ${event.latencyMs}ms)`
+    )
+  } else if (event.timedOut) {
+    toast.warning(
+      `${event.sceneName} - ${event.acksReceived}/${event.lightsExpected} devices responded`
+    )
+  }
+  clearLastSceneApplied()
+})
 
 onMounted(async () => {
   // Check system preference for dark mode
@@ -52,6 +81,8 @@ const toggleDarkMode = () => {
 
 <template>
   <div id="app" class="min-h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors">
+    <ToastNotification />
+
     <!-- Navigation Header -->
     <header class="glass sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-800">
       <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -75,11 +106,11 @@ const toggleDarkMode = () => {
 
           <!-- Main Navigation -->
           <div class="hidden md:flex items-center space-x-6">
-            <RouterLink to="/dashboard" class="nav-link"> Dashboard </RouterLink>
+            <RouterLink v-if="isResident" to="/dashboard" class="nav-link"> Dashboard </RouterLink>
             <RouterLink to="/rooms" class="nav-link"> Rooms </RouterLink>
+            <RouterLink to="/devices" class="nav-link"> Devices </RouterLink>
             <RouterLink to="/scenes" class="nav-link"> Scenes </RouterLink>
             <RouterLink to="/schedules" class="nav-link"> Schedules </RouterLink>
-            <RouterLink v-if="isOwner" to="/settings" class="nav-link"> ⚙️ Settings </RouterLink>
           </div>
         </div>
 

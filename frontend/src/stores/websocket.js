@@ -5,6 +5,7 @@
  * - Live sensor data (temperature, humidity, light level)
  * - Device state changes (on/off, brightness, color)
  * - Scene application events and acknowledgments
+ * - Schedule CRUD events (create, update, delete, toggle, triggered)
  *
  * Uses SockJS for WebSocket transport with automatic reconnection.
  *
@@ -66,6 +67,36 @@ const lastSceneApplied = ref(null)
  * @type {Object}
  */
 const pendingScenes = reactive({})
+
+/**
+ * Stores correlationIds of last 10 processed events.
+ * @type {Set}
+ */
+const processedSceneEvents = new Set()
+
+/**
+ * Recent schedule events (last 10).
+ * Used for activity feed and real-time sync.
+ */
+const scheduleEvents = ref([])
+
+/**
+ * Last schedule that was triggered
+ * Contains scheduleId, scheduleName, triggerCount, triggeredAt.
+ */
+const lastScheduleTriggered = ref(null)
+
+/**
+ * Last schedule change event.
+ * Used for syncing schedule lists across devices.
+ */
+const lastScheduleChange = ref(null)
+
+/**
+ * Last scene change event.
+ * Used for syncing scene lists across devices.
+ */
+const lastSceneChange = ref(null)
 
 /** WebSocket connection status */
 const connected = ref(false)
@@ -168,10 +199,11 @@ function subscribeToTopics() {
       const deviceId = data.deviceId || data.data?.deviceId
       const state = data.data?.state || data.data || {}
       if (deviceId) {
+        const backendLastSeen = state.lastSeen || data.timestamp
         deviceStates[deviceId] = {
           ...state,
           timestamp: data.timestamp,
-          lastSeen: new Date().toISOString()
+          lastSeen: backendLastSeen
         }
         log('Updated deviceStates for', deviceId, deviceStates[deviceId])
       }
@@ -209,6 +241,20 @@ function subscribeToTopics() {
       }
 
       // Handle different scene event types
+      // Deduplicate: skip if we've already processed this correlationId + type combo
+      const eventKey = `${sceneEvent.correlationId}-${data.type}`
+      if (processedSceneEvents.has(eventKey)) {
+        log('Skipping duplicate scene event:', eventKey)
+        return
+      }
+      
+      // Track processed events
+      processedSceneEvents.add(eventKey)
+      if (processedSceneEvents.size > 20) {
+        const first = processedSceneEvents.values().next().value
+        processedSceneEvents.delete(first)
+      }
+      
       switch (data.type) {
         case 'SCENE_PENDING':
           // Track pending command awaiting ACK
@@ -231,12 +277,55 @@ function subscribeToTopics() {
           // Legacy event (without ACK tracking)
           lastSceneApplied.value = sceneEvent
           break
+
+        case 'SCENE_CREATED':
+        case 'SCENE_UPDATED':
+        case 'SCENE_DELETED':
+          // Scene CRUD events - notify views to refresh
+          lastSceneChange.value = sceneEvent
+          log('Scene change event:', data.type, sceneEvent.sceneName || sceneEvent.sceneId)
+          break
       }
 
       // Keep last 10 scene events for activity feed
       sceneEvents.value = [sceneEvent, ...sceneEvents.value.slice(0, 9)]
     } catch (e) {
       logError('Error parsing scene message:', e)
+    }
+  })
+
+  // Subscribe to schedule events
+  stompClient.subscribe('/topic/schedules', message => {
+    try {
+      const data = JSON.parse(message.body)
+      log('Schedule event:', data)
+
+      const scheduleEvent = {
+        type: data.type,
+        scheduleId: data.data?.scheduleId,
+        scheduleName: data.data?.scheduleName,
+        enabled: data.data?.enabled,
+        triggerCount: data.data?.triggerCount,
+        triggeredAt: data.data?.triggeredAt,
+        timestamp: data.timestamp
+      }
+
+      switch (data.type) {
+        case 'SCHEDULE_TRIGGERED':
+          lastScheduleTriggered.value = scheduleEvent
+          break
+
+        case 'SCHEDULE_CREATED':
+        case 'SCHEDULE_UPDATED':
+        case 'SCHEDULE_DELETED':
+        case 'SCHEDULE_TOGGLED':
+          lastScheduleChange.value = scheduleEvent
+          break
+      }
+
+      scheduleEvents.value = [scheduleEvent, ...scheduleEvents.value.slice(0, 9)]
+    } catch (e) {
+      logError('Error parsing schedule message:', e)
     }
   })
 
@@ -302,6 +391,39 @@ export function isScenePending(correlationId) {
 }
 
 /**
+ * Clears the last schedule triggered notification.
+ *
+ * Call this after displaying a toast to dismiss it.
+ *
+ * @returns {void}
+ */
+export function clearLastScheduleTriggered() {
+  lastScheduleTriggered.value = null
+}
+
+/**
+ * Clears the last schedule change notification.
+ *
+ * Call this after handling the schedule list refresh.
+ *
+ * @returns {void}
+ */
+export function clearLastScheduleChange() {
+  lastScheduleChange.value = null
+}
+
+/**
+ * Clears the last scene change notification.
+ *
+ * Call this after handling the scene list refresh.
+ *
+ * @returns {void}
+ */
+export function clearLastSceneChange() {
+  lastSceneChange.value = null
+}
+
+/**
  * Composable function to access WebSocket state and methods.
  *
  * Provides reactive access to connection status, device states,
@@ -317,12 +439,19 @@ export function useWebSocket() {
     deviceStates,
     sceneEvents,
     lastSceneApplied,
+    lastSceneChange,
     pendingScenes,
+    scheduleEvents,
+    lastScheduleTriggered,
+    lastScheduleChange,
     connect: connectWebSocket,
     disconnect: disconnectWebSocket,
     getSensorData,
     getDeviceState,
     clearLastSceneApplied,
-    isScenePending
+    clearLastSceneChange,
+    isScenePending,
+    clearLastScheduleTriggered,
+    clearLastScheduleChange
   }
 }
