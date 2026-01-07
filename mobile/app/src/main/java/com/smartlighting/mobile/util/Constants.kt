@@ -9,8 +9,10 @@ object Constants {
     object Endpoints {
         const val ROOMS = "api/rooms"
         const val SCENES = "api/scenes"
-        const val CONTROL = "api/control"
-        const val GROUPS = "api/groups"
+        const val LIGHTING = "api/lighting"
+        const val SCHEDULES = "api/schedules"
+        const val NLP = "api/nlp"
+        const val AUTH = "api/auth"
     }
     
     /**

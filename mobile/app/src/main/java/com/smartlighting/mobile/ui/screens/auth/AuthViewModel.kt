@@ -44,9 +44,14 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             val result = repository.getAuthConfig()
             if (result.isSuccess) {
-                _googleClientId.value = result.getOrNull()?.get("googleClientId")
+                val config = result.getOrNull()
+                val clientId = config?.get("googleClientId")
+                // Only set if valid (not empty/placeholder)
+                _googleClientId.value = if (!clientId.isNullOrBlank()) clientId else null
+                android.util.Log.d("AuthViewModel", "Google Sign-In ${if (_googleClientId.value != null) "available" else "unavailable"}")
             } else {
-                _authState.value = UiState.Error("Failed to load auth config: ${result.exceptionOrNull()?.message}")
+                android.util.Log.w("AuthViewModel", "Could not load auth config: ${result.exceptionOrNull()?.message}")
+                _googleClientId.value = null
             }
         }
     }

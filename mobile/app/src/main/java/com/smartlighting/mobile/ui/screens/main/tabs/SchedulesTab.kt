@@ -1,5 +1,10 @@
 package com.smartlighting.mobile.ui.screens.main.tabs
 
+import android.Manifest
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -39,6 +44,32 @@ fun SchedulesTab(
     var editingSchedule by remember { mutableStateOf<Schedule?>(null) }
     var nlpCommand by remember { mutableStateOf("") }
     var parsedCommand by remember { mutableStateOf<NlpCommand?>(null) }
+    var isListening by remember { mutableStateOf(false) }
+    
+    // Check if user can edit (OWNER or RESIDENT, not GUEST)
+    val canEdit = viewModel.canEdit
+    
+    // Voice recognition launcher
+    val voiceLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val data = result.data
+        val matches = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+        if (!matches.isNullOrEmpty()) {
+            nlpCommand = matches[0]
+            viewModel.parseNlpCommand(nlpCommand)
+        }
+        isListening = false
+    }
+    
+    // Permission launcher for microphone
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            startScheduleVoiceRecognition(voiceLauncher) { isListening = true }
+        }
+    }
     
     LaunchedEffect(Unit) {
         viewModel.loadSchedules()
@@ -152,108 +183,129 @@ fun SchedulesTab(
             )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // NLP Command Input - Minimal
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = nlpCommand,
-                    onValueChange = { nlpCommand = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Try: 'Turn off lights at 11pm'", style = MaterialTheme.typography.bodySmall) },
-                    shape = RoundedCornerShape(24.dp),
-                    singleLine = true,
-                    trailingIcon = {
-                        if (nlpCommand.isNotEmpty()) {
-                            IconButton(onClick = { nlpCommand = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(20.dp))
+            // NLP Command Input - Only show for users who can edit
+            if (canEdit) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = nlpCommand,
+                        onValueChange = { nlpCommand = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Try: 'Turn off lights at 11pm'", style = MaterialTheme.typography.bodySmall) },
+                        shape = RoundedCornerShape(24.dp),
+                        singleLine = true,
+                        leadingIcon = {
+                            IconButton(
+                                onClick = {
+                                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Mic,
+                                    contentDescription = "Voice Input",
+                                    tint = if (isListening) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        MaterialTheme.colorScheme.secondary
+                                    }
+                                )
+                            }
+                        },
+                        trailingIcon = {
+                            if (nlpCommand.isNotEmpty()) {
+                                IconButton(onClick = { nlpCommand = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(20.dp))
+                                }
                             }
                         }
-                    }
-                )
-                
-                FloatingActionButton(
-                    onClick = { 
-                        if (nlpCommand.isNotEmpty()) {
-                            viewModel.parseNlpCommand(nlpCommand)
+                    )
+                    
+                    FloatingActionButton(
+                        onClick = { 
+                            if (nlpCommand.isNotEmpty()) {
+                                viewModel.parseNlpCommand(nlpCommand)
+                            }
+                        },
+                        modifier = Modifier.size(48.dp),
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
+                    ) {
+                        if (nlpCommandState is UiState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onSecondary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.Check, contentDescription = "Process Command")
                         }
-                    },
-                    modifier = Modifier.size(48.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
-                ) {
-                    if (nlpCommandState is UiState.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.Check, contentDescription = "Process Command")
                     }
                 }
             }
             
-            // Show parsed command preview - compact
-            parsedCommand?.let { command ->
-                if (command.valid) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
+            // Show parsed command preview - compact (only for users who can edit)
+            if (canEdit) {
+                parsedCommand?.let { command ->
+                    if (command.valid) {
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Row(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    command.preview ?: "",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                IconButton(
-                                    onClick = { 
-                                        viewModel.confirmNlpCommand(command)
-                                        parsedCommand = null
-                                    }
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
-                                        Icons.Default.Check, 
-                                        contentDescription = "Confirm",
-                                        tint = MaterialTheme.colorScheme.primary
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        command.preview ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
-                                IconButton(onClick = { parsedCommand = null }) {
-                                    Icon(
-                                        Icons.Default.Close, 
-                                        contentDescription = "Cancel",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
+                                
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    IconButton(
+                                        onClick = { 
+                                            viewModel.confirmNlpCommand(command)
+                                            parsedCommand = null
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Check, 
+                                            contentDescription = "Confirm",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    IconButton(onClick = { parsedCommand = null }) {
+                                        Icon(
+                                            Icons.Default.Close, 
+                                            contentDescription = "Cancel",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -271,7 +323,7 @@ fun SchedulesTab(
                 is UiState.Success -> {
                     val schedules = state.data
                     if (schedules.isEmpty()) {
-                        EmptyScheduleState()
+                        EmptyScheduleState(canEdit = canEdit)
                     } else {
                         LazyColumn(
                             contentPadding = PaddingValues(16.dp),
@@ -281,9 +333,10 @@ fun SchedulesTab(
                             items(schedules) { schedule ->
                                 ScheduleCard(
                                     schedule = schedule,
-                                    onToggle = { viewModel.toggleSchedule(schedule.id ?: "") },
-                                    onEdit = { editingSchedule = schedule },
-                                    onDelete = { viewModel.deleteSchedule(schedule.id ?: "") }
+                                    canEdit = canEdit,
+                                    onToggle = if (canEdit) { { viewModel.toggleSchedule(schedule.id ?: "") } } else null,
+                                    onEdit = if (canEdit) { { editingSchedule = schedule } } else null,
+                                    onDelete = if (canEdit) { { viewModel.deleteSchedule(schedule.id ?: "") } } else null
                                 )
                             }
                         }
@@ -299,28 +352,30 @@ fun SchedulesTab(
             }
         }
         
-        // Beautiful FAB for creating new schedule
-        FloatingActionButton(
-            onClick = {
-                editingSchedule = null
-                showCreateDialog = true
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .size(56.dp),
-            containerColor = MaterialTheme.colorScheme.secondary,
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = 6.dp,
-                pressedElevation = 8.dp,
-                hoveredElevation = 8.dp
-            )
-        ) {
-            Icon(
-                Icons.Default.Add, 
-                contentDescription = "Create Schedule",
-                modifier = Modifier.size(28.dp)
-            )
+        // Beautiful FAB for creating new schedule - only show for users who can edit
+        if (canEdit) {
+            FloatingActionButton(
+                onClick = {
+                    editingSchedule = null
+                    showCreateDialog = true
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .size(56.dp),
+                containerColor = MaterialTheme.colorScheme.secondary,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 6.dp,
+                    pressedElevation = 8.dp,
+                    hoveredElevation = 8.dp
+                )
+            ) {
+                Icon(
+                    Icons.Default.Add, 
+                    contentDescription = "Create Schedule",
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
         
         SnackbarHost(
@@ -335,13 +390,14 @@ fun SchedulesTab(
 @Composable
 private fun ScheduleCard(
     schedule: Schedule,
-    onToggle: () -> Unit,
+    canEdit: Boolean = true,
+    onToggle: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
-    onDelete: () -> Unit
+    onDelete: (() -> Unit)? = null
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     
-    if (showDeleteDialog) {
+    if (showDeleteDialog && onDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Schedule?") },
@@ -445,34 +501,60 @@ private fun ScheduleCard(
                         }
                     }
                     
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Switch(
-                            checked = schedule.enabled,
-                            onCheckedChange = { onToggle() },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                            )
-                        )
-                        if (onEdit != null) {
-                            IconButton(onClick = onEdit) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Edit",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
+                    // Action buttons - only show if user can edit
+                    if (canEdit) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (onToggle != null) {
+                                Switch(
+                                    checked = schedule.enabled,
+                                    onCheckedChange = { onToggle() },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                        checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                    )
                                 )
                             }
+                            if (onEdit != null) {
+                                IconButton(onClick = onEdit) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Edit",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            if (onDelete != null) {
+                                IconButton(onClick = { showDeleteDialog = true }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = Color(0xFFFF6B6B),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
                         }
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = Color(0xFFFF6B6B),
-                                modifier = Modifier.size(20.dp)
+                    } else {
+                        // For GUEST users, show read-only status indicator
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (schedule.enabled)
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                    else
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = if (schedule.enabled) "Active" else "Inactive",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White
                             )
                         }
                     }
@@ -531,7 +613,7 @@ private fun ScheduleCard(
 }
 
 @Composable
-private fun EmptyScheduleState() {
+private fun EmptyScheduleState(canEdit: Boolean = true) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -567,7 +649,10 @@ private fun EmptyScheduleState() {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            "Create your first lighting schedule using\nnatural language commands above",
+            if (canEdit) 
+                "Create your first lighting schedule using\nnatural language commands or the + button"
+            else 
+                "No schedules have been created yet.\nContact an owner or resident to create schedules.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -744,6 +829,18 @@ private fun formatActions(schedule: Schedule): String {
         }
         else -> action.intent ?: "Unknown"
     }
+}
+
+private fun startScheduleVoiceRecognition(
+    launcher: androidx.activity.result.ActivityResultLauncher<Intent>,
+    onStart: () -> Unit
+) {
+    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_PROMPT, "Say your schedule command...")
+    }
+    onStart()
+    launcher.launch(intent)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -51,6 +51,9 @@ fun ScenesTab(
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingScene by remember { mutableStateOf<Scene?>(null) }
     
+    // Check if user can edit (OWNER or RESIDENT, not GUEST)
+    val canEdit = viewModel.canEdit
+    
     // Voice recognition launcher
     val voiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -185,125 +188,129 @@ fun ScenesTab(
             )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // NLP Command Input - Minimal
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = nlpCommand,
-                    onValueChange = { nlpCommand = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Try: 'Turn on movie mode'", style = MaterialTheme.typography.bodySmall) },
-                    shape = RoundedCornerShape(24.dp),
-                    singleLine = true,
-                    leadingIcon = {
-                        IconButton(
-                            onClick = {
-                                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.Mic,
-                                contentDescription = "Voice Input",
-                                tint = if (isListening) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.primary
-                                }
-                            )
-                        }
-                    },
-                    trailingIcon = {
-                        if (nlpCommand.isNotEmpty()) {
-                            IconButton(onClick = { nlpCommand = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
-                )
-                
-                FloatingActionButton(
-                    onClick = { 
-                        if (nlpCommand.isNotEmpty()) {
-                            viewModel.parseNlpCommand(nlpCommand)
-                        }
-                    },
-                    modifier = Modifier.size(48.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
+            // NLP Command Input - Only show for users who can edit
+            if (canEdit) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (nlpCommandState is UiState.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.Check, contentDescription = "Process Command")
+                    OutlinedTextField(
+                        value = nlpCommand,
+                        onValueChange = { nlpCommand = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Try: 'Turn on movie mode'", style = MaterialTheme.typography.bodySmall) },
+                        shape = RoundedCornerShape(24.dp),
+                        singleLine = true,
+                        leadingIcon = {
+                            IconButton(
+                                onClick = {
+                                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Mic,
+                                    contentDescription = "Voice Input",
+                                    tint = if (isListening) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        MaterialTheme.colorScheme.primary
+                                    }
+                                )
+                            }
+                        },
+                        trailingIcon = {
+                            if (nlpCommand.isNotEmpty()) {
+                                IconButton(onClick = { nlpCommand = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(20.dp))
+                                }
+                            }
+                        }
+                    )
+                    
+                    FloatingActionButton(
+                        onClick = { 
+                            if (nlpCommand.isNotEmpty()) {
+                                viewModel.parseNlpCommand(nlpCommand)
+                            }
+                        },
+                        modifier = Modifier.size(48.dp),
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
+                    ) {
+                        if (nlpCommandState is UiState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.Check, contentDescription = "Process Command")
+                        }
                     }
                 }
             }
             
-            // Show parsed command preview - compact
-            parsedCommand?.let { command ->
-                if (command.valid) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
+            // Show parsed command preview - compact (only for users who can edit)
+            if (canEdit) {
+                parsedCommand?.let { command ->
+                    if (command.valid) {
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Row(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    command.preview ?: "",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                IconButton(
-                                    onClick = { 
-                                        viewModel.confirmNlpCommand(command)
-                                        parsedCommand = null
-                                    }
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
-                                        Icons.Default.Check, 
-                                        contentDescription = "Confirm",
-                                        tint = MaterialTheme.colorScheme.primary
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        command.preview ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
-                                IconButton(onClick = { parsedCommand = null }) {
-                                    Icon(
-                                        Icons.Default.Close, 
-                                        contentDescription = "Cancel",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
+                                
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    IconButton(
+                                        onClick = { 
+                                            viewModel.confirmNlpCommand(command)
+                                            parsedCommand = null
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Check, 
+                                            contentDescription = "Confirm",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    IconButton(onClick = { parsedCommand = null }) {
+                                        Icon(
+                                            Icons.Default.Close, 
+                                            contentDescription = "Cancel",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -366,13 +373,14 @@ fun ScenesTab(
                                     ) {
                                         rowScenes.forEach { scene ->
                                             Box(modifier = Modifier.weight(1f)) {
-                                                // Only show edit/delete for non-preset scenes
+                                                // Only show edit/delete for non-preset scenes AND if user can edit
                                                 val isPreset = scene.isPreset == true || scene.isGlobal == true
+                                                val showEditDelete = canEdit && !isPreset
                                                 CustomSceneCard(
                                                     scene = scene,
                                                     onApply = { viewModel.activateScene(scene.id ?: "") },
-                                                    onEdit = if (!isPreset) { { editingScene = scene } } else null,
-                                                    onDelete = if (!isPreset) { { viewModel.deleteScene(scene.id ?: "") } } else null,
+                                                    onEdit = if (showEditDelete) { { editingScene = scene } } else null,
+                                                    onDelete = if (showEditDelete) { { viewModel.deleteScene(scene.id ?: "") } } else null,
                                                     isLoading = activateState is UiState.Loading
                                                 )
                                             }
@@ -396,28 +404,30 @@ fun ScenesTab(
             }
         }
         
-            // Beautiful FAB for creating new scene
-            FloatingActionButton(
-                onClick = {
-                    editingScene = null
-                    showCreateDialog = true
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-                    .size(56.dp),
-                containerColor = MaterialTheme.colorScheme.primary,
-                elevation = FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 6.dp,
-                    pressedElevation = 8.dp,
-                    hoveredElevation = 8.dp
-                )
-            ) {
-                Icon(
-                    Icons.Default.Add, 
-                    contentDescription = "Create Scene",
-                    modifier = Modifier.size(28.dp)
-                )
+            // Beautiful FAB for creating new scene - only show for users who can edit
+            if (canEdit) {
+                FloatingActionButton(
+                    onClick = {
+                        editingScene = null
+                        showCreateDialog = true
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                        .size(56.dp),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 6.dp,
+                        pressedElevation = 8.dp,
+                        hoveredElevation = 8.dp
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Add, 
+                        contentDescription = "Create Scene",
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         
         SnackbarHost(
@@ -1128,16 +1138,16 @@ private fun ColorPickerCanvas(
                         change.consume()
                         val x = change.position.x.coerceIn(0f, size.width.toFloat())
                         val y = change.position.y.coerceIn(0f, size.height.toFloat())
-                        saturation = 1f - (x / size.width)
-                        brightness = 1f - (y / size.height)
+                        saturation = x / size.width  // Left = white (0), Right = full color (1)
+                        brightness = 1f - (y / size.height)  // Top = bright (1), Bottom = dark (0)
                     }
                 }
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
                         val x = offset.x.coerceIn(0f, size.width.toFloat())
                         val y = offset.y.coerceIn(0f, size.height.toFloat())
-                        saturation = 1f - (x / size.width)
-                        brightness = 1f - (y / size.height)
+                        saturation = x / size.width  // Left = white (0), Right = full color (1)
+                        brightness = 1f - (y / size.height)  // Top = bright (1), Bottom = dark (0)
                     }
                 }
         )

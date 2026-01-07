@@ -23,6 +23,7 @@ class TokenManager @Inject constructor(
         private const val KEY_USER_ID = "user_id"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_NAME = "user_name"
+        private const val KEY_USER_ROLE = "user_role"
     }
 
     /**
@@ -49,13 +50,29 @@ class TokenManager @Inject constructor(
     /**
      * Save user information
      */
-    fun saveUserInfo(userId: String?, email: String?, name: String?) {
+    fun saveUserInfo(userId: String?, email: String?, name: String?, role: String? = null) {
         prefs.edit().apply {
             putString(KEY_USER_ID, userId)
             putString(KEY_USER_EMAIL, email)
             putString(KEY_USER_NAME, name)
+            putString(KEY_USER_ROLE, role)
             apply()
         }
+    }
+    
+    /**
+     * Get user role (OWNER, RESIDENT, GUEST)
+     */
+    fun getUserRole(): String {
+        return prefs.getString(KEY_USER_ROLE, null) ?: "GUEST"
+    }
+    
+    /**
+     * Check if user can edit (OWNER or RESIDENT)
+     */
+    fun canEdit(): Boolean {
+        val role = getUserRole()
+        return role == "OWNER" || role == "ROLE_OWNER" || role == "RESIDENT" || role == "ROLE_RESIDENT"
     }
 
     /**
@@ -88,6 +105,7 @@ class TokenManager @Inject constructor(
             remove(KEY_USER_ID)
             remove(KEY_USER_EMAIL)
             remove(KEY_USER_NAME)
+            remove(KEY_USER_ROLE)
             apply()
         }
     }

@@ -82,8 +82,25 @@ data class ParsedCommand(
     val params: Map<String, Any>? = null,
     @SerializedName("scene")
     val scene: String? = null,
+    @SerializedName("schedule")
+    val schedule: ScheduleConfig? = null,
     @SerializedName("confidence")
     val confidence: Double? = null
+)
+
+/**
+ * Schedule configuration parsed from natural language.
+ * Matches backend's NlpCommandDto.ScheduleConfig
+ */
+data class ScheduleConfig(
+    @SerializedName("time")
+    val time: String? = null,           // Time in HH:MM format (for time triggers)
+    @SerializedName("trigger")
+    val trigger: String? = null,        // Sun event: "sunset" or "sunrise"
+    @SerializedName("offsetMinutes")
+    val offsetMinutes: Int? = null,     // Offset in minutes for sun events
+    @SerializedName("recurrence")
+    val recurrence: Any? = null         // Recurrence: "once", "daily", "weekdays", "weekends", or list of days
 )
 
 data class ConflictAnalysis(
