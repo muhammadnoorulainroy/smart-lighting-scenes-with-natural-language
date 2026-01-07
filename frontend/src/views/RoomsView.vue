@@ -8,27 +8,11 @@
           Manage your smart lighting rooms and devices
         </p>
       </div>
-      <div class="flex gap-3">
+      <div v-if="canEdit" class="flex gap-3">
         <button class="btn btn-secondary" @click="showAddDeviceModal = true">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
           Add Device
         </button>
         <button class="btn btn-primary" @click="showAddRoomModal = true">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
           Add Room
         </button>
       </div>
@@ -86,7 +70,7 @@
       <p class="text-neutral-600 dark:text-neutral-400 mb-6">
         Get started by creating your first room and adding devices
       </p>
-      <button class="btn btn-primary" @click="showAddRoomModal = true">Create Your First Room</button>
+      <button v-if="canEdit" class="btn btn-primary" @click="showAddRoomModal = true">Create Your First Room</button>
     </div>
 
     <!-- Rooms Grid -->
@@ -97,8 +81,10 @@
         :room="room"
         :devices="room.devices || room.devicesList || []"
         :is-expanded="expandedRoomId === room.id"
+        :can-edit="canEdit"
         @toggle="toggleRoom(room.id)"
         @device-click="handleViewDevice"
+        @delete="handleDeleteRoom"
       />
     </div>
 
@@ -106,33 +92,55 @@
     <AddRoomModal
       :show="showAddRoomModal"
       @close="showAddRoomModal = false"
-      @room-added="handleRoomAdded"
+      @created="handleRoomAdded"
     />
 
     <AddDeviceModal
       :show="showAddDeviceModal"
       :rooms="rooms"
       @close="showAddDeviceModal = false"
-      @device-added="handleDeviceAdded"
+      @created="handleDeviceAdded"
     />
 
     <DeviceDetailModal
       v-if="selectedDevice"
       :show="showDeviceDetailModal"
       :device="selectedDevice"
+      :can-edit="canEdit"
       @close="handleCloseDeviceDetail"
       @updated="handleDeviceUpdated"
+    />
+
+    <!-- Delete Room Confirmation Modal -->
+    <ConfirmModal
+      :show="showDeleteModal"
+      title="Delete Room"
+      :message="`Are you sure you want to delete '${roomToDelete?.name}'? All devices in this room will also be deleted.`"
+      confirm-text="Delete"
+      type="danger"
+      :loading="deleting"
+      @confirm="confirmDeleteRoom"
+      @cancel="cancelDeleteRoom"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { roomsApi } from '../api/rooms'
+import { useAuthStore } from '../stores/auth'
+import { useToast } from '../stores/toast'
 import RoomCard from '../components/rooms/RoomCard.vue'
 import AddRoomModal from '../components/AddRoomModal.vue'
 import AddDeviceModal from '../components/AddDeviceModal.vue'
 import DeviceDetailModal from '../components/rooms/DeviceDetailModal.vue'
+import ConfirmModal from '../components/ConfirmModal.vue'
+
+const authStore = useAuthStore()
+const toast = useToast()
+
+// Role-based access - GUEST can only view rooms
+const canEdit = computed(() => authStore.isResident)
 
 // State
 const rooms = ref([])
@@ -143,6 +151,11 @@ const showAddDeviceModal = ref(false)
 const showDeviceDetailModal = ref(false)
 const selectedDevice = ref(null)
 const expandedRoomId = ref(null)
+
+// Delete modal state
+const showDeleteModal = ref(false)
+const roomToDelete = ref(null)
+const deleting = ref(false)
 
 // Load rooms from API
 const loadRooms = async () => {
@@ -159,15 +172,17 @@ const loadRooms = async () => {
 }
 
 // Handle room added
-const handleRoomAdded = (newRoom) => {
-  rooms.value.push(newRoom)
+const handleRoomAdded = () => {
+  loadRooms() // Reload to get fresh data
   showAddRoomModal.value = false
+  toast.success('Room created successfully')
 }
 
 // Handle device added
 const handleDeviceAdded = () => {
   loadRooms() // Reload rooms to get updated device list
   showAddDeviceModal.value = false
+  toast.success('Device added successfully')
 }
 
 // Handle toggle room expand/collapse
@@ -192,19 +207,32 @@ const handleDeviceUpdated = () => {
   loadRooms() // Reload rooms to get updated data
 }
 
-// Handle delete room (reserved for future delete button)
-// eslint-disable-next-line no-unused-vars
-const handleDeleteRoom = async (roomId) => {
-  if (!confirm('Are you sure you want to delete this room? All devices in this room will also be deleted.')) {
-    return
-  }
+// Handle delete room - open modal
+const handleDeleteRoom = (room) => {
+  roomToDelete.value = room
+  showDeleteModal.value = true
+}
 
+const cancelDeleteRoom = () => {
+  showDeleteModal.value = false
+  roomToDelete.value = null
+}
+
+const confirmDeleteRoom = async () => {
+  if (!roomToDelete.value) return
+
+  deleting.value = true
   try {
-    await roomsApi.deleteRoom(roomId)
-    rooms.value = rooms.value.filter((r) => r.id !== roomId)
+    await roomsApi.deleteRoom(roomToDelete.value.id)
+    rooms.value = rooms.value.filter((r) => r.id !== roomToDelete.value.id)
+    toast.success('Room deleted successfully')
+    showDeleteModal.value = false
+    roomToDelete.value = null
   } catch (err) {
     console.error('Error deleting room:', err)
-    alert(err.response?.data?.message || 'Failed to delete room. Please try again.')
+    toast.error('Failed to delete room')
+  } finally {
+    deleting.value = false
   }
 }
 

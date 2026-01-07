@@ -5,15 +5,12 @@
         <h1 class="text-3xl font-display font-semibold">Lighting Schedules</h1>
         <p class="text-neutral-600 dark:text-neutral-400 mt-1">Automate your lights with time-based schedules</p>
       </div>
-      <button class="btn btn-primary" @click="showCreateModal = true">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
+      <button v-if="canEdit" class="btn btn-primary" @click="showCreateModal = true">
         Create Schedule
       </button>
     </div>
 
-    <div class="card p-6 mb-8">
+    <div v-if="canEdit" class="card p-6 mb-8">
       <h3 class="font-medium mb-3">Quick Schedule via Natural Language</h3>
       <div class="flex items-center gap-4">
         <div class="flex-1 relative">
@@ -139,8 +136,8 @@ class="text-xs px-2 py-1 rounded" :class="{
 
     <div v-else-if="schedules.length === 0" class="card p-12 text-center">
       <h3 class="text-lg font-medium mb-2">No Schedules Yet</h3>
-      <p class="text-neutral-500 mb-4">Create schedules to automate your lights.</p>
-      <button class="btn btn-primary" @click="showCreateModal = true">Create First Schedule</button>
+      <p class="text-neutral-500 mb-4">{{ canEdit ? 'Create schedules to automate your lights.' : 'No schedules have been created yet.' }}</p>
+      <button v-if="canEdit" class="btn btn-primary" @click="showCreateModal = true">Create First Schedule</button>
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -173,7 +170,7 @@ class="text-xs px-2 py-1 rounded" :class="{
               <span v-if="schedule.lastTriggeredAt"> | Last: {{ formatDate(schedule.lastTriggeredAt) }}</span>
             </div>
           </div>
-          <div class="flex flex-col gap-2 items-end">
+          <div v-if="canEdit" class="flex flex-col gap-2 items-end">
             <label class="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" :checked="schedule.enabled" class="sr-only peer" @change="toggleSchedule(schedule)" />
               <div class="w-11 h-6 bg-neutral-200 rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" />
@@ -191,20 +188,58 @@ class="text-xs px-2 py-1 rounded" :class="{
               </button>
             </div>
           </div>
+          <!-- Show enabled status for view-only users -->
+          <div v-else class="flex items-center">
+            <span 
+              class="text-sm px-2 py-1 rounded-full"
+              :class="schedule.enabled ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800'"
+            >
+              {{ schedule.enabled ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
 
     <ScheduleModal :show="showCreateModal || showEditModal" :schedule="editingSchedule" @close="closeModal" @save="saveSchedule" />
+
+    <ConfirmModal
+      :show="showDeleteModal"
+      title="Delete Schedule"
+      :message="`Are you sure you want to delete '${scheduleToDelete?.name}'? This action cannot be undone.`"
+      confirm-text="Delete"
+      type="danger"
+      :loading="deleting"
+      @confirm="confirmDeleteSchedule"
+      @cancel="cancelDeleteSchedule"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { schedulesApi } from '../api/schedules'
 import { nlpApi } from '../api/nlp'
 import { scenesApi } from '../api/scenes'
+import { useWebSocket } from '../stores/websocket'
+import { useAuthStore } from '../stores/auth'
+import { useToast } from '../stores/toast'
 import ScheduleModal from '../components/schedules/ScheduleModal.vue'
+import ConfirmModal from '../components/ConfirmModal.vue'
+
+const { 
+  lastScheduleTriggered, 
+  lastScheduleChange, 
+  clearLastScheduleTriggered, 
+  clearLastScheduleChange,
+  connect: connectWs 
+} = useWebSocket()
+
+const authStore = useAuthStore()
+const toast = useToast()
+
+// Role-based access - GUEST can only view schedules
+const canEdit = computed(() => authStore.isResident)
 
 const schedules = ref([])
 const scenes = ref([])
@@ -219,6 +254,11 @@ const isListening = ref(false)
 const selectedResolutions = ref({})
 const selectedResolutionParams = ref({})
 let recognition = null
+
+// Delete modal state
+const showDeleteModal = ref(false)
+const scheduleToDelete = ref(null)
+const deleting = ref(false)
 
 // Check if all conflicts have resolutions selected
 const allConflictsResolved = computed(() => {
@@ -250,18 +290,45 @@ const toggleSchedule = async schedule => {
 
 const editSchedule = schedule => { editingSchedule.value = { ...schedule }; showEditModal.value = true }
 
-const deleteSchedule = async schedule => {
-  if (!confirm(`Delete schedule "${schedule.name}"?`)) {return}
-  try { await schedulesApi.delete(schedule.id); await loadSchedules() }
-  catch (err) { console.error('Failed to delete schedule:', err); alert('Failed to delete') }
+const deleteSchedule = (schedule) => {
+  scheduleToDelete.value = schedule
+  showDeleteModal.value = true
+}
+
+const cancelDeleteSchedule = () => {
+  showDeleteModal.value = false
+  scheduleToDelete.value = null
+}
+
+const confirmDeleteSchedule = async () => {
+  if (!scheduleToDelete.value) return
+
+  deleting.value = true
+  try {
+    await schedulesApi.delete(scheduleToDelete.value.id)
+    await loadSchedules()
+    showDeleteModal.value = false
+    scheduleToDelete.value = null
+    toast.success('Schedule deleted successfully')
+  } catch (err) {
+    console.error('Failed to delete schedule:', err)
+    toast.error('Failed to delete schedule')
+  } finally {
+    deleting.value = false
+  }
 }
 
 const saveSchedule = async data => {
   try {
-    if (editingSchedule.value?.id) {await schedulesApi.update(editingSchedule.value.id, data)}
-    else {await schedulesApi.create(data)}
+    if (editingSchedule.value?.id) {
+      await schedulesApi.update(editingSchedule.value.id, data)
+      toast.success('Schedule updated successfully')
+    } else {
+      await schedulesApi.create(data)
+      toast.success('Schedule created successfully')
+    }
     await loadSchedules(); closeModal()
-  } catch (err) { console.error('Failed to save:', err); alert('Failed to save') }
+  } catch (err) { console.error('Failed to save:', err); toast.error('Failed to save schedule') }
 }
 
 const closeModal = () => { showCreateModal.value = false; showEditModal.value = false; editingSchedule.value = null }
@@ -296,6 +363,7 @@ const confirmNlpCommand = async () => {
   try {
     const result = await nlpApi.confirm(nlpResult.value)
     if (result.executed) {
+      toast.success(result.result || 'Schedule created successfully')
       nlpCommand.value = ''
       nlpResult.value = null
       selectedResolutions.value = {}
@@ -303,7 +371,10 @@ const confirmNlpCommand = async () => {
       await loadSchedules()
     }
   }
-  catch (err) { console.error('Execute error:', err) }
+  catch (err) { 
+    console.error('Execute error:', err) 
+    toast.error('Failed to create schedule')
+  }
   finally { nlpProcessing.value = false }
 }
 
@@ -346,6 +417,7 @@ const applyResolutionsAndCreate = async () => {
     // Now create the new schedule
     const result = await nlpApi.confirm(nlpResult.value)
     if (result.executed) {
+      toast.success(result.result || 'Schedule created with resolutions applied')
       nlpCommand.value = ''
       nlpResult.value = null
       selectedResolutions.value = {}
@@ -354,14 +426,14 @@ const applyResolutionsAndCreate = async () => {
     }
   } catch (err) {
     console.error('Error applying resolutions:', err)
-    alert(`Failed to apply resolutions: ${err.message || 'Unknown error'}`)
+    toast.error(`Failed to apply resolutions: ${err.message || 'Unknown error'}`)
   } finally {
     nlpProcessing.value = false
   }
 }
 
 const toggleVoiceInput = () => {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { alert('Voice not supported'); return }
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { toast.warning('Voice input is not supported in your browser'); return }
   if (isListening.value) { recognition?.stop(); isListening.value = false; return }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition
   recognition = new SR(); recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US'
@@ -409,5 +481,29 @@ const formatActions = schedule => {
 
 const formatDate = d => d ? new Date(d).toLocaleString() : ''
 
-onMounted(() => { loadSchedules() })
+watch(lastScheduleTriggered, event => {
+  if (event) {
+    toast.success(`Schedule "${event.scheduleName}" triggered! (${event.triggerCount} times total)`)
+    const schedule = schedules.value.find(s => s.id === event.scheduleId)
+    if (schedule) {
+      schedule.triggerCount = event.triggerCount
+      schedule.lastTriggeredAt = new Date(event.triggeredAt).toISOString()
+    }
+    clearLastScheduleTriggered()
+  }
+})
+
+// Watch for schedule changes (create/update/delete/toggle) - refresh list
+watch(lastScheduleChange, event => {
+  if (event) {
+    loadSchedules()
+    clearLastScheduleChange()
+  }
+})
+
+onMounted(() => { 
+  connectWs()
+  loadSchedules() 
+})
 </script>
+

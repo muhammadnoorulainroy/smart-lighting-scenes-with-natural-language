@@ -5,8 +5,8 @@
       <p class="text-neutral-600 dark:text-neutral-400">System management and monitoring</p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="card p-6">
+    <div class="grid grid-cols-1 gap-6 mb-8" :class="isOwner ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
+      <div v-if="isOwner" class="card p-6">
         <div class="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Total Users</div>
         <div class="text-3xl font-semibold">{{ stats.totalUsers }}</div>
       </div>
@@ -18,15 +18,11 @@
         <div class="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Devices</div>
         <div class="text-3xl font-semibold">{{ stats.totalDevices }}</div>
       </div>
-      <div class="card p-6">
-        <div class="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Active Scenes</div>
-        <div class="text-3xl font-semibold">{{ stats.totalScenes }}</div>
-      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- User Management -->
-      <div class="card p-6">
+    <div class="grid grid-cols-1 gap-6" :class="{ 'lg:grid-cols-2': isOwner }">
+      <!-- User Management - Only for OWNER -->
+      <div v-if="isOwner" class="card p-6">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold">User Management</h2>
           <button class="btn btn-primary text-sm" @click="showUserModal = true">Add User</button>
@@ -41,7 +37,7 @@
               <div
                 class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold"
               >
-                {{ user.name.charAt(0).toUpperCase() }}
+                {{ user.name?.charAt(0)?.toUpperCase() || '?' }}
               </div>
               <div>
                 <div class="font-medium">{{ user.name }}</div>
@@ -79,11 +75,6 @@
       <div class="card p-6">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold">Rooms & Devices</h2>
-          <div class="space-x-2">
-            <button class="btn btn-secondary text-sm" @click="showRoomModal = true">
-              Add Room
-            </button>
-          </div>
         </div>
         <div class="space-y-4">
           <div
@@ -104,7 +95,7 @@
               <button
                 v-if="!room.isDefault"
                 class="text-sm text-red-600 hover:text-red-700"
-                @click="deleteRoom(room.id)"
+                @click="openDeleteModal(room)"
               >
                 Delete
               </button>
@@ -196,6 +187,18 @@
         </div>
       </div>
     </Transition>
+
+    <!-- Delete Room Confirmation Modal -->
+    <ConfirmModal
+      :show="showDeleteModal"
+      title="Delete Room"
+      :message="`Are you sure you want to delete '${roomToDelete?.name}'? All devices in this room will also be deleted.`"
+      confirm-text="Delete"
+      type="danger"
+      :loading="deleting"
+      @confirm="confirmDeleteRoom"
+      @cancel="cancelDeleteRoom"
+    />
   </div>
 </template>
 
@@ -204,15 +207,21 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { usersApi } from '../api/users'
 import { roomsApi } from '../api/rooms'
+import ConfirmModal from '../components/ConfirmModal.vue'
 
 const authStore = useAuthStore()
+const isOwner = computed(() => authStore.isOwner)
 
 const stats = ref({
   totalUsers: 0,
   totalRooms: 0,
-  totalDevices: 0,
-  totalScenes: 0
+  totalDevices: 0
 })
+
+// Delete modal state
+const showDeleteModal = ref(false)
+const roomToDelete = ref(null)
+const deleting = ref(false)
 
 const users = ref([])
 const rooms = ref([])
@@ -233,19 +242,25 @@ const currentUserId = computed(() => authStore.user?.id)
 
 const loadData = async () => {
   try {
-    const [usersData, roomsData] = await Promise.all([
-      usersApi.getAll(),
-      roomsApi.getAll ? roomsApi.getAll() : roomsApi.getRooms()
-    ])
-
-    users.value = usersData
+    // Load rooms for all dashboard users
+    const roomsData = await (roomsApi.getAll ? roomsApi.getAll() : roomsApi.getRooms())
     rooms.value = roomsData
+
+    // Only OWNER can fetch user list
+    if (isOwner.value) {
+      try {
+        const usersData = await usersApi.getAll()
+        users.value = usersData
+      } catch (err) {
+        console.error('Failed to load users:', err)
+        users.value = []
+      }
+    }
 
     stats.value = {
       totalUsers: users.value.length,
       totalRooms: rooms.value.length,
-      totalDevices: rooms.value.reduce((sum, room) => sum + (room.devices?.length || 0), 0),
-      totalScenes: 0
+      totalDevices: rooms.value.reduce((sum, room) => sum + (room.devices?.length || 0), 0)
     }
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
@@ -274,15 +289,30 @@ const toggleUserStatus = async user => {
   }
 }
 
-const deleteRoom = async roomId => {
-  if (!confirm('Are you sure you want to delete this room?')) {
-    return
-  }
+// Delete room modal handlers
+const openDeleteModal = (room) => {
+  roomToDelete.value = room
+  showDeleteModal.value = true
+}
+
+const cancelDeleteRoom = () => {
+  showDeleteModal.value = false
+  roomToDelete.value = null
+}
+
+const confirmDeleteRoom = async () => {
+  if (!roomToDelete.value) return
+
+  deleting.value = true
   try {
-    await roomsApi.deleteRoom(roomId)
+    await roomsApi.deleteRoom(roomToDelete.value.id)
     await loadData()
+    showDeleteModal.value = false
+    roomToDelete.value = null
   } catch (error) {
     console.error('Failed to delete room:', error)
+  } finally {
+    deleting.value = false
   }
 }
 

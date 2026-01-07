@@ -77,12 +77,6 @@
             Scenes
           </router-link>
           <router-link
-            to="/routines"
-            class="text-sm px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-100 dark:hover:bg-primary-900/30 text-neutral-700 dark:text-neutral-300 transition-colors"
-          >
-            Routines
-          </router-link>
-          <router-link
             to="/schedules"
             class="text-sm px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-primary-100 dark:hover:bg-primary-900/30 text-neutral-700 dark:text-neutral-300 transition-colors"
           >

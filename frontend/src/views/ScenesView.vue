@@ -8,10 +8,7 @@
           Apply preset moods or create your own custom scenes
         </p>
       </div>
-      <button class="btn btn-primary" @click="showCreateModal = true">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
+      <button v-if="canEdit" class="btn btn-primary" @click="showCreateModal = true">
         Create Scene
       </button>
     </div>
@@ -133,7 +130,7 @@
                 </div>
               </div>
             </div>
-            <div class="flex gap-2">
+            <div v-if="canEdit" class="flex gap-2">
               <button class="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded" @click="editScene(scene)">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -174,51 +171,35 @@
       @save="saveScene"
     />
 
-    <!-- Toast Notification -->
-    <Transition
-      enter-active-class="transition ease-out duration-200"
-      enter-from-class="opacity-0 translate-y-4"
-      enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition ease-in duration-150"
-      leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 translate-y-4"
-    >
-      <div
-        v-if="showToastNotification"
-        class="fixed bottom-8 right-8 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50"
-        :class="{
-          'bg-green-500 text-white': toastType === 'success',
-          'bg-yellow-500 text-white': toastType === 'pending',
-          'bg-red-500 text-white': toastType === 'error'
-        }"
-      >
-        <!-- Success icon -->
-        <svg v-if="toastType === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <!-- Pending spinner -->
-        <svg v-else-if="toastType === 'pending'" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        <!-- Error icon -->
-        <svg v-else-if="toastType === 'error'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        {{ toastMessage }}
-      </div>
-    </Transition>
+    <ConfirmModal
+      :show="showDeleteModal"
+      title="Delete Scene"
+      :message="`Are you sure you want to delete '${sceneToDelete?.name}'? This action cannot be undone.`"
+      confirm-text="Delete"
+      type="danger"
+      :loading="deleting"
+      @confirm="confirmDeleteScene"
+      @cancel="cancelDeleteScene"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { scenesApi } from '../api/scenes'
 import { nlpApi } from '../api/nlp'
 import { useWebSocket } from '../stores/websocket'
+import { useAuthStore } from '../stores/auth'
+import { useToast } from '../stores/toast'
 import SceneModal from '../components/scenes/SceneModal.vue'
+import ConfirmModal from '../components/ConfirmModal.vue'
 
-const { connected: wsConnected, lastSceneApplied, clearLastSceneApplied, connect: connectWs } = useWebSocket()
+const { connected: wsConnected, connect: connectWs, lastSceneChange, clearLastSceneChange } = useWebSocket()
+const authStore = useAuthStore()
+const toast = useToast()
+
+// Role-based access - GUEST can only view and apply scenes
+const canEdit = computed(() => authStore.isResident)
 
 // State
 const scenes = ref([])
@@ -227,10 +208,11 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingScene = ref(null)
 const applyingScene = ref(null)
-const showToastNotification = ref(false)
-const toastMessage = ref('')
-const toastType = ref('success')
-let toastTimeout = null
+
+// Delete modal state
+const showDeleteModal = ref(false)
+const sceneToDelete = ref(null)
+const deleting = ref(false)
 
 // NLP State
 const nlpCommand = ref('')
@@ -238,33 +220,6 @@ const nlpProcessing = ref(false)
 const nlpResult = ref(null)
 const isListening = ref(false)
 let recognition = null
-
-// Watch for WebSocket scene events
-watch(lastSceneApplied, (newEvent) => {
-  if (newEvent) {
-    if (newEvent.confirmed) {
-      showToast(`Scene "${newEvent.sceneName}" confirmed by ${newEvent.devicesConfirmed} device(s) (${newEvent.latencyMs}ms)`, 'success')
-    } else if (newEvent.timedOut) {
-      showToast(`Scene "${newEvent.sceneName}" timed out (${newEvent.acksReceived}/${newEvent.lightsExpected} devices responded)`, 'error')
-    } else {
-      // Legacy event without ack
-      showToast(`Scene "${newEvent.sceneName}" applied to ${newEvent.devicesAffected} light(s)`, 'success')
-    }
-    clearLastSceneApplied()
-  }
-})
-
-const showToast = (message, type = 'success') => {
-  toastMessage.value = message
-  toastType.value = type
-  showToastNotification.value = true
-  if (toastTimeout) {
-    clearTimeout(toastTimeout)
-  }
-  toastTimeout = setTimeout(() => {
-    showToastNotification.value = false
-  }, type === 'error' ? 5000 : 3000)
-}
 
 // Computed
 const presetScenes = computed(() => scenes.value.filter(s => s.isPreset))
@@ -288,13 +243,20 @@ const applyScene = async scene => {
     const result = await scenesApi.apply(scene.id)
     
     if (result.correlationId && result.status === 'pending') {
-      showToast(`Sending "${scene.name}" to ${result.lightsAffected} device(s)...`, 'pending')
+      // Build descriptive message with room info
+      const target = scene.settingsJson?.target || scene.settings?.target || 'all'
+      const roomLabel = target === 'all' ? 'all rooms' : target.replace(/_/g, ' ')
+      toast.pendingWithTimeout(
+        `Sending "${scene.name}" to ${roomLabel} (${result.lightsAffected} device${result.lightsAffected > 1 ? 's' : ''})...`,
+        30000,
+        `"${scene.name}" timed out. Devices may be offline.`
+      )
     } else if (!wsConnected.value) {
-      showToast(result.message || `Scene "${scene.name}" applied`, 'success')
+      toast.success(result.message || `Scene "${scene.name}" applied`)
     }
   } catch (err) {
     console.error('Failed to apply scene:', err)
-    showToast('Failed to apply scene', 'error')
+    toast.error('Failed to apply scene')
   } finally {
     applyingScene.value = null
   }
@@ -305,14 +267,31 @@ const editScene = scene => {
   showEditModal.value = true
 }
 
-const deleteScene = async scene => {
-  if (!confirm(`Delete scene "${scene.name}"?`)) {return}
+const deleteScene = (scene) => {
+  sceneToDelete.value = scene
+  showDeleteModal.value = true
+}
+
+const cancelDeleteScene = () => {
+  showDeleteModal.value = false
+  sceneToDelete.value = null
+}
+
+const confirmDeleteScene = async () => {
+  if (!sceneToDelete.value) return
+
+  deleting.value = true
   try {
-    await scenesApi.delete(scene.id)
+    await scenesApi.delete(sceneToDelete.value.id)
     await loadScenes()
+    showDeleteModal.value = false
+    sceneToDelete.value = null
+    toast.success('Scene deleted successfully')
   } catch (err) {
     console.error('Failed to delete scene:', err)
-    alert('Failed to delete scene')
+    toast.error('Failed to delete scene')
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -320,14 +299,16 @@ const saveScene = async sceneData => {
   try {
     if (editingScene.value?.id) {
       await scenesApi.update(editingScene.value.id, sceneData)
+      toast.success('Scene updated successfully')
     } else {
       await scenesApi.create(sceneData)
+      toast.success('Scene created successfully')
     }
     await loadScenes()
     closeModal()
   } catch (err) {
     console.error('Failed to save scene:', err)
-    alert('Failed to save scene')
+    toast.error('Failed to save scene')
   }
 }
 
@@ -396,6 +377,7 @@ const confirmNlpCommand = async () => {
   try {
     const result = await nlpApi.confirm(nlpResult.value)
     if (result.executed) {
+      toast.success(result.result || 'Command executed successfully')
       nlpCommand.value = ''
       nlpResult.value = null
       // Refresh scenes in case a new one was created
@@ -403,6 +385,7 @@ const confirmNlpCommand = async () => {
     }
   } catch (err) {
     console.error('Execute error:', err)
+    toast.error('Failed to execute command')
   } finally {
     nlpProcessing.value = false
   }
@@ -411,7 +394,7 @@ const confirmNlpCommand = async () => {
 // Voice Input
 const toggleVoiceInput = () => {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert('Voice input is not supported in your browser')
+    toast.warning('Voice input is not supported in your browser')
     return
   }
 
@@ -457,9 +440,12 @@ onMounted(() => {
   }
 })
 
-onUnmounted(() => {
-  if (toastTimeout) {
-    clearTimeout(toastTimeout)
+// Watch for scene changes from other devices/tabs (real-time sync)
+watch(lastSceneChange, async (event) => {
+  if (event) {
+    console.log('[ScenesView] Scene change event:', event.type, event.sceneName || event.sceneId)
+    await loadScenes()
+    clearLastSceneChange()
   }
 })
 </script>
