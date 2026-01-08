@@ -68,7 +68,9 @@
               class="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
             >
               <span class="relative flex h-1.5 w-1.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span
+                  class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+                />
                 <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
               </span>
               Live
@@ -81,7 +83,9 @@
           >
             <span>Power</span>
             <span
-              :class="liveDeviceState?.isOn || liveDeviceState?.on ? 'text-green-600' : 'text-neutral-500'"
+              :class="
+                liveDeviceState?.isOn || liveDeviceState?.on ? 'text-green-600' : 'text-neutral-500'
+              "
               class="font-medium"
             >
               {{ liveDeviceState?.isOn || liveDeviceState?.on ? 'ON' : 'OFF' }}
@@ -95,11 +99,17 @@
           >
             <div class="flex items-center justify-between mb-2">
               <span>Color</span>
-              <span class="font-mono text-sm">{{ liveDeviceState.rgbColor || liveDeviceState.rgb || liveDeviceState.color }}</span>
+              <span class="font-mono text-sm">{{
+                liveDeviceState.rgbColor || liveDeviceState.rgb || liveDeviceState.color
+              }}</span>
             </div>
             <div
               class="h-8 rounded-lg border border-neutral-300 dark:border-neutral-600"
-              :style="{ backgroundColor: formatRgbColor(liveDeviceState.rgbColor || liveDeviceState.rgb || liveDeviceState.color) }"
+              :style="{
+                backgroundColor: formatRgbColor(
+                  liveDeviceState.rgbColor || liveDeviceState.rgb || liveDeviceState.color
+                )
+              }"
             />
           </div>
 
@@ -146,7 +156,10 @@
               <span>Color Temp <span class="text-xs text-neutral-500">(temperature)</span></span>
               <span class="font-medium">{{ currentColorTemp }}K</span>
             </div>
-            <div class="w-full rounded-full h-2 overflow-hidden" style="background: linear-gradient(to right, #FFB347, #FFFAF0, #87CEEB);">
+            <div
+              class="w-full rounded-full h-2 overflow-hidden"
+              style="background: linear-gradient(to right, #ffb347, #fffaf0, #87ceeb)"
+            >
               <div
                 class="h-2 bg-white/30 transition-all"
                 :style="{ width: `${colorTempPercent}%`, marginLeft: 'auto' }"
@@ -163,14 +176,20 @@
               <h3 class="font-medium text-neutral-700 dark:text-neutral-300">Manual Control</h3>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input v-model="manualMode" type="checkbox" class="sr-only peer" />
-                <div class="w-11 h-6 bg-neutral-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-neutral-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500" />
-                <span class="ml-2 text-sm text-neutral-600 dark:text-neutral-400">{{ manualMode ? 'Manual' : 'Auto' }}</span>
+                <div
+                  class="w-11 h-6 bg-neutral-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-neutral-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"
+                />
+                <span class="ml-2 text-sm text-neutral-600 dark:text-neutral-400">{{
+                  manualMode ? 'Manual' : 'Auto'
+                }}</span>
               </label>
             </div>
 
             <div v-if="manualMode" class="space-y-4">
               <!-- Power Toggle -->
-              <div class="flex items-center justify-between p-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+              <div
+                class="flex items-center justify-between p-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg"
+              >
                 <span>Power</span>
                 <button
                   :class="controlState.on ? 'bg-green-500' : 'bg-neutral-400'"
@@ -236,7 +255,7 @@
                   max="6500"
                   step="100"
                   class="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                  style="background: linear-gradient(to right, #FFB347, #FFFAF0, #87CEEB);"
+                  style="background: linear-gradient(to right, #ffb347, #fffaf0, #87ceeb)"
                 />
                 <div class="flex justify-between text-xs text-neutral-500 mt-1">
                   <span>Warm</span>
@@ -251,9 +270,25 @@
                 :disabled="applyingChanges"
                 @click="applyLedChanges"
               >
-                <svg v-if="applyingChanges" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <svg
+                  v-if="applyingChanges"
+                  class="animate-spin h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
                 <span>{{ applyingChanges ? 'Applying...' : 'Apply Changes' }}</span>
               </button>
@@ -437,7 +472,9 @@ watch(
 
 // Apply LED changes
 const applyLedChanges = async () => {
-  if (!props.device?.id) {return}
+  if (!props.device?.id) {
+    return
+  }
 
   applyingChanges.value = true
   try {
@@ -456,7 +493,7 @@ const applyLedChanges = async () => {
     }
 
     const result = await lightingApi.sendLedCommand(props.device.id, command)
-    
+
     // Show pending notification while waiting for ACK
     if (result?.correlationId) {
       toast.pendingWithTimeout(
@@ -477,7 +514,9 @@ const applyLedChanges = async () => {
 
 // Get live LED state from WebSocket (merges with device prop)
 const liveDeviceState = computed(() => {
-  if (!props.device?.id) {return props.device?.deviceState || {}}
+  if (!props.device?.id) {
+    return props.device?.deviceState || {}
+  }
 
   const wsState = deviceStates[props.device.id]
   if (wsState) {
@@ -544,28 +583,36 @@ const deviceTypeLabel = computed(() => {
 // Get current brightness from live state (handles different key names)
 const currentBrightness = computed(() => {
   const state = liveDeviceState.value
-  if (!state) {return null}
+  if (!state) {
+    return null
+  }
   return state.brightnessPct ?? state.brightness ?? null
 })
 
 // Get current saturation from live state (humidity-based)
 const currentSaturation = computed(() => {
   const state = liveDeviceState.value
-  if (!state) {return null}
+  if (!state) {
+    return null
+  }
   return state.saturationPct ?? state.saturation ?? null
 })
 
 // Get current color temperature from live state (temperature-based)
 const currentColorTemp = computed(() => {
   const state = liveDeviceState.value
-  if (!state) {return null}
+  if (!state) {
+    return null
+  }
   return state.colorTempKelvin ?? state.color_temp ?? null
 })
 
 // Calculate color temp position as percentage (2700K = 0%, 6500K = 100%)
 const colorTempPercent = computed(() => {
   const temp = currentColorTemp.value
-  if (!temp) {return 50}
+  if (!temp) {
+    return 50
+  }
   // Map 2700K-6500K to 0-100%
   const percent = ((temp - 2700) / (6500 - 2700)) * 100
   return Math.max(0, Math.min(100, percent))
@@ -573,10 +620,14 @@ const colorTempPercent = computed(() => {
 
 // Format RGB color for CSS (handles array or string formats)
 const formatRgbColor = color => {
-  if (!color) {return 'transparent'}
+  if (!color) {
+    return 'transparent'
+  }
   if (typeof color === 'string') {
     // Already a CSS color string
-    if (color.startsWith('#') || color.startsWith('rgb')) {return color}
+    if (color.startsWith('#') || color.startsWith('rgb')) {
+      return color
+    }
     // Might be comma-separated: "255,128,0"
     if (color.includes(',')) {
       const parts = color.split(',').map(Number)

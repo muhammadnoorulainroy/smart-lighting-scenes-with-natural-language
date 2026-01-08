@@ -247,14 +247,14 @@ function subscribeToTopics() {
         log('Skipping duplicate scene event:', eventKey)
         return
       }
-      
+
       // Track processed events
       processedSceneEvents.add(eventKey)
       if (processedSceneEvents.size > 20) {
         const first = processedSceneEvents.values().next().value
         processedSceneEvents.delete(first)
       }
-      
+
       switch (data.type) {
         case 'SCENE_PENDING':
           // Track pending command awaiting ACK

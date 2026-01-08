@@ -30,7 +30,12 @@
             @click="toggleVoiceInput"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+              />
             </svg>
           </button>
         </div>
@@ -40,8 +45,19 @@
           @click="processNlpCommand"
         >
           <svg v-if="nlpProcessing" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
           <span v-else>Process</span>
         </button>
@@ -53,31 +69,60 @@
         enter-from-class="opacity-0 -translate-y-2"
         enter-to-class="opacity-100 translate-y-0"
       >
-        <div v-if="nlpResult" class="mt-4 p-4 rounded-lg" :class="nlpResult.valid ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'">
+        <div
+          v-if="nlpResult"
+          class="mt-4 p-4 rounded-lg"
+          :class="
+            nlpResult.valid
+              ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+              : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+          "
+        >
           <div v-if="nlpResult.valid" class="space-y-3">
             <div class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                class="w-5 h-5 text-green-500 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <div>
-                <p class="font-medium text-neutral-800 dark:text-neutral-200">{{ nlpResult.preview }}</p>
-                <p v-if="nlpResult.isScheduled" class="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                <p class="font-medium text-neutral-800 dark:text-neutral-200">
+                  {{ nlpResult.preview }}
+                </p>
+                <p
+                  v-if="nlpResult.isScheduled"
+                  class="text-sm text-neutral-600 dark:text-neutral-400 mt-1"
+                >
                   This will create a schedule
                 </p>
               </div>
             </div>
             <div class="flex gap-3">
-              <button class="btn btn-primary" @click="confirmNlpCommand">
-                Confirm & Execute
-              </button>
-              <button class="btn btn-secondary" @click="nlpResult = null">
-                Cancel
-              </button>
+              <button class="btn btn-primary" @click="confirmNlpCommand">Confirm & Execute</button>
+              <button class="btn btn-secondary" @click="nlpResult = null">Cancel</button>
             </div>
           </div>
           <div v-else class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              class="w-5 h-5 text-red-500 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <div>
               <p class="font-medium text-red-800 dark:text-red-200">{{ nlpResult.error }}</p>
@@ -101,7 +146,10 @@
           <div class="text-4xl mb-2">{{ scene.icon }}</div>
           <h3 class="font-medium text-sm">{{ scene.name }}</h3>
           <p class="text-xs text-neutral-500 mt-1 line-clamp-2">{{ scene.description }}</p>
-          <div class="mt-2 text-xs font-medium px-2 py-1 rounded-full inline-block" :class="getTargetBadgeClass(scene)">
+          <div
+            class="mt-2 text-xs font-medium px-2 py-1 rounded-full inline-block"
+            :class="getTargetBadgeClass(scene)"
+          >
             {{ formatTarget(scene) }}
           </div>
         </div>
@@ -111,12 +159,11 @@
     <!-- Custom Scenes -->
     <div>
       <h2 class="text-xl font-semibold mb-4">Custom Scenes</h2>
-      <div v-if="customScenes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
-          v-for="scene in customScenes"
-          :key="scene.id"
-          class="card p-4"
-        >
+      <div
+        v-if="customScenes.length > 0"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
+        <div v-for="scene in customScenes" :key="scene.id" class="card p-4">
           <div class="flex items-start justify-between">
             <div class="flex items-center gap-3">
               <span class="text-2xl">{{ scene.icon }}</span>
@@ -124,21 +171,40 @@
                 <h3 class="font-medium">{{ scene.name }}</h3>
                 <p class="text-sm text-neutral-500">{{ scene.description }}</p>
                 <div class="mt-1">
-                  <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="getTargetBadgeClass(scene)">
+                  <span
+                    class="text-xs font-medium px-2 py-0.5 rounded-full"
+                    :class="getTargetBadgeClass(scene)"
+                  >
                     {{ formatTarget(scene) }}
                   </span>
                 </div>
               </div>
             </div>
             <div v-if="canEdit" class="flex gap-2">
-              <button class="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded" @click="editScene(scene)">
+              <button
+                class="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+                @click="editScene(scene)"
+              >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
                 </svg>
               </button>
-              <button class="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-500" @click="deleteScene(scene)">
+              <button
+                class="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-500"
+                @click="deleteScene(scene)"
+              >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
               </button>
             </div>
@@ -153,8 +219,18 @@
         </div>
       </div>
       <div v-else class="card p-8 text-center text-neutral-500">
-        <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        <svg
+          class="w-12 h-12 mx-auto mb-4 opacity-50"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+          />
         </svg>
         <p>No custom scenes yet</p>
         <button class="btn btn-secondary mt-4" @click="showCreateModal = true">
@@ -194,7 +270,12 @@ import { useToast } from '../stores/toast'
 import SceneModal from '../components/scenes/SceneModal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 
-const { connected: wsConnected, connect: connectWs, lastSceneChange, clearLastSceneChange } = useWebSocket()
+const {
+  connected: wsConnected,
+  connect: connectWs,
+  lastSceneChange,
+  clearLastSceneChange
+} = useWebSocket()
 const authStore = useAuthStore()
 const toast = useToast()
 
@@ -241,7 +322,7 @@ const applyScene = async scene => {
   applyingScene.value = scene.id
   try {
     const result = await scenesApi.apply(scene.id)
-    
+
     if (result.correlationId && result.status === 'pending') {
       // Build descriptive message with room info
       const target = scene.settingsJson?.target || scene.settings?.target || 'all'
@@ -267,7 +348,7 @@ const editScene = scene => {
   showEditModal.value = true
 }
 
-const deleteScene = (scene) => {
+const deleteScene = scene => {
   sceneToDelete.value = scene
   showDeleteModal.value = true
 }
@@ -278,7 +359,9 @@ const cancelDeleteScene = () => {
 }
 
 const confirmDeleteScene = async () => {
-  if (!sceneToDelete.value) return
+  if (!sceneToDelete.value) {
+    return
+  }
 
   deleting.value = true
   try {
@@ -325,7 +408,8 @@ const formatTarget = scene => {
     return '🏠 All Rooms'
   }
   // Capitalize and format room name
-  const roomName = target.toString()
+  const roomName = target
+    .toString()
     .replace(/_/g, ' ')
     .replace(/-/g, ' ')
     .split(' ')
@@ -355,7 +439,9 @@ const getTargetBadgeClass = scene => {
 
 // NLP Methods
 const processNlpCommand = async () => {
-  if (!nlpCommand.value.trim()) {return}
+  if (!nlpCommand.value.trim()) {
+    return
+  }
 
   nlpProcessing.value = true
   nlpResult.value = null
@@ -371,7 +457,9 @@ const processNlpCommand = async () => {
 }
 
 const confirmNlpCommand = async () => {
-  if (!nlpResult.value?.valid) {return}
+  if (!nlpResult.value?.valid) {
+    return
+  }
 
   nlpProcessing.value = true
   try {
@@ -415,7 +503,7 @@ const toggleVoiceInput = () => {
   }
 
   recognition.onresult = event => {
-    const {transcript} = event.results[0][0]
+    const { transcript } = event.results[0][0]
     nlpCommand.value = transcript
     isListening.value = false
     // Auto-process after voice input
@@ -441,7 +529,7 @@ onMounted(() => {
 })
 
 // Watch for scene changes from other devices/tabs (real-time sync)
-watch(lastSceneChange, async (event) => {
+watch(lastSceneChange, async event => {
   if (event) {
     console.log('[ScenesView] Scene change event:', event.type, event.sceneName || event.sceneId)
     await loadScenes()

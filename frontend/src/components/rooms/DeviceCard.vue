@@ -160,7 +160,7 @@ const currentDeviceState = computed(() => {
 
 const isOnline = computed(() => {
   const lastSeen = isLedDevice.value
-    ? (liveDeviceState.value?.lastSeen || props.device?.deviceState?.lastSeen)
+    ? liveDeviceState.value?.lastSeen || props.device?.deviceState?.lastSeen
     : props.device?.deviceState?.lastSeen
   if (!lastSeen) {
     return false

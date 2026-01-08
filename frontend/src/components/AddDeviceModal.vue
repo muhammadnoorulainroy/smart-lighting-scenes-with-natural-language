@@ -183,7 +183,6 @@
               />
               <p class="text-xs text-neutral-500 mt-1">Unique identifier for the microcontroller</p>
             </div>
-
           </div>
 
           <div class="flex justify-end gap-3 mt-6">

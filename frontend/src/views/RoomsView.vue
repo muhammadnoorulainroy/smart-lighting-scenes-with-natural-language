@@ -9,12 +9,8 @@
         </p>
       </div>
       <div v-if="canEdit" class="flex gap-3">
-        <button class="btn btn-secondary" @click="showAddDeviceModal = true">
-          Add Device
-        </button>
-        <button class="btn btn-primary" @click="showAddRoomModal = true">
-          Add Room
-        </button>
+        <button class="btn btn-secondary" @click="showAddDeviceModal = true">Add Device</button>
+        <button class="btn btn-primary" @click="showAddRoomModal = true">Add Room</button>
       </div>
     </div>
 
@@ -41,9 +37,7 @@
           d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
-      <h3 class="text-lg font-semibold mb-2 text-red-700 dark:text-red-300">
-        Error Loading Rooms
-      </h3>
+      <h3 class="text-lg font-semibold mb-2 text-red-700 dark:text-red-300">Error Loading Rooms</h3>
       <p class="text-red-600 dark:text-red-400 mb-4">{{ error }}</p>
       <button class="btn btn-primary" @click="loadRooms">Retry</button>
     </div>
@@ -70,7 +64,9 @@
       <p class="text-neutral-600 dark:text-neutral-400 mb-6">
         Get started by creating your first room and adding devices
       </p>
-      <button v-if="canEdit" class="btn btn-primary" @click="showAddRoomModal = true">Create Your First Room</button>
+      <button v-if="canEdit" class="btn btn-primary" @click="showAddRoomModal = true">
+        Create Your First Room
+      </button>
     </div>
 
     <!-- Rooms Grid -->
@@ -186,12 +182,12 @@ const handleDeviceAdded = () => {
 }
 
 // Handle toggle room expand/collapse
-const toggleRoom = (roomId) => {
+const toggleRoom = roomId => {
   expandedRoomId.value = expandedRoomId.value === roomId ? null : roomId
 }
 
 // Handle view device
-const handleViewDevice = (device) => {
+const handleViewDevice = device => {
   selectedDevice.value = device
   showDeviceDetailModal.value = true
 }
@@ -208,7 +204,7 @@ const handleDeviceUpdated = () => {
 }
 
 // Handle delete room - open modal
-const handleDeleteRoom = (room) => {
+const handleDeleteRoom = room => {
   roomToDelete.value = room
   showDeleteModal.value = true
 }
@@ -219,12 +215,14 @@ const cancelDeleteRoom = () => {
 }
 
 const confirmDeleteRoom = async () => {
-  if (!roomToDelete.value) return
+  if (!roomToDelete.value) {
+    return
+  }
 
   deleting.value = true
   try {
     await roomsApi.deleteRoom(roomToDelete.value.id)
-    rooms.value = rooms.value.filter((r) => r.id !== roomToDelete.value.id)
+    rooms.value = rooms.value.filter(r => r.id !== roomToDelete.value.id)
     toast.success('Room deleted successfully')
     showDeleteModal.value = false
     roomToDelete.value = null

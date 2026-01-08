@@ -1,6 +1,6 @@
 /**
  * @fileoverview Centralized Toast Notification Store
- * 
+ *
  * Provides a global toast notification system that can be used
  * from any component in the application.
  */
@@ -23,7 +23,7 @@ const pendingTimeouts = new Map()
  */
 function show(message, type = 'success', duration = null) {
   const id = ++toastId
-  
+
   // Default durations based on type
   const defaultDurations = {
     success: 3000,
@@ -32,16 +32,16 @@ function show(message, type = 'success', duration = null) {
     error: 5000,
     pending: 0 // Persistent until manually dismissed
   }
-  
+
   const toast = {
     id,
     message,
     type,
     timestamp: Date.now()
   }
-  
+
   toasts.value.push(toast)
-  
+
   // Auto-dismiss after duration (unless 0)
   const dismissAfter = duration ?? defaultDurations[type] ?? 3000
   if (dismissAfter > 0) {
@@ -49,7 +49,7 @@ function show(message, type = 'success', duration = null) {
       dismiss(id)
     }, dismissAfter)
   }
-  
+
   return id
 }
 
@@ -63,7 +63,7 @@ function dismiss(id) {
     clearTimeout(pendingTimeouts.get(id))
     pendingTimeouts.delete(id)
   }
-  
+
   const index = toasts.value.findIndex(t => t.id === id)
   if (index !== -1) {
     toasts.value.splice(index, 1)
@@ -84,10 +84,8 @@ function dismissAll() {
  * Dismiss all pending toasts (useful when ACK arrives)
  */
 function dismissPending() {
-  const pendingIds = toasts.value
-    .filter(t => t.type === 'pending')
-    .map(t => t.id)
-  
+  const pendingIds = toasts.value.filter(t => t.type === 'pending').map(t => t.id)
+
   pendingIds.forEach(id => dismiss(id))
 }
 
@@ -103,7 +101,7 @@ function update(id, message, type, duration = null) {
   if (toast) {
     toast.message = message
     toast.type = type
-    
+
     // Set auto-dismiss for non-pending toasts
     const defaultDurations = {
       success: 3000,
@@ -112,7 +110,7 @@ function update(id, message, type, duration = null) {
       error: 5000,
       pending: 0
     }
-    
+
     const dismissAfter = duration ?? defaultDurations[type] ?? 3000
     if (dismissAfter > 0) {
       setTimeout(() => {
@@ -127,7 +125,7 @@ const success = (message, duration) => show(message, 'success', duration)
 const error = (message, duration) => show(message, 'error', duration)
 const warning = (message, duration) => show(message, 'warning', duration)
 const info = (message, duration) => show(message, 'info', duration)
-const pending = (message) => show(message, 'pending', 0)
+const pending = message => show(message, 'pending', 0)
 
 /**
  * Show a pending toast that auto-converts to error after timeout
@@ -136,9 +134,13 @@ const pending = (message) => show(message, 'pending', 0)
  * @param {string} timeoutMessage - Message to show on timeout
  * @returns {number} Toast ID
  */
-function pendingWithTimeout(message, timeoutMs = 30000, timeoutMessage = 'Request timed out. Device may be offline.') {
+function pendingWithTimeout(
+  message,
+  timeoutMs = 30000,
+  timeoutMessage = 'Request timed out. Device may be offline.'
+) {
   const id = show(message, 'pending', 0)
-  
+
   // Set timeout to convert to error
   const timeoutId = setTimeout(() => {
     const toast = toasts.value.find(t => t.id === id)
@@ -147,7 +149,7 @@ function pendingWithTimeout(message, timeoutMs = 30000, timeoutMessage = 'Reques
     }
     pendingTimeouts.delete(id)
   }, timeoutMs)
-  
+
   pendingTimeouts.set(id, timeoutId)
   return id
 }
@@ -160,14 +162,14 @@ export function useToast() {
   return {
     // State
     toasts: computed(() => toasts.value),
-    
+
     // Methods
     show,
     dismiss,
     dismissAll,
     dismissPending,
     update,
-    
+
     // Convenience methods
     success,
     error,

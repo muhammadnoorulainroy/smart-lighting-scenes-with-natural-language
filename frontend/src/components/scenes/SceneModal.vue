@@ -39,7 +39,11 @@
                 :key="icon"
                 type="button"
                 class="w-10 h-10 text-xl rounded-lg border-2 transition-colors"
-                :class="formData.icon === icon ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30' : 'border-neutral-200 dark:border-neutral-700 hover:border-primary-300'"
+                :class="
+                  formData.icon === icon
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                    : 'border-neutral-200 dark:border-neutral-700 hover:border-primary-300'
+                "
                 @click="formData.icon = icon"
               >
                 {{ icon }}
@@ -110,7 +114,7 @@
               max="6500"
               step="100"
               class="w-full"
-              style="background: linear-gradient(to right, #FFB347, #FFFAF0, #87CEEB);"
+              style="background: linear-gradient(to right, #ffb347, #fffaf0, #87ceeb)"
             />
             <div class="flex justify-between text-xs text-neutral-500 mt-1">
               <span>Warm</span>
@@ -122,10 +126,7 @@
           <!-- Preview -->
           <div class="p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
             <div class="text-sm font-medium mb-2">Preview</div>
-            <div
-              class="h-12 rounded-lg transition-all"
-              :style="previewStyle"
-            />
+            <div class="h-12 rounded-lg transition-all" :style="previewStyle" />
           </div>
 
           <!-- Actions -->
@@ -133,9 +134,7 @@
             <button type="submit" class="btn btn-primary flex-1">
               {{ scene?.id ? 'Update Scene' : 'Create Scene' }}
             </button>
-            <button type="button" class="btn btn-secondary" @click="$emit('close')">
-              Cancel
-            </button>
+            <button type="button" class="btn btn-secondary" @click="$emit('close')">Cancel</button>
           </div>
         </form>
       </div>
@@ -199,7 +198,7 @@ watch(
 
 const previewStyle = computed(() => {
   const brightness = formData.value.brightness / 100
-  const {color} = formData.value
+  const { color } = formData.value
   // Apply brightness to color
   const r = parseInt(color.slice(1, 3), 16)
   const g = parseInt(color.slice(3, 5), 16)
@@ -210,7 +209,9 @@ const previewStyle = computed(() => {
 })
 
 const rgbToHex = rgb => {
-  if (!rgb || !Array.isArray(rgb) || rgb.length < 3) {return '#FFFFFF'}
+  if (!rgb || !Array.isArray(rgb) || rgb.length < 3) {
+    return '#FFFFFF'
+  }
   const [r, g, b] = rgb
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase()
 }

@@ -56,7 +56,11 @@
                 <option value="GUEST">Guest</option>
               </select>
               <button
-                :class="user.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
+                :class="
+                  user.isActive
+                    ? 'text-red-600 hover:text-red-700'
+                    : 'text-green-600 hover:text-green-700'
+                "
                 class="text-sm font-medium"
                 :disabled="user.id === currentUserId"
                 @click="toggleUserStatus(user)"
@@ -130,8 +134,11 @@
       >
         <div class="card p-6 w-full max-w-md">
           <h3 class="text-xl font-semibold mb-4">Add New User</h3>
-          
-          <div v-if="userError" class="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+
+          <div
+            v-if="userError"
+            class="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg"
+          >
             <p class="text-sm text-red-700 dark:text-red-300">{{ userError }}</p>
           </div>
 
@@ -227,7 +234,6 @@ const users = ref([])
 const rooms = ref([])
 
 const showUserModal = ref(false)
-const showRoomModal = ref(false)
 const addingUser = ref(false)
 const userError = ref('')
 
@@ -290,7 +296,7 @@ const toggleUserStatus = async user => {
 }
 
 // Delete room modal handlers
-const openDeleteModal = (room) => {
+const openDeleteModal = room => {
   roomToDelete.value = room
   showDeleteModal.value = true
 }
@@ -301,7 +307,9 @@ const cancelDeleteRoom = () => {
 }
 
 const confirmDeleteRoom = async () => {
-  if (!roomToDelete.value) return
+  if (!roomToDelete.value) {
+    return
+  }
 
   deleting.value = true
   try {
@@ -316,22 +324,22 @@ const confirmDeleteRoom = async () => {
   }
 }
 
-const validateName = (name) => {
+const validateName = name => {
   const nameRegex = /^[a-zA-Z\s'-]+$/
   return nameRegex.test(name)
 }
 
 const addUser = async () => {
   userError.value = ''
-  
+
   // Frontend validation
   if (!validateName(newUser.value.name)) {
     userError.value = 'Name can only contain letters, spaces, hyphens, and apostrophes'
     return
   }
-  
+
   addingUser.value = true
-  
+
   try {
     await usersApi.create({
       email: newUser.value.email,
@@ -339,7 +347,7 @@ const addUser = async () => {
       name: newUser.value.name,
       role: newUser.value.role
     })
-    
+
     await loadData()
     closeUserModal()
   } catch (error) {

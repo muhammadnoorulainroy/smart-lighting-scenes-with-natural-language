@@ -4,9 +4,7 @@
     <div class="flex items-center justify-between mb-8">
       <div>
         <h1 class="text-3xl font-display font-semibold mb-2">Devices</h1>
-        <p class="text-neutral-600 dark:text-neutral-400">
-          Manage all your smart lighting devices
-        </p>
+        <p class="text-neutral-600 dark:text-neutral-400">Manage all your smart lighting devices</p>
       </div>
       <button v-if="canEdit" class="btn btn-primary" @click="showAddDeviceModal = true">
         Add Device
@@ -19,21 +17,39 @@
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="card p-6 text-center bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+    <div
+      v-else-if="error"
+      class="card p-6 text-center bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+    >
       <p class="text-red-600 dark:text-red-400">{{ error }}</p>
       <button class="btn btn-secondary mt-4" @click="loadDevices">Retry</button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="devices.length === 0" class="card p-12 text-center bg-neutral-50 dark:bg-neutral-800/50">
-      <svg class="w-16 h-16 mx-auto mb-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+    <div
+      v-else-if="devices.length === 0"
+      class="card p-12 text-center bg-neutral-50 dark:bg-neutral-800/50"
+    >
+      <svg
+        class="w-16 h-16 mx-auto mb-4 text-neutral-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+        />
       </svg>
       <h3 class="text-xl font-semibold mb-2">No Devices Yet</h3>
       <p class="text-neutral-600 dark:text-neutral-400 mb-6">
         Add your first device to get started
       </p>
-      <button v-if="canEdit" class="btn btn-primary" @click="showAddDeviceModal = true">Add Your First Device</button>
+      <button v-if="canEdit" class="btn btn-primary" @click="showAddDeviceModal = true">
+        Add Your First Device
+      </button>
     </div>
 
     <!-- Device Grid -->
@@ -46,7 +62,7 @@
       >
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center gap-3">
-            <div 
+            <div
               class="w-10 h-10 rounded-lg flex items-center justify-center"
               :class="getDeviceIconClass(device)"
             >
@@ -58,20 +74,29 @@
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <span 
+            <span
               class="text-xs px-2 py-1 rounded-full"
-              :class="isOnline(device) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800'"
+              :class="
+                isOnline(device)
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800'
+              "
             >
               {{ isOnline(device) ? 'Online' : 'Offline' }}
             </span>
-            <button 
-              v-if="canEdit && !isDefaultDevice(device)" 
+            <button
+              v-if="canEdit && !isDefaultDevice(device)"
               class="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-500 hover:text-red-600"
               title="Delete device"
               @click.stop="openDeleteModal(device)"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
               </svg>
             </button>
           </div>
@@ -79,7 +104,9 @@
 
         <div class="text-xs text-neutral-500 space-y-1">
           <p>Type: {{ formatDeviceType(device.type) }}</p>
-          <p v-if="device.deviceState?.lastSeen">Last seen: {{ formatTime(device.deviceState.lastSeen) }}</p>
+          <p v-if="device.deviceState?.lastSeen">
+            Last seen: {{ formatTime(device.deviceState.lastSeen) }}
+          </p>
         </div>
       </div>
     </div>
@@ -146,24 +173,28 @@ const deleting = ref(false)
 
 // Check if a device is an ORIGINAL default device (cannot be deleted)
 // Only the 5 original LEDs (led_index 0-4) and 2 original sensors are non-deletable
-const isDefaultDevice = (device) => {
+const isDefaultDevice = device => {
   const meta = device.metaJson || {}
-  
+
   // Default LEDs have led_index 0-4
-  if (['LED', 'LIGHT'].includes(device.type) && 
-      meta.led_index !== undefined && 
-      meta.led_index >= 0 && 
-      meta.led_index <= 4) {
+  if (
+    ['LED', 'LIGHT'].includes(device.type) &&
+    meta.led_index !== undefined &&
+    meta.led_index >= 0 &&
+    meta.led_index <= 4
+  ) {
     return true
   }
-  
+
   // Default sensors have specific sensor_ids like "SmartLight-Sensor-1"
-  if (['SENSOR', 'MULTI_SENSOR'].includes(device.type) && 
-      meta.sensor_id && 
-      meta.sensor_id.startsWith('SmartLight-Sensor')) {
+  if (
+    ['SENSOR', 'MULTI_SENSOR'].includes(device.type) &&
+    meta.sensor_id &&
+    meta.sensor_id.startsWith('SmartLight-Sensor')
+  ) {
     return true
   }
-  
+
   return false
 }
 
@@ -208,44 +239,56 @@ onMounted(() => {
 })
 
 // Device helpers
-const getDeviceIcon = (device) => {
-  if (['LIGHT', 'LED'].includes(device.type)) return LightIcon
-  if (['SENSOR', 'MULTI_SENSOR'].includes(device.type)) return SensorIcon
+const getDeviceIcon = device => {
+  if (['LIGHT', 'LED'].includes(device.type)) {
+    return LightIcon
+  }
+  if (['SENSOR', 'MULTI_SENSOR'].includes(device.type)) {
+    return SensorIcon
+  }
   return ChipIcon
 }
 
-const getDeviceIconClass = (device) => {
-  if (['LIGHT', 'LED'].includes(device.type)) return 'bg-gradient-to-br from-yellow-400 to-orange-500'
-  if (['SENSOR', 'MULTI_SENSOR'].includes(device.type)) return 'bg-gradient-to-br from-green-400 to-teal-500'
+const getDeviceIconClass = device => {
+  if (['LIGHT', 'LED'].includes(device.type)) {
+    return 'bg-gradient-to-br from-yellow-400 to-orange-500'
+  }
+  if (['SENSOR', 'MULTI_SENSOR'].includes(device.type)) {
+    return 'bg-gradient-to-br from-green-400 to-teal-500'
+  }
   return 'bg-gradient-to-br from-blue-400 to-indigo-500'
 }
 
-const formatDeviceType = (type) => {
+const formatDeviceType = type => {
   const types = {
-    'LED': 'LED Light',
-    'LIGHT': 'Light',
-    'SENSOR': 'Sensor',
-    'MULTI_SENSOR': 'Multi-Sensor',
-    'MICROCONTROLLER': 'Controller'
+    LED: 'LED Light',
+    LIGHT: 'Light',
+    SENSOR: 'Sensor',
+    MULTI_SENSOR: 'Multi-Sensor',
+    MICROCONTROLLER: 'Controller'
   }
   return types[type] || type
 }
 
-const isOnline = (device) => {
+const isOnline = device => {
   const lastSeen = device?.deviceState?.lastSeen
-  if (!lastSeen) return false
+  if (!lastSeen) {
+    return false
+  }
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
   return new Date(lastSeen) > fiveMinutesAgo
 }
 
-const formatTime = (timestamp) => {
-  if (!timestamp) return 'Never'
+const formatTime = timestamp => {
+  if (!timestamp) {
+    return 'Never'
+  }
   const date = new Date(timestamp)
   return date.toLocaleString()
 }
 
 // Actions
-const openDeviceDetail = (device) => {
+const openDeviceDetail = device => {
   selectedDevice.value = device
   showDeviceDetailModal.value = true
 }
@@ -255,7 +298,7 @@ const closeDeviceDetail = () => {
   selectedDevice.value = null
 }
 
-const handleDeviceCreated = (newDevice) => {
+const handleDeviceCreated = newDevice => {
   devices.value.push(newDevice)
   showAddDeviceModal.value = false
   toast.success('Device created successfully')
@@ -266,7 +309,7 @@ const handleDeviceUpdated = () => {
 }
 
 // Delete modal handlers
-const openDeleteModal = (device) => {
+const openDeleteModal = device => {
   deviceToDelete.value = device
   showDeleteModal.value = true
 }
@@ -277,8 +320,10 @@ const cancelDeleteDevice = () => {
 }
 
 const confirmDeleteDevice = async () => {
-  if (!deviceToDelete.value) return
-  
+  if (!deviceToDelete.value) {
+    return
+  }
+
   deleting.value = true
   try {
     await devicesApi.delete(deviceToDelete.value.id)
@@ -294,4 +339,3 @@ const confirmDeleteDevice = async () => {
   }
 }
 </script>
-

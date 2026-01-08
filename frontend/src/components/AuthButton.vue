@@ -1,8 +1,5 @@
 <template>
-  <button
-    class="btn btn-primary flex items-center space-x-2"
-    @click="$emit('click')"
-  >
+  <button class="btn btn-primary flex items-center space-x-2" @click="$emit('click')">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
         stroke-linecap="round"

@@ -16,15 +16,16 @@ const showAuthModal = ref(false)
 const isDarkMode = ref(false)
 
 // Role-based access
-const isOwner = computed(() => authStore.isOwner)
 const isResident = computed(() => authStore.isResident)
 
 // Get WebSocket state for command tracking
 const { lastSceneApplied, clearLastSceneApplied } = useWebSocket()
 
 // Watch for LED command status changes
-watch(lastSceneApplied, (event) => {
-  if (!event) return
+watch(lastSceneApplied, event => {
+  if (!event) {
+    return
+  }
 
   // Dismiss any pending toasts since we got a response
   toast.dismissPending()

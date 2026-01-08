@@ -75,14 +75,14 @@ describe('Route Guards', () => {
       expect(mockNext).toHaveBeenCalledWith()
     })
 
-    it('should redirect non-owners to dashboard', async () => {
+    it('should redirect non-owners to rooms', async () => {
       mockStore.isAuthenticated = true
       mockStore.isOwner = false
 
       await requireOwner(mockTo, mockFrom, mockNext)
 
       expect(mockNext).toHaveBeenCalledWith({
-        path: '/dashboard',
+        path: '/rooms',
         replace: true
       })
     })
@@ -120,14 +120,14 @@ describe('Route Guards', () => {
       expect(mockNext).toHaveBeenCalledWith()
     })
 
-    it('should redirect non-residents to dashboard', async () => {
+    it('should redirect non-residents to rooms', async () => {
       mockStore.isAuthenticated = true
       mockStore.isResident = false
 
       await requireResident(mockTo, mockFrom, mockNext)
 
       expect(mockNext).toHaveBeenCalledWith({
-        path: '/dashboard',
+        path: '/rooms',
         replace: true
       })
     })
