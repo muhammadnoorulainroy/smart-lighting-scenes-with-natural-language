@@ -149,11 +149,11 @@ public class NlpCommandExecutor {
             .replace(" ", "_").replace("-", "_");
 
         return switch (room) {
-            case "living_room", "living" -> List.of(0);
+            case "kitchen" -> List.of(0);
             case "bedroom" -> List.of(1);
-            case "kitchen" -> List.of(2);
-            case "bathroom", "bath" -> List.of(3);
-            case "hallway" -> List.of(4);
+            case "bathroom", "bath" -> List.of(2);
+            case "hallway" -> List.of(3);
+            case "living_room", "living" -> List.of(4);
             default -> List.of(0, 1, 2, 3, 4);
         };
     }
