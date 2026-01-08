@@ -37,22 +37,22 @@ DEFAULT_COLORS = [
 ]
 
 LED_ROOM_NAMES = [
-    "Living Room",
-    "Bedroom",
-    "Kitchen",
-    "Bath",
-    "Hallway",
+    "Kitchen",       # LED 0
+    "Bedroom",       # LED 1
+    "Bathroom",      # LED 2
+    "Hallway",       # LED 3
+    "Living Room",   # LED 4
 ]
 
-# Sensor to LED mapping
+# Sensor to LED mapping (only Bedroom and Living Room have sensors)
 LED_SENSOR_MAPPING = {
-    0: "SmartLight-Sensor-2",
-    1: "SmartLight-Sensor-1",
+    1: "SmartLight-Sensor-1",  # Bedroom
+    4: "SmartLight-Sensor-2",  # Living Room
 }
 
 SENSOR_DEVICES = {
     "SmartLight-Sensor-1": {"led_index": 1, "room_name": "Bedroom"},
-    "SmartLight-Sensor-2": {"led_index": 0, "room_name": "Living Room"},
+    "SmartLight-Sensor-2": {"led_index": 4, "room_name": "Living Room"},
 }
 
 # OLED Display (SH1107)

@@ -442,11 +442,11 @@ smartlighting/
 
 | LED Index | Room | Sensor |
 |-----------|------|--------|
-| 0 | Living Room | SmartLight-Sensor-2 |
+| 0 | Kitchen | - |
 | 1 | Bedroom | SmartLight-Sensor-1 |
-| 2 | Kitchen | - |
-| 3 | Bathroom | - |
-| 4 | Hallway | - |
+| 2 | Bathroom | - |
+| 3 | Hallway | - |
+| 4 | Living Room | SmartLight-Sensor-2 |
 
 ### Runtime Configuration
 
