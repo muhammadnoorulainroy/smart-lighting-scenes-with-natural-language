@@ -900,7 +900,7 @@ async def main():
     try:
         await main_loop()
     except KeyboardInterrupt:
-        log(_SRC, "\n👋 Shutting down...")
+        log(_SRC, "\nShutting down...")
     except Exception as e:
         log_err(_SRC, f"Fatal error: {e}")
         import sys

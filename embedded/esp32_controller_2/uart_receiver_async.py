@@ -130,7 +130,6 @@ class UARTReceiver:
                 "temperature": temp,
                 "humidity": hum,
                 "luminosity": lux if lux is not None else 0,
-                "pressure": data.get("pressure", existing.get("pressure", 0)),
                 "audio": audio if audio is not None else 0,
                 "audio_peak": audio if audio is not None else 0,
                 "name": sensor_name,

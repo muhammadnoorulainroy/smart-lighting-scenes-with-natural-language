@@ -31,22 +31,22 @@ class EnvironmentalSensingService(Service):
     uuid = StandardUUID(0x181A)
     
     temperature = Int16Characteristic(
-        uuid=StandardUUID(0x2A6E),
+        uuid=StandardUUID(0x2A6E), # Temperature official UUID
         properties=Characteristic.READ | Characteristic.NOTIFY,
     )
     
     humidity = Uint16Characteristic(
-        uuid=StandardUUID(0x2A6F),
+        uuid=StandardUUID(0x2A6F), # Humidity official UUID
         properties=Characteristic.READ | Characteristic.NOTIFY,
     )
     
     luminosity = Uint16Characteristic(
-        uuid=StandardUUID(0x2A77),
+        uuid=StandardUUID(0x2AFB),  # Illuminance official UUID
         properties=Characteristic.READ | Characteristic.NOTIFY,
     )
     
     audio_level = Uint16Characteristic(
-        uuid=StandardUUID(0x2A78),
+        uuid=StandardUUID(0x2BE4),  # Noise official UUID
         properties=Characteristic.READ | Characteristic.NOTIFY,
     )
 
@@ -173,7 +173,6 @@ def main():
         # Send ALL sensor values immediately on connection
         temp = sensors.read_temperature()
         humidity = sensors.read_humidity()
-        pressure = sensors.read_pressure()
         lux = sensors.read_luminosity()
         audio = sensors.read_audio_level()
         
@@ -193,8 +192,8 @@ def main():
         sensors.last_lux = lux
         sensors.last_audio = audio
         
-        print("[INIT] T={:.1f}C H={:.1f}% P={:.0f}hPa L={} A={}".format(
-            temp, humidity, pressure, lux, audio))
+        print("[INIT] T={:.1f}C H={:.1f}% L={} A={}".format(
+            temp, humidity, lux, audio))
         
         while ble.connected:
             changed = sensors.get_changed_values()

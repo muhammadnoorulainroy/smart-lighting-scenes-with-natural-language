@@ -7,7 +7,7 @@ Features:
 - Subscribes to notifications for real-time data
 - Uses standard Bluetooth SIG UUIDs
 - Forwards sensor data to ESP32 #2 via UART
-- Power-efficient: event-driven notifications, no polling
+- Power-efficient: light sleep between events, IRQ-driven notifications
 """
 
 import bluetooth
@@ -15,15 +15,25 @@ import time
 import json
 import struct
 import gc
+import machine
 from machine import UART, Pin
 from micropython import const
 
+LIGHT_SLEEP_ENABLED = True
+LIGHT_SLEEP_MS = 2000
+
+# Check if light sleep is available
+_LIGHT_SLEEP_AVAILABLE = hasattr(machine, 'lightsleep')
+if LIGHT_SLEEP_ENABLED and not _LIGHT_SLEEP_AVAILABLE:
+    print("[WARN] Light sleep not available on this platform, using normal sleep")
+    LIGHT_SLEEP_ENABLED = False
+
 # Standard Bluetooth SIG UUIDs
-ENV_SENSING_SERVICE_UUID = bluetooth.UUID(0x181A)
-TEMPERATURE_UUID = bluetooth.UUID(0x2A6E)
-HUMIDITY_UUID = bluetooth.UUID(0x2A6F)
-LUMINOSITY_UUID = bluetooth.UUID(0x2A77)
-AUDIO_UUID = bluetooth.UUID(0x2A78)
+ENV_SENSING_SERVICE_UUID = bluetooth.UUID(0x181A)  # Environmental Sensing Service
+TEMPERATURE_UUID = bluetooth.UUID(0x2A6E)          # Temperature
+HUMIDITY_UUID = bluetooth.UUID(0x2A6F)             # Humidity
+LUMINOSITY_UUID = bluetooth.UUID(0x2AFB)           # Illuminance
+AUDIO_UUID = bluetooth.UUID(0x2BE4)                # Noise
 
 # Client Characteristic Configuration Descriptor (for enabling notifications)
 CCCD_UUID = bluetooth.UUID(0x2902)
@@ -504,17 +514,55 @@ class BLECentral:
         return sum(1 for s in self.sensors.values() 
                    if s.state == SensorConnection.STATE_READY)
     
+    def _sleep(self, duration_ms):
+        """
+        Sleep with power optimization.
+        Uses light sleep when enabled and all sensors connected,
+        falls back to regular sleep otherwise.
+        
+        Power consumption:
+        - Light sleep: CPU paused, BLE IRQ still works
+        - Regular sleep: CPU idle but running
+        
+        BLE notifications wake the CPU immediately via hardware IRQ,
+        so we don't miss any sensor data.
+        """
+        all_ready = self.get_ready_count() == len(TARGET_SENSORS)
+        
+        if LIGHT_SLEEP_ENABLED and _LIGHT_SLEEP_AVAILABLE and all_ready:
+            # All sensors connected and ready - safe to use light sleep
+            # BLE notifications will still trigger IRQ and wake us immediately
+            try:
+                machine.lightsleep(duration_ms)
+            except OSError as e:
+                # Light sleep can fail if BLE is in certain states
+                # Fallback to regular sleep
+                time.sleep_ms(duration_ms)
+        else:
+            # Either:
+            # - Light sleep disabled
+            # - Not all sensors connected (need fast reconnection)
+            # - Light sleep not available
+            time.sleep_ms(duration_ms)
+    
     def run(self):
         """Main loop - scan, connect, and receive notifications."""
         print("\n" + "=" * 50)
         print("  ESP32 #1 - BLE Central")
         print("  Connecting to SmartLight Sensors")
+        print("=" * 50)
+
+        if LIGHT_SLEEP_ENABLED:
+            print("  Power Mode: LIGHT SLEEP")
+        else:
+            print("  Power Mode: NORMAL")
         print("=" * 50 + "\n")
         
         last_status = 0
         last_full_send = 0  # Will trigger immediate send on first loop
         reconnect_delay = 0
         first_run = True
+        light_sleep_active = False
         
         while True:
             now = time.time()
@@ -524,6 +572,11 @@ class BLECentral:
             needed = set(TARGET_SENSORS.keys()) - connected_names
             
             if needed:
+                # Not all sensors connected - disable light sleep logging
+                if light_sleep_active:
+                    light_sleep_active = False
+                    print("[POWER] Exiting light sleep mode (reconnecting)")
+                
                 # Add delay before reconnection attempts to avoid rapid cycling
                 if reconnect_delay > 0:
                     reconnect_delay -= 1
@@ -548,10 +601,13 @@ class BLECentral:
                     # No sensors found, wait before next scan
                     print("[BLE] No target sensors found, waiting...")
                     reconnect_delay = 5  # Wait 5 seconds before next scan
-            
-            # Main loop - just wait for notifications
-            # BLE notifications are handled in IRQ
-            time.sleep(2)
+            else:
+                # All sensors connected - can use light sleep
+                if LIGHT_SLEEP_ENABLED and not light_sleep_active:
+                    light_sleep_active = True
+                    print("[POWER] Entering light sleep mode")
+
+            self._sleep(LIGHT_SLEEP_MS)
             
             # Send full sensor data periodically (every 5 seconds) or on first run
             if first_run or (now - last_full_send >= 5):
@@ -566,7 +622,8 @@ class BLECentral:
                 gc.collect()  # Periodic garbage collection
                 conn = self.get_connected_count()
                 ready = self.get_ready_count()
-                print(f"[STATUS] Connected: {conn}/{len(TARGET_SENSORS)}, Ready: {ready}, Mem: {gc.mem_free()}")
+                sleep_mode = "LIGHT" if (LIGHT_SLEEP_ENABLED and light_sleep_active) else "NORMAL"
+                print(f"[STATUS] Sensors: {conn}/{len(TARGET_SENSORS)}, Ready: {ready}, Sleep: {sleep_mode}, Mem: {gc.mem_free()}")
 
 
 def main():
