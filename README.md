@@ -149,6 +149,32 @@ make docker-logs-app   # View logs
 
 ## Architecture
 
+### System Architecture
+
+![System Architecture](docs/diagrams/architecture.png)
+
+The system consists of three layers:
+
+| Layer | Components | Purpose |
+|-------|------------|---------|
+| **Embedded** | ESP32s, nRF52840 sensors, LEDs, OLED | Hardware control and sensor data collection |
+| **Server** | Spring Boot, PostgreSQL, Redis, Mosquitto, Nginx | Business logic, data storage, MQTT broker, reverse proxy |
+| **Client** | Vue.js Web App, Android App | User interfaces for controlling the system |
+
+### Sequence Diagram
+
+![Sequence Diagram](docs/diagrams/sequence.png)
+
+The sequence diagram shows five main data flows:
+
+1. **User Applies Scene via Web App** - Scene application through the UI with MQTT commands and ACK tracking
+2. **NLP Command Processing** - Natural language command parsing, preview, and execution
+3. **Scheduled Scene Trigger** - Automatic scene activation based on schedules
+4. **Sensor Data Flow** - Environmental data from nRF52840 sensors through BLE to MQTT to the dashboard
+5. **Manual LED Control** - Direct device control from the Devices page
+
+### Project Structure
+
 This is a monorepo containing all components of the Smart Lighting system:
 
 ```
@@ -544,6 +570,10 @@ npm run docker:down     # Stop infrastructure
 - **[Build Instructions](docs/BUILD.md)** - Build automation
 - **[Embedded System](docs/EMBEDDED_SYSTEM.md)** - ESP32/nRF52840 hardware
 - **[Getting Started Tutorial](docs/tutorials/tutorial.md)** - Step-by-step guide
+
+### Diagrams
+- **[Architecture Diagram](docs/diagrams/architecture.png)** - System architecture overview
+- **[Sequence Diagram](docs/diagrams/sequence.png)** - Data flow sequences
 
 ---
 
