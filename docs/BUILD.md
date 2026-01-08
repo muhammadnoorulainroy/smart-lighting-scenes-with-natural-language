@@ -22,6 +22,19 @@
 | Docker Compose | 2+ | `docker compose version` |
 | GNU Make | 3.8+ | `make --version` |
 
+### Recommended Shell (Windows)
+
+On Windows, run `make` commands from **Git Bash** or **WSL** for full compatibility:
+
+| Environment | Compatibility | Notes |
+|-------------|---------------|-------|
+| **Git Bash** | Full | Recommended for Windows |
+| **WSL** | Full | Linux environment on Windows |
+| **PowerShell** | Limited | Basic build/clean works, some features fail |
+| **cmd.exe** | Not supported | Use Git Bash instead |
+
+Git Bash is included with [Git for Windows](https://git-scm.com/download/win).
+
 ---
 
 ## Quick Start

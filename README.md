@@ -97,6 +97,8 @@ make docker-down-app   # Stop full stack
 make docker-logs-app   # View logs
 ```
 
+> **Windows Users:** Run `make` commands from **Git Bash** or **WSL** for full compatibility. PowerShell has limited support.
+
 ---
 
 ## Features
@@ -225,6 +227,7 @@ For development with hot-reload and debugging capabilities.
 - **Java 21+** (JDK)
 - **Docker** (for infrastructure services)
 - **GNU Make** (optional)
+- **Git Bash or WSL** (Windows only, for Make commands)
 
 ```bash
 # Verify tools

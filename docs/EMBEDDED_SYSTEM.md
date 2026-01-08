@@ -36,6 +36,7 @@ The Smart Lighting embedded system uses a dual-ESP32 architecture with nRF52840 
 - **Connections**:
   - UART TX: GPIO 17 (to ESP32 #2)
 - **Firmware**: MicroPython
+- **Power Mode**: Light sleep between BLE notifications (2s intervals)
 
 ### ESP32 #2 - Main Controller
 - **Role**: System controller, MQTT bridge, display manager, runtime config
@@ -64,12 +65,12 @@ The Smart Lighting embedded system uses a dual-ESP32 architecture with nRF52840 
 
 Uses standard Bluetooth SIG Environmental Sensing Service (0x181A).
 
-| Characteristic | UUID   | Data Format            |
-|----------------|--------|------------------------|
-| Temperature    | 0x2A6E | Int16 (value * 100)    |
-| Humidity       | 0x2A6F | Uint16 (value * 100)   |
-| Luminosity     | 0x2A77 | Uint16 (raw lux)       |
-| Audio Level    | 0x2A78 | Uint16 (0-100 scale)   |
+| Characteristic | UUID   | Official Name | Data Format            |
+|----------------|--------|---------------|------------------------|
+| Temperature    | 0x2A6E | Temperature   | Int16 (value × 100)    |
+| Humidity       | 0x2A6F | Humidity      | Uint16 (value × 100)   |
+| Illuminance    | 0x2AFB | Illuminance   | Uint16 (raw lux)       |
+| Audio Level    | 0x2BE4 | Noise         | Uint16 (0-100 scale)   |
 
 Connection parameters:
 - Max concurrent connections: 2
@@ -173,7 +174,7 @@ Topic structure: `smartlighting/<category>/<target>/<action>`
 | File                      | Description                           |
 |---------------------------|---------------------------------------|
 | main.py                   | Entry point                           |
-| ble_central.py            | BLE central with state machine        |
+| ble_central.py            | BLE central with state machine, light sleep |
 | boot.py                   | Boot sequence                         |
 | config.py                 | Target sensor configuration           |
 
@@ -349,20 +350,40 @@ mosquitto_pub -h localhost -t "smartlighting/command/mode" -m "manual"
 
 ## Power Management
 
-### OLED Auto-Sleep
+### ESP32 #1 Light Sleep
+
+ESP32 #1 enters light sleep mode when all BLE sensors are connected and ready:
+
+| Parameter | Value | Configurable |
+|-----------|-------|--------------|
+| LIGHT_SLEEP_ENABLED | True | Yes (code) |
+| LIGHT_SLEEP_MS | 2000ms | Yes (code) |
+
+**Behavior**:
+- Pauses CPU while maintaining BLE connections
+- Instant wake-up on BLE notifications
+- Falls back to normal sleep if `machine.lightsleep()` unavailable
+- Only activates when all expected sensors are connected
+
+**Power Savings**:
+- Active mode: ~80-120mA
+- Light sleep: ~5-10mA
+- Wake latency: <1ms on BLE interrupt
+
+### OLED Auto-Sleep (ESP32 #2)
 - Timeout: Configurable (default 15 seconds)
 - Wake triggers: Button press, MQTT command
 - Can be disabled via backend config
 - Implementation: Hardware power off (`display.poweroff()`)
 
-### WiFi Power Save
+### WiFi Power Save (ESP32 #2)
 - Mode: MIN_MODEM (sleep between beacons)
-- Savings: ~10-15mA
 
-### BLE Optimization
+### BLE Optimization (ESP32 #1)
 - Notification-based (no polling)
 - Event-driven data transfer
 - Sequential GATT operations to prevent ENOMEM
+- Light sleep between notification cycles
 
 ## WiFi Provisioning
 
@@ -413,6 +434,17 @@ LED_SENSOR_MAPPING = {
     0: "SmartLight-Sensor-2",
     1: "SmartLight-Sensor-1",
 }
+```
+
+### ESP32 #1 Settings (ble_central.py)
+```python
+# Light sleep (power saving)
+LIGHT_SLEEP_ENABLED = True    # Enable light sleep mode
+LIGHT_SLEEP_MS = 2000         # Sleep duration between cycles
+
+# BLE connection
+MAX_SENSORS = 2               # Expected sensor count
+SCAN_TIMEOUT = 10000          # BLE scan timeout (ms)
 ```
 
 ### Sensor Thresholds (config.py / backend)
@@ -500,11 +532,21 @@ When `DEBUG = True` in config.py:
 [ 12s][sensor] Lux: 350, Brightness: 65 (capped at 80)
 ```
 
-### Memory Status
+### Memory Status (ESP32 #2)
 Heartbeat log every 10 seconds:
 ```
 [322s][main] Up:320s Mem:50624B BLE:2/2 MQTT:OK Mode:auto
 ```
+
+### ESP32 #1 Status
+Heartbeat log shows power mode:
+```
+[120s][ble] Up:120s Sensors:2/2 Sleep:LIGHT Mem:45KB
+```
+
+Power modes:
+- `LIGHT`: Light sleep active (all sensors connected)
+- `NORMAL`: Normal operation (scanning or partial connection)
 
 ## Troubleshooting
 
