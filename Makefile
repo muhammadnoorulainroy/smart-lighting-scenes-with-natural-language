@@ -1,48 +1,49 @@
 # Smart Lighting Scenes - Build System
 # Orchestrates builds across backend (Gradle) and frontend (npm)
+#
+# Compatible with: Git Bash, WSL, Linux, macOS
+# On Windows: Run from Git Bash (recommended) or WSL
 
 .PHONY: help install build test clean run dev docker-up docker-down lint format package check-deps verify all
 
-# Detect OS
-ifeq ($(OS),Windows_NT)
-	GRADLEW := gradlew.bat
-	SHELL := cmd
-	RM := del /Q /F
-	RMDIR := rmdir /S /Q
-	MKDIR := mkdir
-	SEP := \\
+BASH_EXISTS := $(shell bash --version 2>/dev/null && echo yes)
+
+ifdef BASH_EXISTS
+    SHELL := bash
+    .SHELLFLAGS := -eu -o pipefail -c
 else
-	GRADLEW := ./gradlew
-	SHELL := /bin/bash
-	.SHELLFLAGS := -eu -o pipefail -c
-	RM := rm -f
-	RMDIR := rm -rf
-	MKDIR := mkdir -p
-	SEP := /
+    $(warning WARNING: bash not found. Some features may not work. Install Git Bash on Windows.)
 endif
+
+# Detect OS for gradle wrapper
+UNAME_S := $(shell uname -s 2>/dev/null || echo Windows)
+IS_WINDOWS_BASH := $(filter MINGW% MSYS% CYGWIN%,$(UNAME_S))
+IS_NATIVE_WINDOWS := $(filter Windows%,$(UNAME_S))
+
+ifdef IS_WINDOWS_BASH
+    GRADLEW := ./gradlew.bat
+else ifdef IS_NATIVE_WINDOWS
+    GRADLEW := gradlew.bat
+else
+    GRADLEW := ./gradlew
+endif
+
+RM := rm -f
+RMDIR := rm -rf
+MKDIR := mkdir -p
 
 # Directories
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 INFRA_DIR := infra
-
-# Colors for output (disable on Windows)
-ifeq ($(OS),Windows_NT)
-	BLUE :=
-	GREEN :=
-	YELLOW :=
-	RED :=
-	NC :=
-else
-	BLUE := \033[0;34m
-	GREEN := \033[0;32m
-	YELLOW := \033[0;33m
-	RED := \033[0;31m
-	NC := \033[0m
-endif
+BLUE := \033[0;34m
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+RED := \033[0;31m
+NC := \033[0m
 
 help:
-	@echo "$(BLUE)Smart Lighting Scenes - Build System$(NC)"
+	@printf "$(BLUE)Smart Lighting Scenes - Build System$(NC)\n"
 	@echo ""
 	@echo "Setup & Installation:"
 	@echo "  make install          Install all dependencies"
@@ -86,13 +87,13 @@ help:
 
 # Prerequisites check
 check-deps:
-	@echo "$(BLUE)Checking prerequisites...$(NC)"
-	@java --version >/dev/null 2>&1 || (echo "$(RED)Error: Java not found. Please install JDK 21+$(NC)" && exit 1)
-	@node --version >/dev/null 2>&1 || (echo "$(RED)Error: Node.js not found. Please install Node.js 18+$(NC)" && exit 1)
-	@npm --version >/dev/null 2>&1 || (echo "$(RED)Error: npm not found$(NC)" && exit 1)
-	@docker --version >/dev/null 2>&1 || echo "$(YELLOW)Warning: Docker not found (optional)$(NC)"
-	@test -f $(BACKEND_DIR)/gradlew || (echo "$(RED)Error: Gradle wrapper not found$(NC)" && exit 1)
-	@echo "$(GREEN)All prerequisites found$(NC)"
+	@printf "$(BLUE)Checking prerequisites...$(NC)\n"
+	@java --version >/dev/null 2>&1 || (printf "$(RED)Error: Java not found. Please install JDK 21+$(NC)\n" && exit 1)
+	@node --version >/dev/null 2>&1 || (printf "$(RED)Error: Node.js not found. Please install Node.js 18+$(NC)\n" && exit 1)
+	@npm --version >/dev/null 2>&1 || (printf "$(RED)Error: npm not found$(NC)\n" && exit 1)
+	@docker --version >/dev/null 2>&1 || printf "$(YELLOW)Warning: Docker not found (optional)$(NC)\n"
+	@test -f $(BACKEND_DIR)/gradlew || test -f $(BACKEND_DIR)/gradlew.bat || (printf "$(RED)Error: Gradle wrapper not found$(NC)\n" && exit 1)
+	@printf "$(GREEN)All prerequisites found$(NC)\n"
 
 # Installation
 install: check-deps
@@ -107,7 +108,7 @@ install: check-deps
 
 # Build
 build: build-backend build-frontend
-	@echo "$(GREEN)Build complete$(NC)"
+	@printf "$(GREEN)Build complete$(NC)\n"
 
 build-backend:
 	@echo "Building backend..."
@@ -121,7 +122,7 @@ build-frontend:
 
 # Testing
 test: test-backend test-frontend
-	@echo "$(GREEN)All tests passed$(NC)"
+	@printf "$(GREEN)All tests passed$(NC)\n"
 
 test-backend:
 	@echo "Running backend tests..."
@@ -129,43 +130,39 @@ test-backend:
 	@echo "Test report: $(BACKEND_DIR)/build/reports/tests/test/index.html"
 
 test-frontend:
-	@echo "$(BLUE)Running frontend tests...$(NC)"
+	@printf "$(BLUE)Running frontend tests...$(NC)\n"
 	@if [ -f "$(FRONTEND_DIR)/package.json" ] && grep -q '"test"' "$(FRONTEND_DIR)/package.json"; then \
 		cd $(FRONTEND_DIR) && npm run test; \
 	else \
-		echo "$(YELLOW)Frontend tests not configured yet$(NC)"; \
+		printf "$(YELLOW)Frontend tests not configured yet$(NC)\n"; \
 	fi
 
 # Code quality
 lint: lint-backend lint-frontend
-	@echo "$(GREEN)Linting complete$(NC)"
+	@printf "$(GREEN)Linting complete$(NC)\n"
 
 lint-backend:
 	@echo "Linting backend..."
-ifeq ($(OS),Windows_NT)
-	@echo "Checkstyle not configured"
-else
-	@if cd $(BACKEND_DIR) && $(GRADLEW) tasks --all | grep -q checkstyle; then \
+	@if cd $(BACKEND_DIR) && $(GRADLEW) tasks --all 2>/dev/null | grep -q checkstyle; then \
 		cd $(BACKEND_DIR) && $(GRADLEW) checkstyleMain checkstyleTest; \
 	else \
 		echo "Checkstyle not configured"; \
 	fi
-endif
 
 lint-frontend:
 	@echo "Linting frontend..."
 	cd $(FRONTEND_DIR) && npm run lint
 
 format:
-	@echo "$(BLUE)Formatting code...$(NC)"
+	@printf "$(BLUE)Formatting code...$(NC)\n"
 	@if [ -f "$(FRONTEND_DIR)/package.json" ] && grep -q '"format"' "$(FRONTEND_DIR)/package.json"; then \
 		cd $(FRONTEND_DIR) && npm run format; \
 	fi
-	@echo "$(GREEN)Code formatted$(NC)"
+	@printf "$(GREEN)Code formatted$(NC)\n"
 
 # Development
 dev:
-	@echo "$(BLUE)Development Mode$(NC)"
+	@printf "$(BLUE)Development Mode$(NC)\n"
 	@echo ""
 	@echo "Start the application:"
 	@echo "  1. make docker-up      (start infrastructure)"
@@ -174,8 +171,7 @@ dev:
 	@echo ""
 	@echo "Access points:"
 	@echo "  Frontend:  http://localhost:5173"
-	@echo "  Backend:   http://localhost:8080"
-	@echo "  API Docs:  http://localhost:8080/swagger-ui.html"
+	@echo "  Backend:   http://localhost:8080/api"
 	@echo ""
 
 dev-backend:
@@ -247,38 +243,38 @@ docker-ps:
 
 # Packaging
 package: build
-	@echo "$(BLUE)Creating deployment packages...$(NC)"
+	@printf "$(BLUE)Creating deployment packages...$(NC)\n"
 	@echo "Backend JAR: $(BACKEND_DIR)/build/libs/"
 	@ls -lh $(BACKEND_DIR)/build/libs/*.jar 2>/dev/null || true
 	@echo "Frontend dist: $(FRONTEND_DIR)/dist/"
 	@if [ -d "$(FRONTEND_DIR)/dist" ]; then du -sh $(FRONTEND_DIR)/dist; fi
-	@echo "$(GREEN)Packages ready$(NC)"
+	@printf "$(GREEN)Packages ready$(NC)\n"
 
 # Cleanup
 clean: clean-backend clean-frontend
-	@echo "$(GREEN)Clean complete$(NC)"
+	@printf "$(GREEN)Clean complete$(NC)\n"
 
 clean-backend:
 	@echo "Cleaning backend..."
 	cd $(BACKEND_DIR) && $(GRADLEW) clean
 
 clean-frontend:
-	@echo "$(BLUE)Cleaning frontend...$(NC)"
-	@if [ -d "$(FRONTEND_DIR)/dist" ]; then rm -rf $(FRONTEND_DIR)/dist; fi
-	@if [ -d "$(FRONTEND_DIR)/.vite" ]; then rm -rf $(FRONTEND_DIR)/.vite; fi
+	@printf "$(BLUE)Cleaning frontend...$(NC)\n"
+	@$(RMDIR) $(FRONTEND_DIR)/dist 2>/dev/null || true
+	@$(RMDIR) $(FRONTEND_DIR)/.vite 2>/dev/null || true
 
 clean-all: clean
-	@echo "$(BLUE)Deep cleaning...$(NC)"
-	@rm -rf node_modules $(FRONTEND_DIR)/node_modules
-	@rm -f package-lock.json $(FRONTEND_DIR)/package-lock.json
-	@echo "$(GREEN)Deep clean complete$(NC)"
+	@printf "$(BLUE)Deep cleaning...$(NC)\n"
+	@$(RMDIR) node_modules $(FRONTEND_DIR)/node_modules 2>/dev/null || true
+	@$(RM) package-lock.json $(FRONTEND_DIR)/package-lock.json 2>/dev/null || true
+	@printf "$(GREEN)Deep clean complete$(NC)\n"
 
 # Verification
 verify: build test lint
-	@echo "$(GREEN)Verification passed$(NC)"
+	@printf "$(GREEN)Verification passed$(NC)\n"
 
 all: clean build test
-	@echo "$(GREEN)Build pipeline complete$(NC)"
+	@printf "$(GREEN)Build pipeline complete$(NC)\n"
 
 # Project info
 info:
