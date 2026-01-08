@@ -120,18 +120,18 @@ public class RoomsController {
         if (auth == null) {
             return null;
         }
-        
+
         // Handle OAuth2 users
         if (auth.getPrincipal() instanceof CustomOAuth2User customUser) {
             return customUser.getUser();
         }
-        
+
         // Handle OAuth2User (standard)
         if (auth.getPrincipal() instanceof OAuth2User oauth2User) {
             String email = oauth2User.getAttribute("email");
             return userRepository.findByEmail(email).orElse(null);
         }
-        
+
         // Handle local auth users (email stored in principal name)
         String email = auth.getName();
         return userRepository.findByEmail(email).orElse(null);

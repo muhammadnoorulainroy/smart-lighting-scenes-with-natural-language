@@ -103,7 +103,7 @@ public class ConflictAiEnhancer {
               "enhanced_resolutions": [
                 {
                   "conflict_index": 0,
-                  "best_resolution": "The ID of the best resolution from the existing options (adjust_new, prioritize_existing, replace_existing)"
+                  "best_resolution": "The best resolution ID (adjust_new, prioritize_existing, replace_existing)"
                 }
               ]
             }

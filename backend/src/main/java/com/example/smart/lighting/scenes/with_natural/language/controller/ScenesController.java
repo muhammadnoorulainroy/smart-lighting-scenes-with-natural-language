@@ -132,10 +132,10 @@ public class ScenesController {
         }
 
         scene = sceneRepository.save(scene);
-        
+
         // Broadcast real-time event
         webSocketEventService.broadcastSceneUpdated(scene.getId(), scene.getName());
-        
+
         return ResponseEntity.ok(toDto(scene));
     }
 

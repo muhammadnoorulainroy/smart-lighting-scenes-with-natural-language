@@ -127,7 +127,7 @@ public class WebSocketEventService {
         data.put("correlationId", correlationId);
         data.put("devicesConfirmed", devicesConfirmed);
         data.put("latencyMs", latencyMs);
-        
+
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SCENE_CONFIRMED")
             .data(data)
@@ -151,7 +151,7 @@ public class WebSocketEventService {
         data.put("correlationId", correlationId);
         data.put("acksReceived", acksReceived);
         data.put("lightsExpected", lightsExpected);
-        
+
         WebSocketMessage message = WebSocketMessage.builder()
             .type("SCENE_TIMEOUT")
             .data(data)
@@ -253,7 +253,7 @@ public class WebSocketEventService {
         log.debug("Broadcasted sensor update: {}", sensorName);
     }
 
-    //  Scene CRUD Events 
+    //  Scene CRUD Events
 
     /**
      * Broadcasts that a scene was created.
@@ -313,7 +313,7 @@ public class WebSocketEventService {
         log.info("Broadcasted scene deleted: {}", sceneId);
     }
 
-    //  Schedule Events 
+    //  Schedule Events
 
     /**
      * Broadcasts that a schedule was created.

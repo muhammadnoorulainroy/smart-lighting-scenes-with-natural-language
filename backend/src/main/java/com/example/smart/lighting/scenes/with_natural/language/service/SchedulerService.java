@@ -81,7 +81,7 @@ public class SchedulerService {
         }
         lastProcessedMinute = currentMinuteKey;
 
-        log.info("=== Schedule Check at {}:{} ({}) ===", 
+        log.info("=== Schedule Check at {}:{} ({}) ===",
             String.format("%02d", currentTime.getHour()),
             String.format("%02d", currentTime.getMinute()),
             currentDay);
@@ -92,9 +92,9 @@ public class SchedulerService {
         for (Schedule schedule : timeSchedules) {
             Map<String, Object> config = schedule.getTriggerConfig();
             String scheduleTime = (String) config.getOrDefault("at", config.get("time"));
-            log.info("Checking schedule '{}': scheduled for {}, weekdays: {}", 
+            log.info("Checking schedule '{}': scheduled for {}, weekdays: {}",
                 schedule.getName(), scheduleTime, config.get("weekdays"));
-                
+
             if (shouldTrigger(schedule, currentTime, currentDay)) {
                 try {
                     log.info(">>> TRIGGERING schedule: {} <<<", schedule.getName());
@@ -148,7 +148,7 @@ public class SchedulerService {
         if (weekdaysObj == null) {
             weekdaysObj = config.get("days");
         }
-        
+
         if (weekdaysObj instanceof List<?> weekdays && !((List<?>) weekdays).isEmpty()) {
             @SuppressWarnings("unchecked")
             List<String> days = (List<String>) weekdays;

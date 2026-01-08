@@ -25,14 +25,14 @@ public class MobileAuthService {
     public MobileAuthService(
             UserRepository userRepository,
             @Value("${spring.security.oauth2.client.registration.google.client-id}") String clientId) {
-        
+
         this.userRepository = userRepository;
         this.verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 new GsonFactory())
                 .setAudience(Collections.singletonList(clientId))
                 .build();
-        
+
         log.info("MobileAuthService initialized");
     }
 
@@ -41,7 +41,7 @@ public class MobileAuthService {
      */
     public User authenticateWithGoogle(String idTokenString) throws Exception {
         GoogleIdToken idToken = verifier.verify(idTokenString);
-        
+
         if (idToken == null) {
             throw new SecurityException("Invalid ID token");
         }

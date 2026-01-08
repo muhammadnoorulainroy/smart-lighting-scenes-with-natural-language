@@ -113,7 +113,7 @@ public class NlpScheduleBuilder {
         ScheduleConfig schedule = parsed.getSchedule();
 
         String timeStr = schedule.getTime() != null ? schedule.getTime() : schedule.getTrigger();
-        
+
         // Add recurrence info to name
         String recurrenceStr = "";
         if (schedule.getRecurrence() != null) {

@@ -39,7 +39,7 @@ public class DotenvConfig implements ApplicationContextInitializer<ConfigurableA
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
         ConfigurableEnvironment environment = applicationContext.getEnvironment();
-        
+
         // Try to load .env from parent directory (project root)
         File envFile = new File("../.env");
         if (!envFile.exists()) {

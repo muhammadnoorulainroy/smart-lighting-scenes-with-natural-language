@@ -67,7 +67,8 @@ public interface DeviceStateRepository extends JpaRepository<DeviceState, UUID> 
      */
     @Modifying
     @Query(value = """
-        INSERT INTO smartlighting.device_state_latest (device_id, is_on, brightness_pct, rgb_color, last_seen, updated_at)
+        INSERT INTO smartlighting.device_state_latest
+            (device_id, is_on, brightness_pct, rgb_color, last_seen, updated_at)
         VALUES (:deviceId, :isOn, :brightness, :rgbColor, :lastSeen, :lastSeen)
         ON CONFLICT (device_id)
         DO UPDATE SET
