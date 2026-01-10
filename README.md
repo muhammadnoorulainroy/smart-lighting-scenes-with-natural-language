@@ -5,7 +5,13 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-green.svg)](https://spring.io/projects/spring-boot)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.5-brightgreen.svg)](https://vuejs.org/)
 
-A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes. Control your home lighting through voice commands, scheduled automations, and real-time IoT integration with environmental sensor adaptation.
+A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes.
+
+## Project Demo
+
+[![Watch Demo](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://youtu.be/nlmkqhvYwiA)
+
+**[Watch the full demo on YouTube](https://youtu.be/nlmkqhvYwiA)** Control your home lighting through voice commands, scheduled automations, and real-time IoT integration with environmental sensor adaptation.
 
 ---
 
@@ -146,6 +152,16 @@ make docker-logs-app   # View logs
 - **Web Dashboard**: Vue 3 + Vite responsive web application
 - **Android App**: Kotlin + Jetpack Compose (Material Design 3)
 - **ESP32 Hardware**: Real-time LED control with sensor integration
+
+### Mobile App Configuration
+To connect the Android app to your backend, update the `BASE_URL` in:
+```
+mobile/app/src/main/java/com/smartlighting/mobile/util/Constants.kt
+```
+```kotlin
+const val BASE_URL = "http://YOUR_IP:8080/"
+```
+Replace `YOUR_IP` with your computer's local IP address (e.g., `192.168.1.100`).
 
 ## Architecture
 
@@ -298,7 +314,17 @@ make dev-backend
 # Or: cd backend && ./gradlew bootRun
 ```
 
-**5. Start frontend** (Terminal 2)
+**5. Configure frontend environment**
+
+Create `frontend/.env` for local development:
+```bash
+VITE_API_URL=http://localhost:8080
+VITE_WS_URL=ws://localhost:8080/ws
+```
+
+> **Note:** In Docker/production, leave `VITE_API_URL` empty or unset—Nginx proxies API requests automatically.
+
+**6. Start frontend** (Terminal 2)
 
 ```bash
 make dev-frontend

@@ -236,7 +236,9 @@ watch(
   }
 )
 
-const scrollToDemo = () => demoSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+const scrollToDemo = () => {
+  window.open('https://youtu.be/nlmkqhvYwiA', '_blank', 'noopener,noreferrer')
+}
 
 const processDemo = () => {
   if (!demoCommand.value.trim()) {

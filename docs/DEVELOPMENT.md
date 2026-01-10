@@ -257,6 +257,23 @@ public class MyService {
 
 ### 6. Frontend Development
 
+#### Environment Configuration
+
+Create `frontend/.env` for local development:
+
+```bash
+# Backend API URL (required for local development)
+VITE_API_URL=http://localhost:8080
+```
+
+| Environment | `VITE_API_URL` Value | Result |
+|-------------|---------------------|--------|
+| **Docker/Production** | Empty or unset | Relative URLs → Nginx proxies to backend |
+| **Local Development** | `http://localhost:8080` | Direct connection to backend |
+| **Remote Backend** | `http://YOUR_IP:8080` | Direct connection to backend IP |
+
+> **Note:** Vite requires environment variables to start with `VITE_` to be exposed to the browser.
+
 #### Running locally:
 
 ```bash
@@ -308,11 +325,28 @@ export const nlpApi = {
 
 ### 7. Mobile Development
 
+#### Backend Connection Configuration
+
+To connect the Android app to your backend, update the `BASE_URL` in:
+
+```
+mobile/app/src/main/java/com/smartlighting/mobile/util/Constants.kt
+```
+
+```kotlin
+const val BASE_URL = "http://YOUR_IP:8080/"
+```
+
+Replace `YOUR_IP` with your computer's local IP address (e.g., `192.168.1.100`).
+
+> **Note:** The mobile app uses cleartext HTTP. Ensure your IP is listed in `mobile/app/src/main/res/xml/network_security_config.xml` for Android to allow the connection.
+
 #### Setup Android Studio:
 1. Open `mobile/` directory in Android Studio
 2. Sync Gradle files
-3. Create an emulator or connect device
-4. Run the app
+3. Update `BASE_URL` in `Constants.kt` with your backend IP
+4. Create an emulator or connect device
+5. Run the app
 
 #### Jetpack Compose Tips:
 - Use `@Preview` annotations for component preview
