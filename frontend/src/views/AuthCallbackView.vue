@@ -38,11 +38,12 @@ onMounted(async () => {
     if (token) {
       console.log('Exchanging OAuth token for session...')
       try {
-        // Exchange token for session
+        // Exchange token for session - use response directly (no cookies needed)
         const { data } = await apiClient.post('/api/auth/token', { token: decodeURIComponent(token) })
         if (data?.id) {
-          // Token exchange successful, refresh auth state
-          await authStore.checkAuth()
+          // Token exchange successful - set user directly from response
+          authStore.setUser(data)
+          console.log('User authenticated via token exchange:', data.email)
         }
       } catch (tokenError) {
         console.error('Token exchange failed:', tokenError)

@@ -284,6 +284,16 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithEmail,
     signup,
     logout,
-    clearAuth
+    clearAuth,
+    /**
+     * Sets user data directly (used after token exchange).
+     * @param {Object} userData - User data from token exchange
+     */
+    setUser: userData => {
+      user.value = userData
+      isAuthenticated.value = true
+      error.value = null
+      logger.info(MODULE, `User set directly: ${userData.email} (${userData.role})`)
+    }
   }
 })
