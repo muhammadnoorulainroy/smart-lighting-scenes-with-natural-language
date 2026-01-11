@@ -17,7 +17,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '../api/auth'
-import { getStoredToken, clearStoredToken } from '../api/axios'
+import { getStoredToken, setStoredToken, clearStoredToken } from '../api/axios'
 import logger from '../utils/logger'
 
 /** @constant {string} Module name for logging */
@@ -195,7 +195,16 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = null
       logger.info(MODULE, `Attempting email login for: ${email}`)
 
-      const userData = await authApi.login(email, password)
+      const response = await authApi.login(email, password)
+      // Response contains { user, token }
+      const { user: userData, token } = response
+
+      // Store JWT token for cross-domain authentication
+      if (token) {
+        setStoredToken(token)
+        logger.debug(MODULE, 'JWT token stored for cross-domain auth')
+      }
+
       user.value = userData
       isAuthenticated.value = true
       logger.info(MODULE, `Email login successful: ${userData.email}`)
@@ -228,7 +237,16 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = null
       logger.info(MODULE, `Attempting signup for: ${email}`)
 
-      const userData = await authApi.signup(email, password, name)
+      const response = await authApi.signup(email, password, name)
+      // Response contains { user, token }
+      const { user: userData, token } = response
+
+      // Store JWT token for cross-domain authentication
+      if (token) {
+        setStoredToken(token)
+        logger.debug(MODULE, 'JWT token stored for cross-domain auth')
+      }
+
       user.value = userData
       isAuthenticated.value = true
       logger.info(MODULE, `Signup successful: ${userData.email}`)

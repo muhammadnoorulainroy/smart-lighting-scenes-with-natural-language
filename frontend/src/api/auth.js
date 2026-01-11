@@ -71,14 +71,14 @@ export const authApi = {
   /**
    * Registers a new user with email and password.
    *
-   * On success, the user is automatically logged in and a session cookie is set.
+   * On success, the user is automatically logged in and a JWT token is returned.
    * The user starts with GUEST role by default.
    *
    * @async
    * @param {string} email - User's email address (must be unique)
    * @param {string} password - Password (min 6 characters)
    * @param {string} name - Display name
-   * @returns {Promise<Object>} Created user profile
+   * @returns {Promise<Object>} Object with user profile and JWT token
    * @throws {Error} If email already exists or validation fails
    */
   async signup(email, password, name) {
@@ -87,18 +87,19 @@ export const authApi = {
       password,
       name
     })
+    // Response contains { user, token }
     return response.data
   },
 
   /**
    * Authenticates a user with email and password.
    *
-   * On success, a session cookie is set for subsequent requests.
+   * On success, returns user profile and JWT token for cross-domain auth.
    *
    * @async
    * @param {string} email - User's email address
    * @param {string} password - User's password
-   * @returns {Promise<Object>} Authenticated user profile
+   * @returns {Promise<Object>} Object with user profile and JWT token
    * @throws {Error} If credentials are invalid
    */
   async login(email, password) {
@@ -106,6 +107,7 @@ export const authApi = {
       email,
       password
     })
+    // Response contains { user, token }
     return response.data
   },
 

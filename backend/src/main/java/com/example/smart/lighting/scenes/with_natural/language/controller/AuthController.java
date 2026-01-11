@@ -62,8 +62,21 @@ public class AuthController {
         try {
             User user = localAuthService.signup(request);
             authenticateUser(user, httpRequest);
+
+            // Generate JWT token for cross-domain authentication
+            String token = jwtService.generateToken(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getRole().name()
+            );
+
             log.info("User signed up and authenticated: {}", user.getEmail());
-            return ResponseEntity.status(HttpStatus.CREATED).body(localAuthService.toUserDto(user));
+
+            // Return user data with JWT token
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("user", localAuthService.toUserDto(user));
+            response.put("token", token);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
             log.warn("Signup failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -78,8 +91,21 @@ public class AuthController {
         try {
             User user = localAuthService.login(request);
             authenticateUser(user, httpRequest);
+
+            // Generate JWT token for cross-domain authentication
+            String token = jwtService.generateToken(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getRole().name()
+            );
+
             log.info("User logged in and authenticated: {}", user.getEmail());
-            return ResponseEntity.ok(localAuthService.toUserDto(user));
+
+            // Return user data with JWT token
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("user", localAuthService.toUserDto(user));
+            response.put("token", token);
+            return ResponseEntity.ok(response);
         } catch (BadCredentialsException e) {
             log.warn("Login failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
