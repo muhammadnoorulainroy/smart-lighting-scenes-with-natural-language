@@ -3,12 +3,22 @@
 -- Single home, three roles (OWNER, RESIDENT, GUEST)
 
 -- Create schema
-CREATE SCHEMA IF NOT EXISTS smartlighting;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'smartlighting') THEN
+        CREATE SCHEMA smartlighting;
+    END IF;
+END $$;
 
-SET search_path TO smartlighting;
+SET search_path TO smartlighting, public;
 
 -- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
 
 -- ============================================================================
 -- ENUMS
