@@ -34,13 +34,13 @@ onMounted(async () => {
     }
 
     // Check for JWT token in URL (cross-domain OAuth)
-    const token = route.query.token
+    const { token } = route.query
     if (token) {
       console.log('Exchanging OAuth token for session...')
       try {
         // Exchange token for session
-        const response = await apiClient.post('/api/auth/token', { token: decodeURIComponent(token) })
-        if (response.data && response.data.id) {
+        const { data } = await apiClient.post('/api/auth/token', { token: decodeURIComponent(token) })
+        if (data?.id) {
           // Token exchange successful, refresh auth state
           await authStore.checkAuth()
         }
