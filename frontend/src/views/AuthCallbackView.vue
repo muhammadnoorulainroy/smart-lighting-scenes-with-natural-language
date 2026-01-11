@@ -16,7 +16,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import apiClient from '../api/axios'
+import apiClient, { setStoredToken } from '../api/axios'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ErrorAlert from '../components/ErrorAlert.vue'
 
@@ -36,17 +36,21 @@ onMounted(async () => {
     // Check for JWT token in URL (cross-domain OAuth)
     const { token } = route.query
     if (token) {
-      console.log('Exchanging OAuth token for session...')
+      console.log('Received OAuth token, storing and validating...')
       try {
-        // Exchange token for session - use response directly (no cookies needed)
-        const { data } = await apiClient.post('/api/auth/token', { token: decodeURIComponent(token) })
+        // Decode and store the token for future API requests
+        const decodedToken = decodeURIComponent(token)
+        setStoredToken(decodedToken)
+
+        // Validate token and get user data from backend
+        const { data } = await apiClient.post('/api/auth/token', { token: decodedToken })
         if (data?.id) {
-          // Token exchange successful - set user directly from response
+          // Token validated - set user directly from response
           authStore.setUser(data)
-          console.log('User authenticated via token exchange:', data.email)
+          console.log('User authenticated via token:', data.email)
         }
       } catch (tokenError) {
-        console.error('Token exchange failed:', tokenError)
+        console.error('Token validation failed:', tokenError)
         error.value = 'Failed to complete authentication. Please try again.'
         return
       }

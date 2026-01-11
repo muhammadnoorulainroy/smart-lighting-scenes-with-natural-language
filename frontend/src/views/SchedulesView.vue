@@ -140,7 +140,10 @@
                     :value="resolution.id"
                     :checked="selectedResolutions[idx] === resolution.id"
                     class="text-primary-600"
-                    @change="selectedResolutions[idx] = resolution.id; selectedResolutionParams[idx] = resolution.changes"
+                    @change="
+                      selectedResolutions[idx] = resolution.id
+                      selectedResolutionParams[idx] = resolution.changes
+                    "
                   />
                   <label :for="`res-${idx}-${resolution.id}`" class="text-sm cursor-pointer">
                     {{ resolution.description }}

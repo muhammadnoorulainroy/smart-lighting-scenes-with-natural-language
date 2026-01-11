@@ -17,6 +17,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '../api/auth'
+import { getStoredToken, clearStoredToken } from '../api/axios'
 import logger from '../utils/logger'
 
 /** @constant {string} Module name for logging */
@@ -90,6 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Checks authentication status and loads user profile.
    *
    * Should be called on app initialization to restore session.
+   * First tries session-based auth, then falls back to JWT token.
    * Sets isLoading while checking, then updates state.
    *
    * @async
@@ -101,10 +103,25 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = null
       logger.debug(MODULE, 'Checking authentication status')
 
+      // Check if we have a stored JWT token
+      const storedToken = getStoredToken()
+      if (storedToken) {
+        logger.debug(MODULE, 'Found stored JWT token, validating...')
+        try {
+          // Token will be automatically added to request by axios interceptor
+          await fetchCurrentUser()
+          return
+        } catch (tokenErr) {
+          logger.warn(MODULE, 'Stored token validation failed, clearing...')
+          clearStoredToken()
+        }
+      }
+
+      // Fall back to session-based auth
       const authenticated = await authApi.checkAuth()
 
       if (authenticated) {
-        logger.debug(MODULE, 'User is authenticated, fetching profile')
+        logger.debug(MODULE, 'User is authenticated via session, fetching profile')
         await fetchCurrentUser()
       } else {
         logger.info(MODULE, 'User is not authenticated')
@@ -255,6 +272,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Clears all authentication state.
    *
    * Called internally on logout, auth failure, or session expiry.
+   * Also removes stored JWT token.
    *
    * @returns {void}
    */
@@ -263,6 +281,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     isAuthenticated.value = false
     error.value = null
+    clearStoredToken()
   }
 
   return {
