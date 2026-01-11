@@ -66,7 +66,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         log.info("User {} logged in successfully with role {}", oAuth2User.getEmail(), userRole);
 
         // Generate a JWT token for cross-domain authentication
-        String token = jwtService.generateToken(oAuth2User.getUserId().toString(), oAuth2User.getEmail(), userRole);
+        String token = jwtService.generateToken(oAuth2User.getUser().getId().toString(), oAuth2User.getEmail(), userRole);
 
         // Redirect to frontend auth callback page with the token
         return UriComponentsBuilder.fromUriString(frontendUrl)
