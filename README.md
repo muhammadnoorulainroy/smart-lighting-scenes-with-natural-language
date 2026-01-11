@@ -7,11 +7,31 @@
 
 A comprehensive smart home lighting control system that understands natural language commands and creates intelligent lighting scenes.
 
-## Project Demo
+## Live Demo
+
+[![Live Demo](https://img.shields.io/badge/_Live_App-Visit_Demo-blue?style=for-the-badge)](https://smart-lighting-frontend.onrender.com/)
+
+**[Try the Live Demo](https://smart-lighting-frontend.onrender.com/)**
+
+> ⚠️ **Note:** Hosted on Render's free tier. Initial load may take 30-60 seconds as the server spins up from cold start.
+
+### Test Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Owner** | `owner@test.com` | `password` |
+| **Resident** | `resident@test.com` | `password` |
+| **Guest** | `guest@test.com` | `password` |
+
+Or sign in with **Google OAuth** to create your own account.
+
+---
+
+## Video Demo
 
 [![Watch Demo](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://youtu.be/nlmkqhvYwiA)
 
-**[Watch the full demo on YouTube](https://youtu.be/nlmkqhvYwiA)** Control your home lighting through voice commands, scheduled automations, and real-time IoT integration with environmental sensor adaptation.
+**[Watch the full demo on YouTube](https://youtu.be/nlmkqhvYwiA)** - Control your home lighting through voice commands, scheduled automations, and real-time IoT integration with environmental sensor adaptation.
 
 ---
 
