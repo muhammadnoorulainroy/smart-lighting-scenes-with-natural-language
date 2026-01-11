@@ -16,6 +16,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import apiClient from '../api/axios'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ErrorAlert from '../components/ErrorAlert.vue'
 
@@ -32,11 +33,27 @@ onMounted(async () => {
       return
     }
 
-    // Wait a bit for the backend to set the session cookie
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Fetch user data
-    await authStore.checkAuth()
+    // Check for JWT token in URL (cross-domain OAuth)
+    const token = route.query.token
+    if (token) {
+      console.log('Exchanging OAuth token for session...')
+      try {
+        // Exchange token for session
+        const response = await apiClient.post('/api/auth/token', { token: decodeURIComponent(token) })
+        if (response.data && response.data.id) {
+          // Token exchange successful, refresh auth state
+          await authStore.checkAuth()
+        }
+      } catch (tokenError) {
+        console.error('Token exchange failed:', tokenError)
+        error.value = 'Failed to complete authentication. Please try again.'
+        return
+      }
+    } else if (route.query.success) {
+      // Legacy: wait for session cookie (same-domain)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      await authStore.checkAuth()
+    }
 
     if (authStore.isAuthenticated) {
       // Redirect to the intended page or dashboard

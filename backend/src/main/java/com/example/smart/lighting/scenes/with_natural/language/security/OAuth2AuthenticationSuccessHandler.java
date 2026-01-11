@@ -1,5 +1,6 @@
 package com.example.smart.lighting.scenes.with_natural.language.security;
 
+import com.example.smart.lighting.scenes.with_natural.language.service.JwtService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,12 +13,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Handles successful OAuth2 authentication by redirecting to the frontend.
  *
  * <p>After successful Google OAuth login, redirects the user to the
- * frontend's auth callback page with a success parameter.</p>
+ * frontend's auth callback page with a JWT token for cross-domain auth.</p>
  *
 
  * @see SimpleUrlAuthenticationSuccessHandler
@@ -29,6 +32,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     @Value("${cors.allowed-origins}")
     private String[] allowedOrigins;
+
+    private final JwtService jwtService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -60,10 +65,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         log.info("User {} logged in successfully with role {}", oAuth2User.getEmail(), userRole);
 
-        // Redirect to frontend auth callback page which will handle the post-auth flow
+        // Generate a JWT token for cross-domain authentication
+        String token = jwtService.generateToken(oAuth2User.getUserId().toString(), oAuth2User.getEmail(), userRole);
+
+        // Redirect to frontend auth callback page with the token
         return UriComponentsBuilder.fromUriString(frontendUrl)
                 .path("/auth/callback")
-                .queryParam("success", "true")
+                .queryParam("token", URLEncoder.encode(token, StandardCharsets.UTF_8))
                 .build().toUriString();
     }
 }
