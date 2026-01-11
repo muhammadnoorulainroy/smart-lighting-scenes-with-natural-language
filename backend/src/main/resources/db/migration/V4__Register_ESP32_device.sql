@@ -254,6 +254,3 @@ BEGIN
     ON CONFLICT (device_id) DO NOTHING;
 
 END $$;
-
--- Log the registration
-COMMENT ON TABLE devices IS 'Registered ESP32-001 with 5 LED devices (LED 0-4)';
